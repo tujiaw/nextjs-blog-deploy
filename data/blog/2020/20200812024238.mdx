@@ -1,0 +1,33 @@
+---
+title: 'log4cxx OutputDebugString DebugView'
+date: '2020-08-12'
+tags: ['Windows']
+draft: false
+summary: 文章介绍 log4cxx 的常用 appender 及在 GUI 程序中用 OutputDebugString 看日志。提到可通过配置 log4cxx.properties 实现向 OutputDebugString 输出日志，用 vs 输出窗口或 DebugView 工具实时查看。 
+---
+
+log4cxx常用appender有ConsoleAppender输出到控制台，RollingFileAppender输出到文件。
+
+
+在GUI程序中使用log4cxx时，要想能实时看到输出日志一般用windows函数OutputDebugString，log4cxx console appender是显示不出来的。
+
+
+所以如果log4cxx的日志能向OutputDebugString一样输出就好了，没想到还真有这样一个appender，如下配置就能实现了，这样就可以用vs输出窗口或者DebugView工具实时看日志了。
+
+log4cxx.properties
+```
+log4j.logger.Test=DEBUG,rfa,odsa
+
+log4j.appender.rfa=org.apache.log4j.RollingFileAppender
+log4j.appender.rfa.Append=true
+log4j.appender.rfa.File=./log/bondclient.log
+log4j.appender.rfa.MaxFileSize=30MB
+log4j.appender.rfa.MaxBackupIndex=30
+log4j.appender.rfa.ImmediateFlush=true
+log4j.appender.rfa.layout=org.apache.log4j.PatternLayout
+log4j.appender.rfa.layout.ConversionPattern=[%d][%-5p][%t][%.20l] - %m%n
+
+log4j.appender.odsa=org.apache.log4j.OutputDebugStringAppender
+log4j.appender.odsa.layout=org.apache.log4j.PatternLayout
+log4j.appender.odsa.layout.ConversionPattern=[%d][%-5p][%t][%.20l] - %m%n
+```

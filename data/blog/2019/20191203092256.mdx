@@ -1,0 +1,69 @@
+---
+title: '双击exe阻止程序启动'
+date: '2019-12-03'
+tags: ['Windows']
+draft: false
+summary: 文章介绍双击 exe 阻止程序启动的方法，不依赖传参，通过获取父进程 ID 判断是否为 explorer.exe 进程 ID 来实现。给出获取进程信息、按名称获取进程 ID、获取父进程 ID 的函数及示例代码。 
+---
+
+有些程序不希望用户双击直接运行，而是由其他的程序调用启动。
+
+根据main函数的传参可以简单的实现这个需求，用户双击运行的话参数argc为1，argv为程序运行的路径。
+
+这里通过另外一种方法来实现，不依赖于传参。
+
+* 在main函数里获取父进程的ID
+* 判断父进程ID是否为explorer.exe进程ID
+* 如果是，表示是通过双击打开的
+
+代码如下：
+```
+bool GetProcessInfo(PROCESSENTRY32 &info, const std::function<bool(const PROCESSENTRY32 &data)> &cb)
+{
+    bool result = false;
+    info.dwSize = sizeof(PROCESSENTRY32);
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+    if (Process32First(snapshot, &info)) {
+        while (Process32Next(snapshot, &info)) {
+            if (cb(info)) {
+                result = true;
+                break;
+            }
+        }
+    }
+
+    CloseHandle(snapshot);
+    return result;
+}
+
+DWORD GetProcessIdByName(const WCHAR *name)
+{
+    PROCESSENTRY32 info;
+    if (GetProcessInfo(info, [&](const PROCESSENTRY32 &data) -> bool {
+        return wcsicmp(data.szExeFile, name) == 0;
+    })) {
+        return info.th32ProcessID;
+    }
+    return -1;
+}
+
+DWORD GetParentProcessId(DWORD pid)
+{
+    PROCESSENTRY32 info;
+    if (GetProcessInfo(info, [&](const PROCESSENTRY32 &data) -> bool {
+        return data.th32ProcessID == pid;
+    })) {
+        return info.th32ParentProcessID;
+    }
+    return -1;
+}
+
+// main.cpp
+DWORD parentProcessId = GetParentProcessId(GetCurrentProcessId());
+DWORD explorerProcessId = GetProcessIdByName(L"explorer.exe");
+if (parentProcessId > 0 && parentProcessId == explorerProcessId) {
+    // 不能双击启动
+    return 0;
+}
+```
+> 关键就是判断它的父进程ID是不是explorer.exe

@@ -1,0 +1,77 @@
+---
+title: 'react判断滚动到底部以及保持原来的滚动位置'
+date: '2017-07-25'
+tags: ['Web']
+draft: false
+summary: 文章解决判断组件滚动到底部及页面切换后保持滚动位置问题。通过 ref 获取 dom 节点，在组件加载和卸载时添加/移除 scroll 事件监听来判断。页面切换时用全局变量保存和恢复 scrollTop 位置。 
+---
+
+这里解决两个问题：  
+* 判断某个组件是否滚动到底部
+* 页面切换出去再切换回来后怎样保持之前的滚动位置
+
+> 要保证这个组件就是那个滚动的组件，overflowY为scroll  
+
+
+# 判断某个组件是否滚动到底部
+* 组件代码如下，通过ref获取真实的dom节点
+```
+<div ref={ node => this.contentNode = node }>
+```
+
+* 在组件加载完成后增加监听scroll事件，组件将要卸载的时候移除事件，onScrollHandle里面就可以判断是否滚动到了底部  
+```
+  onScrollHandle(event) {
+    const clientHeight = event.target.clientHeight
+    const scrollHeight = event.target.scrollHeight
+    const scrollTop = event.target.scrollTop
+    const isBottom = (clientHeight + scrollTop === scrollHeight)
+    console.log('is bottom:' + isBottom)
+  }
+
+  componentDidMount() {
+    if (this.contentNode) {
+      this.contentNode.addEventListener('scroll', this.onScrollHandle.bind(this));
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.contentNode) {
+      this.contentNode.removeEventListener('scroll', this.onScrollHandle.bind(this));
+    }
+  }
+```
+
+# 页面切换出去再切换回来后怎样保持之前的滚动位置
+* 当页面切换出去的时候会调用componentWillUnmount方法，所以在这里记录下当前组件位置  
+* 当页面切换进来的时候会调用componentDidMount方法，将之前保存的位置重新赋值给组件  
+代码如下：  
+```
+let scrollTop = 0
+onScrollHandle(event) {
+    const clientHeight = event.target.clientHeight
+    const scrollHeight = event.target.scrollHeight
+    const scrollTop = event.target.scrollTop
+    const isBottom = (clientHeight + scrollTop === scrollHeight)
+    if (this.state.isScrollBottom !== isBottom) {
+      this.setState({
+        isScrollBottom: isBottom
+      })
+    }
+  }
+
+  componentDidMount() {
+    if (this.contentNode) {
+      this.contentNode.addEventListener('scroll', this.onScrollHandle.bind(this));
+      this.contentNode.scrollTop = scrollTop
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.contentNode) {
+      this.contentNode.removeEventListener('scroll', this.onScrollHandle.bind(this));
+      scrollTop = this.contentNode.scrollTop
+    }
+  }
+```
+> scrollTop放在类外面作为全局变量

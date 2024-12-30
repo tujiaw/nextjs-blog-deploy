@@ -1,0 +1,36 @@
+---
+title: 'Qt什么时候用activateWindow'
+date: '2019-03-05'
+tags: ['Windows', 'Qt', 'C/C++']
+draft: false
+summary: 在 Qt 中，show 用于显示窗口，raise 可将窗口置于最前。但主窗口点击时子窗口可能遮挡，此时需用 activateWindow 和 raise 解决。show 显示窗口及子窗口，showNormal 恢复最大化或最小化窗口，raise 提升窗口，activateWindow 设置活动窗口并可与 raise 配合确保窗口置顶。 
+---
+
+Qt什么时候用activateWindow
+
+通常我们使用show来显示窗口，使用raise将窗口显示在最前面。  
+遇到的问题是，当在主窗口中打开一个子窗口时，如果这个窗口之前已经创建好了，它只是不在最前面被遮挡了，这时候要把它显示在前面使用show和raise是可以的。但是会带来一个问题，如果在当前窗口上没有做任何操作就直接点击主窗口，此时子窗口还是在前面，遮挡住了主窗口。除非你在子窗口上点击一下再点击主窗口就可以了。  
+
+解决上面问题的方法其实就是使用activateWindow和raise。
+
+可以参考下面的API解释。
+
+
+# void QWidget::show()
+Shows the widget and its child widgets.
+This is equivalent to calling showFullScreen(), showMaximized(), or setVisible(true), depending on the platform's default behavior for the window flags.
+
+# void QWidget::showNormal()
+Restores the widget after it has been maximized or minimized.
+Calling this function only affects windows.
+
+# void QWidget::raise()
+Raises this widget to the top of the parent widget's stack.
+After this call the widget will be visually in front of any overlapping sibling widgets.
+Note: When using activateWindow(), you can call this function to ensure that the window is stacked on top.
+
+# void QWidget::activateWindow()
+Sets the top-level widget containing this widget to be the active window.
+An active window is a visible top-level window that has the keyboard input focus.
+This function performs the same operation as clicking the mouse on the title bar of a top-level window. On X11, the result depends on the Window Manager. If you want to ensure that the window is stacked on top as well you should also call raise(). Note that the window must be visible, otherwise activateWindow() has no effect.
+On Windows, if you are calling this when the application is not currently the active one then it will not make it the active window. It will change the color of the taskbar entry to indicate that the window has changed in some way. This is because Microsoft does not allow an application to interrupt what the user is currently doing in another application.

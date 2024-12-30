@@ -1,0 +1,137 @@
+---
+title: '设计模式-单例模式'
+date: '2017-04-15'
+tags: ['C/C++', 'Design']
+draft: false
+summary: 单例模式是常用软件设计模式，保证类只有一个实例。通过静态方法获取实例，构造函数私有。多线程时需小心，可用互斥锁。文中用 C++代码展示了单例模式的实现及相关知识点，包括 static 成员变量和静态成员函数等，还给出了单例销毁的示例。 
+---
+
+单例模式，也叫单子模式，是一种常用的软件设计模式。在应用这个模式时，单例对象的类必须保证只有一个实例存在。许多时候整个系统只需要拥有一个的全局对象，这样有利于我们协调系统整体的行为。比如在某个服务器程序中，该服务器的配置信息存放在一个文件中，这些配置数据由一个单例对象统一读取，然后服务进程中的其他对象再通过这个单例对象获取这些配置信息。这种方式简化了在复杂环境下的配置管理。
+
+实现单例模式的思路是：一个类能返回对象一个引用(永远是同一个)和一个获得该实例的方法（必须是静态方法，通常使用getInstance这个名称）；当我们调用这个方法时，如果类持有的引用不为空就返回这个引用，如果类保持的引用为空就创建该类的实例并将实例的引用赋予该类保持的引用；同时我们还将该类的构造函数定义为私有方法，这样其他处的代码就无法通过调用该类的构造函数来实例化该类的对象，只有通过该类提供的静态方法来得到该类的唯一实例。
+
+单例模式在多线程的应用场合下必须小心使用。如果当唯一实例尚未创建时，有两个线程同时调用创建方法，那么它们同时没有检测到唯一实例的存在，从而同时各自创建了一个实例，这样就有两个实例被构造出来，从而违反了单例模式中实例唯一的原则。 解决这个问题的办法是为指示类是否已经实例化的变量提供一个互斥锁(虽然这样会降低效率)。
+
+```
+//#include "stdafx.h"
+
+#include <iostream>
+using namespace std;
+
+class CSingleton
+{
+public:
+	static CSingleton* Instance();
+	void Output();
+
+private:
+	CSingleton();
+
+	static CSingleton *m_instance;
+};
+
+CSingleton* CSingleton::m_instance = 0;
+
+CSingleton* CSingleton::Instance()
+{
+	if (m_instance == 0)
+	{
+		m_instance = new CSingleton();
+	}
+
+	return m_instance;
+}
+
+void CSingleton::Output()
+{
+	cout << "this is Singleton!" << endl;
+}
+
+CSingleton::CSingleton()
+{
+}
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+	CSingleton *singleton = CSingleton::Instance();
+	singleton->Output();
+
+	//system("pause");
+	return 0;
+}
+
+
+```
+## 涉及到的知识点：
+### static成员变量:
+static成员变量不属于对象的一部分，而是类的一部分，所以程序可以在还没有诞生任何对象的时候就处理此种成员变量。但首先你必须初始化它。
+不要把static成员变量的初始化操作安排在类的构造函数中，因为构造函数可能一再被调用，
+而变量的初值却只应该设定一次，也不要把初始化操作安排在头文件中，因为它可能会被载入许多地方，
+因此也就可能被执行许多次。你应该在应用程序文件中，类以外的任何位置设定其初值。
+例如在main函数之中，或者在全局函数之中，或任何函数之外.
+static成员变量并不是因为对象的实现才可以得以实现的，它本来就存在，你可以想象它是一个全局变量。
+### 类的静态成员函数:
+类的静态成员函数是属于整个类而非类的对象，所以它没有this指针，
+这就导致了它仅能访问类的静态数据和静态成员函数，如果一定要访问成员变量，
+可以在参数中传入对象，通过对象可以访问类的私用和公有成员。
+static成员函数不能被声明为const。
+static成员函数也不能被声明为虚函数。
+
+## 单例销毁：
+```
+#include <iostream>
+
+class Tool
+{
+public:
+	static Tool* Instance()
+	{
+		if (NULL == s_tool) {
+			s_tool = new Tool();
+		}
+		return s_tool;
+	}
+
+	void show()
+	{
+		std::cout << "show" << std::endl;
+	}
+
+private:
+	Tool()
+	{
+		std::cout << "Tool" << std::endl;
+	}
+
+	~Tool() 
+	{
+		std::cout << "~Tool" << std::endl; 
+	}
+
+	class Garbo
+	{
+	public:
+		~Garbo()
+		{
+			std::cout << "~Garbo" << std::endl;
+			if (s_tool) {
+				delete s_tool;
+				s_tool = NULL;
+			}
+		}
+	};
+	static Garbo garbo;
+	static Tool *s_tool;
+};
+
+Tool::Garbo Tool::garbo;
+Tool* Tool::s_tool = NULL;
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+	Tool::Instance()->show();
+	system("pause");
+	return 0;
+}
+```
+> 2011-07-13

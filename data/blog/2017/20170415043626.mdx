@@ -1,0 +1,88 @@
+---
+title: 'SOCKET中宽字符问题'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 本文记录了在看孙鑫老师 vc++16 课聊天程序视频教程时遇到的两个 SOCKET 宽字符问题及解决方法。一是从 ip 地址控件获取值经转换后接收端显示乱码，通过 MultiByteToWideChar 转换为宽字符解决；二是 WSABUF 中 buf 只能接受 char*，需强制转换。作者表示对 SOCKET 宽字符处理仍需努力。 
+---
+
+今天正在看孙鑫老师vc++16课的一个聊天程序视频教程，按照上面做了一下但遇到两个小的问题，最后解决了所以记录下。
+当你的编译器用的是unicode字符集的话就会出现我遇到的这两个问题。
+
+## 从ip地址控件上获取的值经过inet_ntoa转换为网络字节序后在接收端显示的时候是乱码
+```
+
+LRESULT CMFCCHATDlg::OnSock(WPARAM wParam, LPARAM lParam)
+{
+	switch (LOWORD(lParam))
+	{
+	case FD_READ:
+		WSABUF wsabuf;
+		wsabuf.buf = new CHAR[218];
+		wsabuf.len = 218;
+		DWORD dwRead;
+		DWORD dwFlag = 0;
+		SOCKADDR_IN addrFrom;
+		int len = sizeof(SOCKADDR);
+		if (SOCKET_ERROR == WSARecvFrom(m_socket, &wsabuf, 1, &dwRead, &dwFlag,
+							(SOCKADDR*)&addrFrom, &len, NULL, NULL))
+		{
+			MessageBox(L"接受数据失败！");
+			return 0;
+		}
+		CString str, strTemp;
+		char *szFromIp = inet_ntoa(addrFrom.sin_addr);
+		wchar_t wszFromIp[64] = {0};
+		MultiByteToWideChar(CP_ACP, 0, szFromIp, strlen(szFromIp), wszFromIp, 64<<1); // 将其转换为宽字符的就可以了
+		str.Format(L"%s say: %s", wszFromIp, wsabuf.buf);
+		str += L"/r/n";
+		GetDlgItemText(IDC_EDIT_RECV, strTemp);
+		str += strTemp;
+		SetDlgItemText(IDC_EDIT_RECV, str);
+		
+		break;
+	default:
+		break;
+	}
+	return 1;
+}
+```
+
+## WSABUF中的buf只能接受char*， 而我们获取的是wchar_t
+```
+
+void CMFCCHATDlg::OnBnClickedBtnSend()
+{
+	// TODO: Add your control notification handler code here
+	DWORD dwIp;
+	LPTSTR lpSend;
+	WSABUF wsabuf;
+	DWORD dwSend;
+	//int len;
+	((CIPAddressCtrl*)GetDlgItem(IDC_IPADDRESS1))->GetAddress(dwIp);
+	
+	SOCKADDR_IN addrTo;
+	addrTo.sin_addr.S_un.S_addr = htonl(dwIp);
+	addrTo.sin_family = AF_INET;
+	addrTo.sin_port = htons(6000);
+	lpSend = new wchar_t[218];
+	GetDlgItemText(IDC_EDIT_SEND, lpSend, 218);
+	//len = strSend.GetLength();
+	//wsabuf.buf = strSend.GetBuffer(len);
+	wsabuf.buf = (CHAR*)lpSend; //不用CString，直接这里强制转换一下
+	wsabuf.len = (wcslen(lpSend) + 1) * sizeof(wchar_t);
+	SetDlgItemText(IDC_EDIT_SEND, L"");
+	if (SOCKET_ERROR == WSASendTo(m_socket, &wsabuf, 1, &dwSend, 0,
+		(SOCKADDR*)&addrTo, sizeof(SOCKADDR), NULL, NULL))
+	{
+		MessageBox(L"发送数据失败！");
+		delete lpSend;
+		return;
+	}
+	delete lpSend;
+}
+
+```
+> 感觉这两个方法都不太好，不知道SOCKET有没有对应的宽字符处理函数， 就像（strlen, wcslen）， SOCKET方面我还是小白知道的不多， 以后多多努力。
+
+> 2011-06-05

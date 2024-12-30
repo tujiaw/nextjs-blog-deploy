@@ -1,0 +1,75 @@
+---
+title: 'makefile简单写法'
+date: '2017-10-24'
+tags: ['Linux']
+draft: false
+summary: 介绍 makefile 简单写法，含四个文件及相关编译规则。可自动查找.h.cpp，有常用模板如使用 muduo 库等，包含编辑、清理等目标，清晰定义对象、源文件及编译选项。 
+---
+
+```
+四个文件：error.h error.cpp def.h test.cpp
+error.cpp包含error.h
+test.cpp包含def.h error.h
+
+makefile如下：
+objects = test.o error.o
+#flags = -D_DEBUG # debug版本
+
+edit: $(objects)
+g++ -o edit $(objects)
+
+test.o: def.h test.cpp
+g++ -c test.cpp
+error.o: error.h error.cpp
+g++ -c error.cpp
+
+clean:
+rm edit $(objects)
+
+// ----------自动查找.h .cpp-------------------
+CC = g++
+CFLAGS = -Wall
+
+COM = ../com
+TEST = .
+
+OBJ = $(COM)/ByteArray.o $(TEST)/ByteArrayTest.o
+
+all:$(OBJ)
+$(CC) $(CFLAGS) $(OBJ) -o test
+
+clean:
+rm *.o test
+
+// 常用模板
+TARGET  = ./chat
+OBJPATH  = .
+SOURCES  = $(wildcard *.cpp)
+OBJS     = $(patsubst %.cpp,%.o,$(SOURCES))
+FULLOBJS  = $(patsubst %.cpp,$(OBJPATH)/%.o,$(SOURCES))
+INCPATH  = -I. -I./libevent/header
+LIBPATH  = -L./libevent -levent_core -levent_threads
+LFLAGS  = -w:
+CFLAGS  = -w -c
+CXX      = g++
+all:$(TARGET)
+$(TARGET):$(OBJS)
+ $(CXX) $(LFLAGS) $(FULLOBJS) -o $(TARGET) $(LIBPATH)
+$(OBJS):$(SOURCES)
+ $(CXX) $(CFLAGS) $(DFLAGS) $*.cpp -o $(OBJPATH)/$@ $(INCPATH)
+clean:
+ rm -f $(OBJPATH)/*.o
+ rm -f $(TARGET)
+模板，如使用muduo库：
+CXX=g++
+CFLAGS=-Wall -I/home/tujiaw/muduo/include
+LDFLAGS=-L/home/tujiaw/muduo/lib
+LIBS=-lmuduo_base -lmuduo_net -lpthread
+OBJS=main.o echo.o
+out:$(OBJS)
+ $(CXX) $(CFLAGS) $(OBJS) -o $@ $(LDFLAGS) $(LIBS)
+%.o:%.cpp
+ $(CXX) $(CFLAGS) -c $<
+clean:
+ rm out $(OBJS)
+```

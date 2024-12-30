@@ -1,0 +1,74 @@
+---
+title: 'VritualBox centos NAT、Host-Only网络配置'
+date: '2019-10-10'
+tags: ['Linux']
+draft: false
+summary: 文章介绍了 VirtualBox centos 的 NAT、Host-Only 网络配置。包括虚拟机安装步骤及相关截图，网络设置中 NAT 模式可外网访问和 ping 通主机但虚拟机间不通，Host-Only 模式需注意相关设置及重启，还提到通过 NAT 端口转发实现主机访问虚拟机。 
+---
+
+下面配置NAT和Host-Only这两种网卡可以实现外网访问，虚拟机之间互通
+
+# 虚拟机安装
+![Snipaste_2019-10-10_13-35-06_1.png](https://www.ningto.com/upload/Snipaste_2019-10-10_13-35-06_1.png)
+
+![Snipaste_2019-10-10_13-36-04_2.png](https://www.ningto.com/upload/Snipaste_2019-10-10_13-36-04_2.png)
+
+![Snipaste_2019-10-10_13-36-27_3.png](https://www.ningto.com/upload/Snipaste_2019-10-10_13-36-27_3.png)
+
+![Snipaste_2019-10-10_13-41-41_4.png](https://www.ningto.com/upload/Snipaste_2019-10-10_13-41-41_4.png)
+
+![Snipaste_2019-10-10_13-43-05_5.png](https://www.ningto.com/upload/Snipaste_2019-10-10_13-43-05_5.png)
+
+![Snipaste_2019-10-10_13-43-41_6.png](https://www.ningto.com/upload/Snipaste_2019-10-10_13-43-41_6.png)
+
+![Snipaste_2019-10-10_13-44-19_7.png](https://www.ningto.com/upload/Snipaste_2019-10-10_13-44-19_7.png)
+
+![Snipaste_2019-10-10_13-45-30_8.png](https://www.ningto.com/upload/Snipaste_2019-10-10_13-45-30_8.png)
+
+![Snipaste_2019-10-10_13-46-09_9.png](https://www.ningto.com/upload/Snipaste_2019-10-10_13-46-09_9.png)
+
+# 网络设置
+ping www.baidu.com  
+结果：ping: unknown host www.baidu.com  
+
+首先，确认网络设置，网络地址转换（NAT）
+![Snipaste_2019-10-10_13-57-09_10.png](https://www.ningto.com/upload/Snipaste_2019-10-10_13-57-09_10.png)
+
+vi /etc/sysconfig/network-scripts/ifcfg-eth0
+![Snipaste_2019-10-10_13-55-32_11.png](https://www.ningto.com/upload/Snipaste_2019-10-10_13-55-32_11.png)
+
+重启网卡：service network restart  
+再次ping就通了
+
+这种模式可以访问外网，也可以ping通主机，但是虚拟机之间不通
+
+
+关闭虚拟机设置中增加网卡2，仅主机（Host-Only）网络
+![Snipaste_2019-10-10_14-03-34_12.png](https://www.ningto.com/upload/Snipaste_2019-10-10_14-03-34_12.png)
+
+注意启动网络连接和接入网线要勾选，记住MAC地址网卡设置时要使用
+
+重启虚拟机，进入命令行界面
+```
+cd /etc/sysconfig/network-scripts
+cp ifcfg-eth0 ifcfg-eth1
+vi ifcfg-eth1
+```
+![Snipaste_2019-10-10_14-15-38_13.png](https://www.ningto.com/upload/Snipaste_2019-10-10_14-15-38_13.png)
+
+注意：  
+```
+DEVICE改为eth1
+uuid要与eth0中不一样
+BOOTPROTO=static
+IPADDR=192.168.112.1 # 选一个没有使用的IP
+NETMASK=255.255.255.0
+```
+
+service network restart  
+结果
+![Snipaste_2019-10-10_14-21-40_14.png](https://www.ningto.com/upload/Snipaste_2019-10-10_14-21-40_14.png)
+
+# 主机访问虚拟机
+通过NAT的端口转发来实现
+![Snipaste_2019-10-10_16-03-38_15.png](https://www.ningto.com/upload/Snipaste_2019-10-10_16-03-38_15.png)

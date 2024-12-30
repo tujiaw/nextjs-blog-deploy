@@ -1,0 +1,80 @@
+---
+title: 'nodejs项目热更新 github webhooks'
+date: '2017-02-07'
+tags: ['Node.js']
+draft: false
+summary: 介绍 nodejs 项目热更新 github webhooks，本地代码 git 上传后服务器接收通知并拉取代码重启程序。文中详述在 github 中设置及 nodejs 服务代码、脚本代码，需注意相关配置一致且安装相关组件。 
+---
+
+当本地有代码通过git上传后，服务器收到github代码变更的通知，然后调用脚本拉取(git pull)最新的代码，最后重启程序(如：pm2 restart myproject)。所以只要通过git push完成后部署的程序就会自动热更新。
+
+### 在github中对项目进行设置
+* 打开项目，如：nodeblog
+* 点击Settings->Webhooks->Add webhook
+> Palyload URL: http://123.57.244.171:3333/nodeblog  
+   Content type: application/json  
+   Secret: 自定义（如：123456）  
+   选Just the push event就可以了  
+* 点击Update webhook
+
+### 接收github变更通知  
+nodejs服务代码
+```
+var http = require('http')
+var createHandler = require('github-webhook-handler')
+var handler = createHandler({ path: '/nodeblog', secret: '123456' })
+
+function RunCmd(cmd, args, cb) {
+  var spawn = require('child_process').spawn;
+  var child = spawn(cmd, args);
+  var result = '';
+  child.stdout.on('data', function(data) {
+    result += data.toString();
+  });
+  child.stdout.on('end', function() {
+    cb(result)
+  });
+}
+
+http.createServer(function (req, res) {
+  handler(req, res, function (err) {
+    res.statusCode = 404;
+    res.end('no such location');
+  })
+}).listen(3333)
+
+handler.on('error', function (err) {
+  console.error('Error:', err.message);
+})
+
+handler.on('push', function (event) {
+  console.log('Received a push event for %s to %s',
+    event.payload.repository.name,
+    event.payload.ref);
+  var shpath = './' + event.payload.repository.name + '.sh';
+  RunCmd('sh', [shpath], function(result) {
+      console.log(result);
+  })
+})
+
+handler.on('issues', function (event) {
+  console.log('Received an issue event for %s action=%s: #%d %s',
+    event.payload.repository.name,
+    event.payload.action,
+    event.payload.issue.number,
+    event.payload.issue.title);
+})
+```
+脚本代码
+```
+PRO_DIR="/root/nodeblog"
+echo "start--------------------"
+cd $PRO_DIR
+echo "pull git code"
+git pull
+echo "restart nodeblog"
+pm2 restart nodeblog
+echo "finished-----------------"
+```
+> 安装组件：npm install github-webhook-handler --save  
+   注意监听端口，项目名，path以及secret要与github Settings中的设置一致

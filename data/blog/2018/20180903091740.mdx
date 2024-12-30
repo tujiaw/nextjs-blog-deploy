@@ -1,0 +1,226 @@
+---
+title: 'React session'
+date: '2018-09-03'
+tags: ['React']
+draft: false
+summary: 介绍了 React session 的实现方式，包括服务端支持的请求及封装的 AuthService.js，用高阶组件 withAuth 方便组件使用，还给出了登录页面 Login.js 等示例，灵感来自 react-with-styles 且建议用 next-with-auth 库更好。 
+---
+
+这是我在github上看到的一种实现方式，仅做学习使用，并不是就是最好的解决方案。
+
+
+首先，服务端要支持这两个请求：/token和/user，/token是根据email和密码获取id_token，/user是根据之前获取到的id_token再去获取用户的基本信息，AuthService.js封装了这两个信息的请求和存储。
+```
+// utils/AuthService.js
+export default class AuthService {
+  constructor(domain) {
+    this.domain = domain || 'http://localhost:5000'
+    this.fetch = this.fetch.bind(this)
+    this.login = this.login.bind(this)
+    this.getProfile = this.getProfile.bind(this)
+  }
+
+  login(email, password) {
+    // Get a token
+    return this.fetch(`${this.domain}/token`, {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        password
+      })
+    }).then(res => {
+      this.setToken(res.id_token)
+      return this.fetch(`${this.domain}/user`, {
+        method: 'GET'
+      })
+    }).then(res => {
+      this.setProfile(res)
+      return Promise.resolve(res)
+    })
+  }
+
+  loggedIn(){
+    // Checks if there is a saved token and it's still valid
+    const token = this.getToken()
+    return !!token && !isTokenExpired(token) // handwaiving here
+  }
+
+  setProfile(profile){
+    // Saves profile data to localStorage
+    localStorage.setItem('profile', JSON.stringify(profile))
+  }
+
+  getProfile(){
+    // Retrieves the profile data from localStorage
+    const profile = localStorage.getItem('profile')
+    return profile ? JSON.parse(localStorage.profile) : {}
+  }
+
+  setToken(idToken){
+    // Saves user token to localStorage
+    localStorage.setItem('id_token', idToken)
+  }
+
+  getToken(){
+    // Retrieves the user token from localStorage
+    return localStorage.getItem('id_token')
+  }
+
+  logout(){
+    // Clear user token and profile data from localStorage
+    localStorage.removeItem('id_token');
+    localStorage.removeItem('profile');
+  }
+
+  _checkStatus(response) {
+    // raises an error in case response status is not a success
+    if (response.status >= 200 && response.status < 300) {
+      return response
+    } else {
+      var error = new Error(response.statusText)
+      error.response = response
+      throw error
+    }
+  }
+
+  fetch(url, options){
+    // performs api calls sending the required authentication headers
+    const headers = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    }
+
+    if (this.loggedIn()){
+      headers['Authorization'] = 'Bearer ' + this.getToken()
+    }
+
+    return fetch(url, {
+      headers,
+      ...options
+    })
+    .then(this._checkStatus)
+    .then(response => response.json())
+  }
+}
+```
+
+接下来使用React的高阶组件方式进行一次封装方便组件的使用。向服务端请求是有耗时的，这里加个Loading...缓冲，这样组件渲染的时候看起来更加平滑。
+
+在第一次渲染时，React启动从localStorage读取令牌，这就意味着授权页面不能SEO，目前还可以但绝对不是最佳的。
+```
+// utils/withAuth.js - a HOC for protected pages
+import React, {Component} from 'react'
+import AuthService from './auth'
+
+export default function withAuth(AuthComponent) {
+    const Auth = new AuthService('http://localhost:5000')
+    return class Authenticated extends Component {
+      constructor(props) {
+        super(props)
+        this.state = {
+          isLoading: true
+        };
+      }
+
+      componentDidMount () {
+        if (!Auth.loggedIn()) {
+          this.props.url.replaceTo('/')
+        }
+        this.setState({ isLoading: false })
+      }
+
+      render() {
+        return (
+          <div>
+          {this.state.isLoading ? (
+              <div>LOADING....</div>
+            ) : (
+              <AuthComponent {...this.props}  auth={Auth} />
+            )}
+          </div>
+        )
+      }
+    }
+}
+```
+```
+// ./pages/dashboard.js
+// example of a protected page
+import React from 'react'
+import withAuth from  '../utils/withAuth'
+
+class Dashboard extends Component {
+   render() {
+     const user = this.props.auth.getProfile()
+     return (   
+         <div>Current user: {user.email}</div>
+     )
+   }
+}
+
+export default withAuth(Dashboard) 
+```
+用高阶组件的方式封装一下用起来就很方便了。但是登录页面是不能使用HOC这种方式的，因为登录是公共的，所以直接使用AuthService的实例，注册页面也类似。
+```
+// ./pages/login.js
+import React, {Component} from 'react'
+import AuthService from '../utils/AuthService'
+
+const auth = new AuthService('http://localhost:5000')
+
+class Login extends Component {
+  constructor(props) {
+    super(props)
+    this.handleSubmit = this.handleSubmit.bind(this)
+  }
+
+  componentDidMount () {
+    if (auth.loggedIn()) {
+      this.props.url.replaceTo('/admin')   // redirect if you're already logged in
+    }
+  }
+
+  handleSubmit (e) {
+    e.preventDefault()
+    // yay uncontrolled forms!
+    auth.login(this.refs.email.value, this.refs.password.value)
+      .then(res => {
+        console.log(res)
+        this.props.url.replaceTo('/admin')
+      })
+      .catch(e => console.log(e))  // you would show/hide error messages with component state here 
+  }
+
+  render () {
+    return (
+      <div>
+         Login
+          <form onSubmit={this.handleSubmit} >
+            <input type="text" ref="email"/>
+            <input type="password" ref="password"/>
+            <input type="submit" value="Submit"/>
+          </form>
+      </div>
+    )
+  }
+}
+
+export default Login
+```
+这个实现的灵感来自于react-with-styles，作者建议直接使用next-with-auth这个库更好些。
+```
+// ./utils/withAuth.js
+import nextAuth from 'next/auth'
+import parseScopes from './parseScopes'
+
+const Loading = () => <div>Loading...</div>
+
+export default nextAuth({
+  url: 'http://localhost:5000',
+  tokenEndpoint: '/api/token',
+  profileEndpoint: '/api/me',
+  getTokenFromResponse: (res) => res.id_token,
+  getProfileFromResponse: (res) => res,
+  parseScopes,
+})
+```

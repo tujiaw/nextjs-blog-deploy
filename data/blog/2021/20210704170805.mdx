@@ -1,0 +1,178 @@
+---
+title: 'golang 生成目录的check list文件并校验目录'
+date: '2021-07-04'
+tags: ['Go']
+draft: false
+summary: 文章介绍 golang 生成目录的 check list 文件并校验目录的方法。可通过特定命令生成和校验，代码实现了写入和校验功能，包括遍历目录、计算 MD5 值等操作，能判断目录内容完整性。 
+---
+
+目的是将当前可执行程序平级的某个目录生成check list文件，表明是文件还是目录，如果是文件生成md5值。还可以根据check list文件来判断目录里面的内容是否完整，如果是目录就判断目录是否存在，如果是文件就比对md5值是否一样。
+
+生成check list 文件：
+```
+checkfilelist.exe -name app -mode write
+```
+校验目录是否完整：
+```
+checkfilelist.exe -name app -mode check
+```
+代码如下：
+```
+package main
+
+import (
+	"bufio"
+	"crypto/md5"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	"io/fs"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+)
+
+const CHECKLISTNAME = "checklist.json"
+
+type DirCheck struct {
+	Name  string `json:"name"`
+	Items []Item
+}
+
+type Item struct {
+	Type int    `json:"type"`
+	Path string `json:"path"`
+	Md5  string `json:"md5"`
+}
+
+func main() {
+	var dirname string
+	var mode string
+	flag.StringVar(&dirname, "name", "", "directory name")
+	flag.StringVar(&mode, "mode", "", "write or check")
+	flag.Parse()
+
+	currentfile, _ := exec.LookPath(os.Args[0])
+	currentpath, _ := filepath.Abs(currentfile)
+	currentdir := path.Join(currentpath, "..")
+	fmt.Println("src dir:", currentdir, "name:", dirname)
+	if mode == "write" {
+		Write(currentdir, dirname)
+		fmt.Println("write success")
+	} else if mode == "check" {
+		err := Check(currentdir, CHECKLISTNAME)
+		if err != nil {
+			panic(err)
+		} else {
+			fmt.Println("check success")
+		}
+	} else {
+		panic("mode error")
+	}
+}
+
+func Write(currentdir string, dirname string) {
+	srcdir := path.Join(currentdir, dirname)
+	fmt.Println("src dir:", srcdir)
+	dc := DirCheck{}
+	dc.Name = filepath.Base(srcdir)
+	filepath.WalkDir(srcdir, func(pathstr string, d fs.DirEntry, err error) error {
+		abspath := pathstr[len(srcdir):]
+		if len(abspath) == 0 {
+			return nil
+		}
+
+		filetype := 0
+		md5str := ""
+		if d.IsDir() {
+			filetype = 1
+		} else {
+			filetype = 2
+			md5str, err = MD5File(pathstr)
+			if err != nil {
+				fmt.Println("md5 error, path:", pathstr)
+				panic(err)
+			}
+		}
+
+		dc.Items = append(dc.Items, Item{
+			Type: filetype,
+			Path: abspath,
+			Md5:  md5str,
+		})
+		fmt.Println(abspath)
+		return nil
+	})
+
+	b, err := json.MarshalIndent(dc, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+
+	if err := os.WriteFile(CHECKLISTNAME, b, os.ModePerm); err != nil {
+		panic(err)
+	}
+}
+
+func Check(currentdir string, name string) error {
+	checklistpath := path.Join(currentdir, name)
+	b, err := os.ReadFile(checklistpath)
+	if err != nil {
+		return err
+	}
+
+	var dc DirCheck
+	if err := json.Unmarshal(b, &dc); err != nil {
+		return err
+	}
+
+	for _, item := range dc.Items {
+		pathstr := path.Join(currentdir, dc.Name, item.Path)
+		if item.Type == 1 {
+			if !FileExists(pathstr) {
+				return fmt.Errorf("directory not found, dir:%s", pathstr)
+			}
+		} else if item.Type == 2 {
+			md5str, err := MD5File(pathstr)
+			if err != nil {
+				return err
+			}
+			if md5str != item.Md5 {
+				return fmt.Errorf("md5 not match, path:%s", pathstr)
+			}
+		}
+	}
+	return nil
+}
+
+func MD5File(file string) (string, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	r := bufio.NewReader(f)
+	h := md5.New()
+	_, err = io.Copy(h, r)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%X", h.Sum(nil)), nil
+}
+
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		return false
+	}
+	return true
+}
+
+```

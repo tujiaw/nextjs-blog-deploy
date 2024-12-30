@@ -1,0 +1,85 @@
+---
+title: 'WTL 通过IWebBrowser2接口使WebBrowser控件在自己的窗口打开网页'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 在 WTL 中，为使 WebBrowser 控件在自己窗口打开网页，需添加 IWebBrowser2 控件，创建时勾选相关选项并插入控件。通过代码实现运行后打开默认网页及解决同一窗口打开网页问题，还需处理编译错误和运行时响应事件等。 
+---
+
+遇到的问题是这样的， 在WTL中我用了一个WebBrowser控件来显示网页，但是在点击网页中的链接的时候经常跳到其他浏览器上去打开这个链接。我希望的是总是在我的这个控件上显示网页， 不要跳到其他浏览器上去打开。
+
+## 添加IWebBrowser2控件
+在创建的时候Select project options下要勾选Enable ActiveX Control Hosting， 让其继承自CAxDialogImpl， 然后在对话框上点右键Insert ActiveX Control...， 找到Microsoft Web Browser确定， 将属性ID号改为IDC_IE。
+
+## 让程序运行后打开一个默认网页
+* ```CComPtr<IWebBrowser2> m_pWb2;```
+* 在OnInitDialog中， return上面
+```
+CAxWindow wndIE = GetDlgItem(IDC_IE);
+HRESULT hr;
+hr = wndIE.QueryControl(&m_pWb2);
+if (m_pWb2)
+{
+    CComVariant v;
+    m_pWb2->Navigate(CComBSTR(_T("http://www.baidu.com")), &v, &v, &v, &v);
+}
+```
+
+## 解决在同一个窗口打开网页的问题
+* 让CMainDlg继承自```public IDispEventImpl<IDC_IE, CMainDlg>```
+给控件添加一个事件，这个事件是在打开一个新窗口的时候触发
+```
+BEGIN_SINK_MAP(CMainDlg)
+    SINK_ENTRY(IDC_IE, DISPID_NEWWINDOW2, NewWindow2Ie)
+END_SINK_MAP()
+```
+* 关键是响应函数
+```
+void __stdcall NewWindow2Ie(IDispatch **ppDisp, VARIANT_BOOL* Cancel)
+{
+    HRESULT hr;
+    CComPtr<IDispatch> spdispDoc;
+    hr = m_pWb2->get_Document(&spdispDoc);
+    if (FAILED(hr))
+    {
+        return;
+    }
+    CComQIPtr<IHTMLDocument2> spDoc = spdispDoc;
+    if (!spDoc)
+    {
+        return;
+    }
+    IHTMLElement *htmlElement;
+    spDoc->get_activeElement(&htmlElement);
+    IHTMLAnchorElement *spAnchorElement;
+    htmlElement->QueryInterface(IID_IHTMLAnchorElement, (void**)&spAnchorElement);
+    if (spAnchorElement)
+    {
+        BSTR bstrElementHref;
+        VARIANT vtUrl, vtNull;
+        hr = spAnchorElement->get_href(&bstrElementHref); // 获取当前点击的链接地址
+        vtUrl.vt = VT_BSTR;
+        vtUrl.bstrVal = bstrElementHref;
+        m_pWb2->Navigate2(&vtUrl, &vtNull, &vtNull, &vtNull, &vtNull);
+    }
+    *Cancel = TRUE; // FALSE:打开新窗口， TRUE:不打开新窗口
+}
+```
+
+具体函数的作用可以查下msdn， 按理说这样应该就完了， 但是当我编译的时候有个错误说DISPID_NEWWINDOW2没定义
+包含```#include <ExDispid.h>```就可以了。
+问题还没完， 运行后点击网页上的链接窗口并没有响应上面的事件，解决方法：
+```
+BEGIN_MSG_MAP(CMainDlg)
+#if _ATL_VER >= 0x0700           // 请注意这里
+		CHAIN_MSG_MAP(CAxDialogImpl<CMainDlg>)
+#endif
+		MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
+		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAppAbout)
+		COMMAND_ID_HANDLER(IDOK, OnOK)
+		COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
+	END_MSG_MAP()
+```
+
+> 2011-06-19

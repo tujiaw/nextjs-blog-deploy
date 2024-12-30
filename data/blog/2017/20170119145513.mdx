@@ -1,0 +1,142 @@
+---
+title: '类模板之栈（迁移2011-01-19）'
+date: '2017-01-19'
+tags: ['C/C++']
+draft: false
+summary: 介绍类模板之栈，给出`myStack.h`、`myStack.cpp`和`main.cpp`代码。`myStack.h`定义类模板`CMyStack`，`myStack.cpp`实现其成员函数，`main.cpp`创建并使用`CMyStack<int>`对象进行操作，展示栈的基本功能。  
+---
+
+C++模板的使用实例：
+```
+//myStack.h
+
+#ifndef _TEMP_STACK_H_
+#define _TEMP_STACK_H_
+
+template <class T>
+class CMyStack
+{
+public:
+	CMyStack(short num);
+
+	~CMyStack();
+
+	void MyPush(T value);
+
+	T MyPop();
+
+	bool IsEmpty();
+
+	bool HasElements();
+
+	bool IsFull();
+
+private:
+	T *m_data;
+	short m_sPos;
+	short m_sNum;
+};
+
+
+#endif //_TEMP_STACK_H_
+```
+```
+//myStack.cpp
+
+#include "myStack.h"
+
+template <class T>
+CMyStack<T>::CMyStack(short num) : m_sPos(0)
+{
+	m_sNum = num;
+	m_data = (T*)malloc(sizeof(T) * num);
+}
+
+template <class T>
+CMyStack<T>::~CMyStack()
+{
+	delete m_data;
+}
+
+template <class T>
+void CMyStack<T>::MyPush(T value)
+{
+	if (m_sPos >= m_sNum)
+	{
+		printf("Error: up overflow!/n");
+		return;
+	}
+	m_data[m_sPos++] = value;
+}
+
+template <class T>
+T CMyStack<T>::MyPop()
+{
+	if (m_sPos <= 0)
+	{
+		printf("Error: down overflow!/n");
+		return 0;
+	}
+	return m_data[--m_sPos];
+}
+
+template <class T>
+bool CMyStack<T>::IsEmpty()
+{
+	bool bl;
+
+	bl = m_sPos ? false : true;
+
+	return bl;
+}
+
+template <class T>
+bool CMyStack<T>::HasElements()
+{
+	bool bl;
+
+	bl = m_sPos ? true : false;
+
+	return bl;
+}
+
+template <class T>
+bool CMyStack<T>::IsFull()
+{
+	bool bl;
+
+	bl = (m_sPos == (m_sNum-1)) ? true : false;
+
+	return bl;
+}
+```
+```
+//main.cpp
+
+#include <iostream>
+using namespace std;
+
+#include "myStack.h"
+#include "myStack.cpp"//由于类模板不支持声明与实现分开编译， 所以这里不能少
+
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+
+	CMyStack<int> s(6);
+
+	s.MyPush(6);
+	s.MyPush(5);
+	s.MyPush(4);
+	s.MyPush(3);
+	s.MyPush(2);
+
+	while(!s.IsEmpty())
+	{
+		printf("%d/n", s.MyPop());
+	}
+
+	system("pause");
+	return 0;
+}
+```

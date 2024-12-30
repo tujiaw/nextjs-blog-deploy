@@ -1,0 +1,69 @@
+---
+title: 'go http get post json'
+date: '2019-06-15'
+tags: ['Go']
+draft: false
+summary: 本文介绍 go 中 get 和 post 请求的 json 格式封装。get 用 HttpGetJson 函数，post 较复杂用 HttpPostJson 函数，都通过 marshal 处理数据，用法举例清晰，注意 resp 为根据 json 应答定义的 struct 。  
+---
+
+get和post请求使用比较频繁，这里只考虑json格式，做一下简单封装。
+
+# get请求
+```
+func HttpGetJson(url string, resp interface{}) error {
+	result, err := http.Get(url)
+	if err == nil {
+		defer result.Body.Close()
+		return json.NewDecoder(result.Body).Decode(resp)
+	}
+	return err
+}
+```
+用法举例：
+```
+jsonLogin := GithubLoginResponse{}
+if err := util.HttpGetJson("https://api.github.com/user?access_token="+token, &jsonLogin); err != nil {
+	errmsg = fmt.Sprintf("%v", err)
+	break
+}
+```
+
+# post请求
+相对较复杂些
+```
+func HttpPostJson(url string, data map[string]interface{}, resp interface{}) error {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	reader := bytes.NewReader(b)
+	request, err := http.NewRequest("POST", url, reader)
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Accept", "application/json;charset=UTF-8")
+	request.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	client := http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	return json.NewDecoder(response.Body).Decode(resp)
+}
+```
+用法举例：
+```
+payload := make(map[string]interface{})
+payload["client_id"] = "531ad8e4517595748d97"
+payload["client_secret"] = "bf123fc9fe25a30e3e33d7a07daf825b73e07dc6"
+payload["code"] = code
+payload["state"] = state
+var jsonAccessToken AccessTokenResponse
+if err := util.HttpPostJson("https://github.com/login/oauth/access_token", payload, &jsonAccessToken); err != nil {
+	errmsg = fmt.Sprintf("%v", err)
+	break
+}
+```
+
+> 注意上面的resp interface{}是根据json应答结果定义的struct，可以只定义要使用的字段，如果不知道怎么定义可以参考：[https://www.ningto.com/post/5cd83f0be65d054c17b37f90](https://www.ningto.com/post/5cd83f0be65d054c17b37f90)

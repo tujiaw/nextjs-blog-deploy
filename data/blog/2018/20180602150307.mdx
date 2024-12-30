@@ -1,0 +1,86 @@
+---
+title: '简单有理数(Rational)实现'
+date: '2018-06-02'
+tags: ['C/C++']
+draft: false
+summary: '这篇文章讨论了JavaScript中常见的10种错误，并提供了相应的解决方案。这些错误包括：无法读取属性、null不是对象、未捕获的TypeError、未捕获的RangeError、无法读取长度属性、无法设置属性、未定义的事件、未定义的引用错误等。作者还推荐了Rollbar作为快速解决问题的工具。'
+---
+
+```
+class Rational {
+public:
+	// 构造函数，初始化a_和b_
+	Rational(int a = 0, int b = 1) 
+		: a_(a), b_(b)
+	{
+
+	}
+
+	// 拷贝构造函数，拷贝rhs的a_和b_
+	Rational(const Rational &rhs)
+		: a_(rhs.a()), b_(rhs.b())
+	{
+	}
+
+	// 赋值运算符，返回一个新的Rational对象
+	const Rational operator=(const Rational& rhs)
+	{
+		return Rational(rhs.a_, rhs.b_);
+	}
+
+	// 返回有理数的值
+	double val() const
+	{
+		return a_*1.0 / b_;
+	}
+
+	// 返回有理数的分子
+	int a() const
+	{
+		return a_;
+	}
+
+	// 返回有理数的分母
+	int b() const
+	{
+		return b_;
+	}
+
+private:
+	int a_; // 分子
+	int b_; // 分母
+};
+
+// 加法运算符，返回一个新的Rational对象
+const Rational operator+(const Rational &lhs, const Rational &rhs)
+{
+	return Rational(lhs.a() + rhs.a(), lhs.b() + rhs.b());
+}
+// 减法运算符，返回一个新的Rational对象
+const Rational operator-(const Rational &lhs, const Rational &rhs)
+{
+	return Rational(lhs.a() - rhs.a(), lhs.b() - rhs.b());
+}
+// 乘法运算符，返回一个新的Rational对象
+const Rational operator*(const Rational &lhs, const Rational &rhs)
+{
+	return Rational(lhs.a() * rhs.a(), lhs.b() * rhs.b());
+}
+// 除法运算符，返回一个新的Rational对象
+const Rational operator/(const Rational &lhs, const Rational &rhs)
+{
+	return Rational(lhs.a() / rhs.a(), lhs.b() / rhs.b());
+}
+
+// 判断两个有理数是否相等
+bool operator==(const Rational &lhs, const Rational &rhs)
+{
+	return lhs.val() == rhs.val();
+}
+
+// 判断两个有理数是否不相等
+bool operator!=(const Rational &lhs, const Rational &rhs)
+{
+	return !(lhs == rhs);
+}
+```

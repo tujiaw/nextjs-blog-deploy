@@ -1,0 +1,14 @@
+---
+title: 'Mac、linux安装brew终极办法'
+date: '2022-10-07'
+tags: ['Shell']
+draft: false
+summary: 文章介绍了 Mac、linux 安装 brew 的终极办法，即粘贴特定命令`/bin/zsh -c "$(curl -fsSL https://gitee.com/cunkai/HomebrewCN/raw/master/Homebrew.sh)"`到终端回车，执行后可能需输入开机密码，可解决安装时连不上或下载缓慢的问题。 
+---
+
+安装brew的时候是不是经常碰到连不上或者下载缓慢的情况，下面方法可以帮你解决这个问题：
+
+在终端粘贴如下命令回车就可以了，注意执行后的命令行提示，可能要输入开机密码
+```
+/bin/zsh -c "$(curl -fsSL https://gitee.com/cunkai/HomebrewCN/raw/master/Homebrew.sh)"
+```

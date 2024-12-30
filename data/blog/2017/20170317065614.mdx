@@ -1,0 +1,115 @@
+---
+title: 'Qt自定义读取qss样式表'
+date: '2017-03-17'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 介绍 Qt 自定义读取 qss 样式表，一般用 qss 配置控件样式，特殊情况需代码控制。通过代码解析 qss 中的样式属性，提供 init、style、attr 等函数，示例展示了 qss 样式及初始化读取样式的过程。 
+---
+
+在Qt中一般情况下我们可以通过qss样式表来配置控件的一些样式，但是一些特殊情况下还是需要使用代码来控制样式，它们的颜色之类的样式属性如果直接写在代码里面会写死掉，后期不容易维护以及为换肤造成麻烦。通常写在ini配置文件里面也是可以的，但是这样要维护qss样式和ini配置两份文件。
+
+下面是将这些配置以css的样式直接写在qss文件中通过代码来解析出我们需要的属性，同时又支持使用属性名来生效样式:
+> widget->setProperty("fmlName","calendar");
+
+解析类头文件
+```
+class FmlStyle {
+public:
+	static FmlStyle* instance();
+	void init(const QString &styleFileContent);
+	const QString& style(const QString &fmlName);
+	QString attr(const QString &fmlName, const QString &attrName);
+
+private:
+	FmlStyle();
+
+private:
+	QMap<QString, QString> m_fmlStyles;
+};
+```
+解析类源文件
+```
+FmlStyle::FmlStyle()
+{
+}
+
+FmlStyle* FmlStyle::instance()
+{
+	static FmlStyle s_inst;
+	return &s_inst;
+}
+
+void FmlStyle::init(const QString &styleFileContent)
+{
+	int pos = 0;
+	QRegExp rx("QWidget\\[fmlName=\"\\w+\"\\]"); // 匹配key，如：QWidget[fmlName="calendar"]
+	while ((pos = rx.indexIn(styleFileContent, pos)) != -1) {
+		QString head = styleFileContent.mid(pos, rx.matchedLength());
+		pos += rx.matchedLength();
+		int start = -1;
+		int end = -1;
+		start = styleFileContent.indexOf("{", pos);
+		if (start >= 0) {
+			end = styleFileContent.indexOf("}", start);
+		}
+		if (end - start > 1) {
+			QString body = styleFileContent.mid(start + 1, end - start - 1);
+			pos += body.length();
+			body = body.trimmed();
+			if (body.size() > 0) {
+				m_fmlStyles[head] = body;
+			}
+		}
+	}
+}
+
+const QString& FmlStyle::style(const QString &fmlName)
+{
+	QString head = QString("QWidget[fmlName=\"%1\"]").arg(fmlName);
+	return m_fmlStyles[head];
+}
+
+QString FmlStyle::attr(const QString &fmlName, const QString &attrName)
+{
+	const QString &body = style(fmlName);
+	QStringList attrList = body.split(";");
+	for (int i = 0, count = attrList.size(); i < count; i++) {
+		QStringList strList = attrList[i].split(":");
+		if (strList.size() == 2) {
+			if (strList[0].trimmed() == attrName) {
+				return strList[1].trimmed();
+			}
+		}
+	}
+	return "";
+}
+```
+
+如下样式在qss文件的任意位置：
+```
+QWidget[fmlName="calendar11"] {
+	background: #111111;
+    border: none;
+    color:#FFFFFF;
+    font-size:12px;
+    height:30px;
+}
+```
+初始化以及读取样式：
+```
+    QFile file(":/style.qss");
+    if (!file.exists()) {
+        qDebug() << "no skin file!!!";
+    }
+
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString str = file.readAll();
+		FmlStyle::instance()->init(str);
+        qApp->setStyleSheet(str);
+        file.close();
+    }
+
+	QString xx = FmlStyle::instance()->style("calendar");
+	QString xxx = FmlStyle::instance()->attr("calendar", "font-size");
+	QString xxxx = FmlStyle::instance()->attr("calendar", "background");
+```

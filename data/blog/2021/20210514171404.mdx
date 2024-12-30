@@ -1,0 +1,180 @@
+---
+title: 'Go 实现简单端口扫描'
+date: '2021-05-14'
+tags: ['Go']
+draft: false
+summary: 
+---
+
+通过端口扫描我们可以知道服务器上哪些端口是处于监听状态。
+
+借助Go net模块的DialTimeout方法可以很容易的判断端口是否打开，同时对于批量端口的扫描使用Go Routines实现非常简单。
+
+# 主结构
+```
+type PortScanner struct {
+	ip   string
+	lock *semaphore.Weighted
+}
+```
+需要传入ip地址和一个信号量来限制goroutine启动的数量，goroutine太多会占用太多内存，对于一个小工具而言不太合适。
+
+# 扫描单个端口
+复杂一点你可能需要判断一下错误信息再重复，这里简单实现也能满足基本需求
+```
+func (ps PortScanner) Scan(port int, timeout time.Duration) error {
+	address := fmt.Sprintf("%s:%d", ps.ip, port)
+	conn, err := net.DialTimeout("tcp", address, timeout)
+	if err != nil {
+		return err
+	}
+	conn.Close()
+	return nil
+}
+```
+
+# 批量扫描端口
+指定起始端口和结束端口，使用sync.WaitGroup等待函数执行完成，lock限制goroutine启动的数量
+```
+func (ps PortScanner) Start(from, to int, timeout time.Duration) {
+	wg := sync.WaitGroup{}
+	defer wg.Wait()
+	fmt.Println("Scanning ip", ps.ip)
+	if to == 0 {
+		to = from + 1
+	}
+	for port := from; port < to; port++ {
+		ps.lock.Acquire(context.TODO(), 1)
+		wg.Add(1)
+		go func(port int) {
+			defer ps.lock.Release(1)
+			defer wg.Done()
+			start := time.Now()
+			err := ps.Scan(port, timeout)
+			if err == nil {
+				fmt.Println("Port", port, "open, time", time.Since(start).Milliseconds(), "ms")
+			} else {
+				fmt.Println("Port", port, "closed")
+			}
+		}(port)
+	}
+}
+```
+
+# 完整代码
+```
+package main
+
+import (
+	"context"
+	"fmt"
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"golang.org/x/sync/semaphore"
+)
+
+type PortScanner struct {
+	ip   string
+	lock *semaphore.Weighted
+}
+
+func (ps PortScanner) Scan(port int, timeout time.Duration) error {
+	address := fmt.Sprintf("%s:%d", ps.ip, port)
+	conn, err := net.DialTimeout("tcp", address, timeout)
+	if err != nil {
+		return err
+	}
+	conn.Close()
+	return nil
+}
+
+func (ps PortScanner) Start(from, to int, timeout time.Duration) {
+	wg := sync.WaitGroup{}
+	defer wg.Wait()
+	fmt.Println("Scanning ip", ps.ip)
+	if to == 0 {
+		to = from + 1
+	}
+	for port := from; port < to; port++ {
+		ps.lock.Acquire(context.TODO(), 1)
+		wg.Add(1)
+		go func(port int) {
+			defer ps.lock.Release(1)
+			defer wg.Done()
+			start := time.Now()
+			err := ps.Scan(port, timeout)
+			if err == nil {
+				fmt.Println("Port", port, "open, time", time.Since(start).Milliseconds(), "ms")
+			} else {
+				fmt.Println("Port", port, "closed")
+			}
+		}(port)
+	}
+}
+
+func main() {
+	helps := []string{}
+	helps = append(helps, "\r\ncommand error, eg:")
+	helps = append(helps, "1. portscanner 127.0.0.1:3000")
+	helps = append(helps, "2. portscanner 127.0.0.1:1/65536")
+	tips := strings.Join(helps, "\r\n")
+	if len(os.Args) != 2 {
+		panic(tips)
+	}
+
+	address := os.Args[1]
+	s := strings.Split(address, ":")
+	if len(s) != 2 {
+		panic(tips)
+	}
+
+	ip := s[0]
+	s = strings.Split(s[1], "/")
+	var from, to int
+	if len(s) > 0 {
+		from, _ = strconv.Atoi(s[0])
+	}
+	if len(s) > 1 {
+		to, _ = strconv.Atoi(s[1])
+	}
+
+	ps := PortScanner{
+		ip:   ip,
+		lock: semaphore.NewWeighted(100),
+	}
+	ps.Start(from, to, 1*time.Second)
+}
+```
+有两个设置需要注意：
+* timeout，超时时间1秒
+* NewWeighted，100最多同时运行的goroutine数量
+
+为了提高扫描速度可以减少timeout，增加weighted值。
+
+# 使用
+扫描单个端口
+```
+C:\Windows\system32>portscanner 127.0.0.1:135
+Scanning ip 127.0.0.1
+Port 135 open, time 3 ms
+```
+指定扫描的端口范围
+```
+C:\Windows\system32>portscanner 127.0.0.1:130/140
+Scanning ip 127.0.0.1
+Port 135 open, time 1 ms
+Port 130 closed
+Port 134 closed
+Port 132 closed
+Port 131 closed
+Port 139 closed
+Port 133 closed
+Port 138 closed
+Port 137 closed
+Port 136 closed
+```

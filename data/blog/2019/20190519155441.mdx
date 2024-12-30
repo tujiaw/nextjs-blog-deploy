@@ -1,0 +1,119 @@
+---
+title: 'go代理 golang代理 GOPROXY'
+date: '2019-05-19'
+tags: ['Go']
+draft: false
+summary: 文章介绍了 go 代理相关内容，包括用 dep ensure 安装第三方库失败需设置代理，可使用微软代理或 Shadowsocks-X 软件代理，设置命令行代理需注意相关环境变量及端口等，还介绍了 linux 版本的设置步骤。 
+---
+
+是时候使用go mod来管理包了，具体参考：[go mod 使用](https://juejin.im/post/5c8e503a6fb9a070d878184a)
+
+用dep ensure安装第三方库的时候总是失败，提示golang.org超时，如果不用代理的话肯定是访问不了的，但是我本地已经开了pgfastss代理而且浏览器上可以访问golang.org，后来调查了下，发现命令行是不能代理的即使开启了全局模式。
+
+> 下面方法是用我自己的代理，设置起来比较麻烦，最近发现了一个更好的办法，请看这里：[goproxy](https://goproxy.io/)，如果成功的话下面的操作您暂时就不需要了。
+
+
+或者使用微软的代理，linux使用如下：
+```
+export GOPROXY="https://athens.azurefd.net"
+export GO111MODULE=on
+```
+windows设置上面两个环境变量，注意golang版本需要1.11及以上
+
+Golang V1.13版本及以上可以参考：
+[https://studygolang.com/articles/25267](https://studygolang.com/articles/25267)
+
+
+网上说可以设置命令行代理，我用pgfastss的代理服务器地址端口设置了还是不行，用户名和密码也试过都没成功。
+
+后来看到个帖子他用的是shadowSocks客户端代理软件是成功的，于是我就下载了[Shadowsocks-X](https://github.com/yangfeicheung/Shadowsocks-X)，安装好后打开菜单选择“导出导入服务器”->“扫描屏幕二维码”(来自pgfastss网站你的账号下的服务器)，选择新导入的服务器开启代理（自动模式就可以了），然后试下看能不能打开google，如果可以说明配置成功了，不行的话换另外的服务器地址再试试。
+
+# 前提条件
+注意以下前提条件是你有类似shadowsocks服务商提供的代理服务器信息，如我的是：[https://www.pgfastss.net/](https://www.pgfastss.net/)
+
+上面步骤也只是实现了浏览器可以访问外网要想命令行也可以还需要做一些配置。
+首先，打开Shadowsocks-X软件的偏好设置，选择Socks5，如下界面：  
+# mac版本：
+![](https://www.ningto.com/upload/A1FBEC41B02F6E00D3B40DF8CFFD28E9.png)
+注意其中的IP地址和端口号。
+
+# windows版本：
+![](https://www.ningto.com/upload/7860FE4C8AF7C0C2828D3E18D96960E2.png)
+
+在命令行界面设置代理，执行如下三行命令：
+```
+export http_proxy=socks5://127.0.0.1:10808
+export https_proxy=socks5://127.0.0.1:10808
+export all_proxy=socks5://127.0.0.1:10808
+
+```
+> windows下使用cmd要用管理员权限打开将export换成set
+
+用curl www.google.com试试看能不能访问，正常情况下会下载google首页的数据说明配置成功了，这里只是针对当前窗口，临时生效的。不过这已经符合我的要求的。
+> 注意在使用命令行代理的时候不能关闭Shadowsocks-X代理
+
+取消代理只要关掉命令行窗口就行，或者执行如下命令：
+```
+unset http_proxy
+unset https_proxy
+```
+
+最后，在设置好代理的命令行窗口执行dep ensure就成功的。
+
+# linux版本
+参考：[https://github.com/Shadowsocks-Wiki/shadowsocks/blob/master/6-linux-setup-guide-cn.md](https://github.com/Shadowsocks-Wiki/shadowsocks/blob/master/6-linux-setup-guide-cn.md)
+
+下面以Centos7为例：
+## 安装shadowsocks linux版
+```
+yum install python-setuptools && easy_install pip
+pip install git+https://github.com/shadowsocks/shadowsocks.git@master
+```
+
+## 创建shadowsocks配置文件
+创建一个 /etc/shadowsocks.json 文件，格式如下:
+```
+{
+        "server":"45.85.3.183",
+        "server_port":24820,
+        "local_address":"127.0.0.1",
+        "local_port":1080,
+        "password":"ryH6xxxx",
+        "timeout":300,
+        "method":"rc4-md5",
+        "fast_open":false
+}
+```
+可以参考上面window版本的截图  
+> server：服务商提供的IP  
+  server_port：服务商提供的IP端口  
+  local_address：本地IP，一般就是127.0.0.1  
+  local_port：本地IP端口，可以自己指定一个没有用过的端口  
+  password：服务商提供的密码  
+  method：要跟服务商提供的加密方式一样  
+
+## 启动 Shadowsocks
+```
+sslocal -c /etc/shadowsocks.json -d start
+或者
+/usr/local/bin/sslocal -c /etc/shadowsocks.json -d start
+```
+可以查看日志：
+```
+tailf /var/log/shadowsocks.log
+```
+
+## socks5代理
+启动之后，要想让dep ensure使用shadownsocks代理，还需要进行如下设置  
+注意端口是1080跟上面的local_port一致
+```
+export http_proxy=socks5://127.0.0.1:1080
+export https_proxy=socks5://127.0.0.1:1080
+export all_proxy=socks5://127.0.0.1:1080
+```
+> 此设置只在当前命令行界面生效
+
+## dep ensure
+此时在执行dep ensure应该是成功的，不使用socks5代理的时候关掉此命令行界面就可以了。
+使用go run main.go的时候不需要socks5代理，你可以新启动一个命令行窗口执行。
+sslocal可以让它一直运行，当需要的时候再次设置一下socks5代理就可以了。

@@ -1,0 +1,34 @@
+---
+title: 'nginx url跳转保留路径'
+date: '2018-02-16'
+tags: ['Product', 'Tools']
+draft: false
+summary: 文章介绍了将老域名 http://3inns.cn 映射到新域名 http://ningto.com 且保留路径的方法。在 nginx 中通过配置 `server` 段的 `rewrite` 规则实现，最后重启 nginx 使配置生效。 
+---
+
+我的网站之前的域名是http://3inns.cn，现在注册了一个新域名http://ningto.com，由于老的域名已经用了一段时间，所以当用户访问老地址的时候我想直接映射到新域名并且保留之前的路径。
+
+如老的文章地址：
+```
+http://3inns.cn/post/5a5ad12cf8f42e3a2ef7e0f1
+```
+映射后：
+```
+http://ningto.com/post/5a5ad12cf8f42e3a2ef7e0f1
+```
+
+**nginx中配置**
+```
+server {
+    listen 80;
+
+    server_name www.3inns.cn 3inns.cn;
+
+    rewrite "^/(.*)$" http://ningto.com/$1;
+}
+```
+
+**重启nginx**
+```
+service nginx restart
+```

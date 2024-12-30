@@ -1,0 +1,190 @@
+---
+title: 'Apache Ignite c++ linux 编译安装'
+date: '2019-03-29'
+tags: ['Linux', 'C/C++']
+draft: false
+summary: 介绍 Apache Ignite c++在 linux 下的编译安装，包括环境设置、编译过程（可能出现的多种错误及解决办法）、安装及验证，还给出了 demo 链接，需注意不要直接拉 github 代码编译，要从官网下载。 
+---
+
+Apache Ignite c++ linux 编译安装
+
+不要直接拉github上的代码编译，它上面没有libs库编译成功后运行不起来。
+到官网上去下载：https://ignite.apache.org/download.cgi#binaries
+
+# 环境
+操作系统：centos6  
+ignite版本: http://mirrors.shu.edu.cn/apache//ignite/2.7.0/apache-ignite-2.7.0-bin.zip  
+autoconf：2.69  
+automake：1.14.1  
+JDK：jdk1.8.0_201  
+boost：1.55.0  
+
+# 官方DEVNOTES
+根据文档apache-ignite-2.7.0-bin/platforms/cpp/DEVNOTES.txt将需要的工具安装好：
+```
+GCC, g++, autotools, automake, and libtool
+```
+> 如果直接用yum install安装版本可能太低，到时候再手动编译安装
+
+设置环境变量：  
+vi ~/.bashrc
+```
+export JAVA_HOME=/home/tujiaw/soft/jdk1.8.0_201
+export IGNITE_HOME=/home/tujiaw/soft/apache-ignite-2.7.0-bin
+```
+> 使用source ~/.bashrc（或者 . ~/.bashrc）使其立刻生效
+
+# 编译
+我没有编译odbc和thin-client，编译这两个可能要麻烦些
+* libtoolize && aclocal && autoheader && automake --add-missing && autoreconf  
+* ./configure --disable-odbc --disable-thin-client  
+* make
+
+第一步，可能出现的问题是，没有安装相应的工具或者版本太低；    
+make的时候会出现一些问题，我遇到的是：
+## error: C++ source seen but 'CXX' is undefined
+解决方法是，编辑configure.ac文件增加AC_PROG_CXX
+```
+vi ./configure.ac
+在如下地方新增：AC_PROG_CXX
+AC_CANONICAL_HOST
+AC_CONFIG_MACRO_DIR([m4])
+AC_PROG_CXX
+AC_LANG([C++])
+```
+
+## cc1plus: error: unrecognized command line option "-std=c++03"
+解决方法是将Makefile文件中的c++03改为c++98，由于需要改的Makefile文件比较多我写了个代码用nodejs转：
+```
+const fs = require('fs')
+const path = require('path')
+
+const DIR = path.normalize(__dirname)
+
+function fetchFiles(dir, fn) {
+    const ls = fs.readdirSync(dir)
+    if (!ls) return
+    ls.forEach(name => {
+        const subfile = path.join(dir, name)
+        const st = fs.lstatSync(subfile)
+        if (st && st.isDirectory()) {
+            fetchFiles(subfile, fn)
+        } else if (st && st.isFile()) {
+            fn(subfile)
+        }
+    })
+}
+
+const SEARCH_TEXT = '-std=c++03'
+const REPLACE_TEXT = '-std=c++98'
+const MATCH_LIST = ['Makefile']
+fetchFiles(DIR, filepath => {
+    if (!MATCH_LIST.includes(path.basename(filepath))) return
+    const content = fs.readFileSync(filepath, 'utf-8')
+    if (content && content.indexOf(SEARCH_TEXT) >= 0) {
+        const result = content.replace(SEARCH_TEXT, REPLACE_TEXT)
+        console.log(result)
+        fs.writeFileSync(filepath, result)
+    }
+})
+```
+将其放在当前编译的目录，命名为：replace_cxx.js，执行下面命令：
+```
+node replace_cxx.js 
+```
+如果你不怕麻烦的话手动改也可以大概有一二十个Makefile文件吧
+
+## no matching function for call to check_frwd
+这个问题是我在使用github上面的ignite源码编译时出现的问题，后来替换成使用官网的源码就没出现了。
+实在是没有找到什么好的办法，我把相应文件的测试代码注释起来了，因为是测试代码所以可以这样做，
+我的是在continuous_query_test.cpp文件，注释如下代码：
+```
+/*
+BOOST_AUTO_TEST_CASE(TestGetSetBufferSize)
+{
+    typedef ContinuousQuery<int, TestEntry> QueryType;
+    Listener<int, TestEntry> lsnr;
+
+    ContinuousQuery<int, TestEntry> qry(MakeReference(lsnr));
+
+    BOOST_CHECK_EQUAL(qry.GetBufferSize(), QueryType::DEFAULT_BUFFER_SIZE);
+
+    qry.SetBufferSize(2 * QueryType::DEFAULT_BUFFER_SIZE);
+
+    BOOST_CHECK_EQUAL(qry.GetBufferSize(), 2 * QueryType::DEFAULT_BUFFER_SIZE);
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry);
+
+    BOOST_CHECK_EQUAL(qry.GetBufferSize(), 2 * QueryType::DEFAULT_BUFFER_SIZE);
+
+    CheckEvents(cache, lsnr);
+}
+*/
+```
+
+## undefined reference to `clock_gettime'
+解决方法，打开common/Makefile文件找到LIBS行增加-lrt，如：
+```
+LIBS = -lrt
+```
+> 注意是common目录下的Makefile，并且要make clean之后再make重新编译
+
+# 安装
+命令：```sudo make install```
+我的默认安装在：
+```
+/usr/local/include
+/use/local/lib
+```
+
+# 验证
+在apache-ignite-2.7.0-bin/bin目录下执行
+```
+./ignite.sh
+```
+启动成功后日志如下：
+```
+[09:42:10]    __________  ________________ 
+[09:42:10]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[09:42:10]  _/ // (7 7    // /  / / / _/   
+[09:42:10] /___/\___/_/|_/___/ /_/ /___/  
+[09:42:10] 
+[09:42:10] ver. 2.7.0#20181201-sha1:256ae401
+[09:42:10] 2018 Copyright(C) Apache Software Foundation
+[09:42:10] 
+[09:42:10] Ignite documentation: http://ignite.apache.org
+[09:42:10] 
+[09:42:10] Quiet mode.
+[09:42:10]   ^-- Logging to file '/home/tujiaw/soft/apache-ignite-2.7.0-bin/work/log/ignite-e469023e.0.log'
+[09:42:10]   ^-- Logging by 'JavaLogger [quiet=true, config=null]'
+[09:42:10]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[09:42:10] 
+[09:42:10] OS: Linux 2.6.32-431.el6.x86_64 amd64
+[09:42:10] VM information: Java(TM) SE Runtime Environment 1.8.0_201-b09 Oracle Corporation Java HotSpot(TM) 64-Bit Server VM 25.201-b09
+[09:42:10] Please set system property '-Djava.net.preferIPv4Stack=true' to avoid possible problems in mixed environments.
+[09:42:10] Configured plugins:
+[09:42:10]   ^-- None
+[09:42:10] 
+[09:42:10] Configured failure handler: [hnd=StopNodeOrHaltFailureHandler [tryStop=false, timeout=0, super=AbstractFailureHandler [ignoredFailureTypes=[SYSTEM_WORKER_BLOCKED]]]]
+[09:42:11] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[09:42:11] Security status [authentication=off, tls/ssl=off]
+[09:42:13] Performance suggestions for grid  (fix if possible)
+[09:42:13] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[09:42:13]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[09:42:13]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[09:42:13]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[09:42:13]   ^-- Speed up flushing of dirty pages by OS (alter vm.dirty_expire_centisecs parameter by setting to 500)
+[09:42:13]   ^-- Reduce pages swapping ratio (set vm.swappiness=10.000000 or less)
+[09:42:13]   ^-- Avoid direct reclaim and page allocation failures (set vm.extra_free_kbytes=1240000)
+[09:42:13] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[09:42:13] 
+[09:42:13] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[09:42:13] Data Regions Configured:
+[09:42:13]   ^-- default [initSize=256.0 MiB, maxSize=3.1 GiB, persistence=false]
+[09:42:13] 
+[09:42:13] Ignite node started OK (id=e469023e)
+[09:42:13] Topology snapshot [ver=1, locNode=e469023e, servers=1, clients=0, state=ACTIVE, CPUs=4, offheap=3.1GB, heap=1.0GB]
+```
+
+# demo
+[github demo](https://github.com/tujiaw/ignite_demo)

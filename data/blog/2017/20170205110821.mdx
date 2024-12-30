@@ -1,0 +1,56 @@
+---
+title: 'CSS布局人物简介'
+date: '2017-02-05'
+tags: ['Web']
+draft: false
+summary: 这是关于“樱木花道”的 CSS 布局人物简介页面。通过特定 CSS 样式设置了图片、文字等布局，展示了樱木花道在《灌篮高手》中的相关信息，如他是湘北高中篮球队球员等。 
+---
+
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>樱木花道</title>
+    <style>
+        .demo1 img {
+            width: 50px;
+            height: 50px;
+            float: left;
+            margin-left: -100px;
+            margin-top: 0px;
+        }
+        .demo1 {
+            width: 600px;
+            margin-left: 100px;
+            border: 1px solid #ccc;
+            padding: 0px 20px;
+            position: relative;
+        }
+        .demo1 p {
+            font-size: 12px;
+            line-height: 25px;
+        }
+        .demo1 span {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo1">
+            <img src="https://imgsa.baidu.com/baike/c0%3Dbaike80%2C5%2C5%2C80%2C26/sign=73a145db8194a4c21e2eef796f9d70b0/4e4a20a4462309f7357b09c6740e0cf3d6cad6ca.jpg" alt="tujiaw">
+            <h5>樱木花道</h5>
+            <p>
+                樱木花道是日本漫画及动画《灌篮高手》中的主角，湘北高中篮球队的球员，拥有惊人的体能特质，经常以“天才”自称。 球技进步后取代木暮公延，成为经常先发五人之一，在队中的位置是大前锋。
+            </p>
+            <span>10分钟之前</span>
+        </div>
+    </div>
+</body>
+</html>
+```
+效果图：
+![](https://ww4.sinaimg.cn/large/006y8lValy1fcfstvtdn0j315y07mwgp.jpg)

@@ -1,0 +1,147 @@
+---
+title: 'Qt只启动一个实例'
+date: '2017-09-18'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 文章介绍 Qt 实现只启动一个实例的方法，涉及进程间通信。给出三种方案，重点展示共享内存的实现代码，通过 QSharedMemory 和 QSystemSemaphore 保证原子操作，用法示例中用随机 GUID 作为标识。 
+---
+
+要想实现这个需求，就涉及到进程间通信了，怎样让当前启动的程序知道在它之前有没有程序在运行。
+其实实现方法还是蛮多的，简单介绍几种：
+* 两个进程读写同一个文件
+* 创建一个有名字的事件CreateEvent
+* 共享内存
+
+下面是第三种方案的实现代码：
+```
+#ifndef RUNGUARD_H
+#define RUNGUARD_H
+
+#include <QObject>
+#include <QSharedMemory>
+#include <QSystemSemaphore>
+
+
+class RunGuard
+{
+
+public:
+	RunGuard(const QString& key);
+	~RunGuard();
+
+	bool isAnotherRunning();
+	bool tryToRun();
+	void release();
+
+private:
+	const QString key;
+	const QString memLockKey;
+	const QString sharedmemKey;
+
+	QSharedMemory sharedMem;
+	QSystemSemaphore memLock;
+
+	Q_DISABLE_COPY(RunGuard)
+};
+
+
+#endif // RUNGUARD_H
+```
+
+```
+#include "RunGuard.h"
+
+#include <QCryptographicHash>
+
+
+namespace
+{
+
+	QString generateKeyHash(const QString& key, const QString& salt)
+	{
+		QByteArray data;
+
+		data.append(key.toUtf8());
+		data.append(salt.toUtf8());
+		data = QCryptographicHash::hash(data, QCryptographicHash::Sha1).toHex();
+
+		return data;
+	}
+
+}
+
+
+RunGuard::RunGuard(const QString& key)
+	: key(key)
+	, memLockKey(generateKeyHash(key, "_memLockKey"))
+	, sharedmemKey(generateKeyHash(key, "_sharedmemKey"))
+	, sharedMem(sharedmemKey)
+	, memLock(memLockKey, 1)
+{
+	memLock.acquire();
+	{
+		QSharedMemory fix(sharedmemKey);
+		fix.attach();
+	}
+	memLock.release();
+}
+
+RunGuard::~RunGuard()
+{
+	release();
+}
+
+bool RunGuard::isAnotherRunning()
+{
+	if (sharedMem.isAttached())
+		return false;
+
+	memLock.acquire();
+	const bool isRunning = sharedMem.attach();
+	if (isRunning)
+		sharedMem.detach();
+	memLock.release();
+
+	return isRunning;
+}
+
+bool RunGuard::tryToRun()
+{
+	if (isAnotherRunning())   // Extra check
+		return false;
+
+	memLock.acquire();
+	const bool result = sharedMem.create(sizeof(quint64));
+	memLock.release();
+	if (!result)
+	{
+		release();
+		return false;
+	}
+
+	return true;
+}
+
+void RunGuard::release()
+{
+	memLock.acquire();
+	if (sharedMem.isAttached())
+		sharedMem.detach();
+	memLock.release();
+}
+```
+
+* QSystemSemaphore  
+信号量保证进程间的原子操作，当有多个进程同时访问同一块共享内存时是有问题的，所以要保证共享内存的原子操作
+
+* QSharedMemory  
+共享内存，如果isAttached为false说明没有其他的进程在运行，然后自身再attach这个共享内存，那么在下一个进程启动的时候就会发现isAttached为true
+
+用法：
+```
+	RunGuard guard("69619FA7-4944-4CCA-BF69-83323F34D32F");
+	if (!guard.tryToRun()) {
+		return 0;
+	}
+```
+> 69619FA7-4944-4CCA-BF69-83323F34D32F使用工具生成的随机GUID，你可以填任意字符串

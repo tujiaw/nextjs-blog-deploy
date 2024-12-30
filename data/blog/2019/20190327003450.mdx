@@ -1,0 +1,47 @@
+---
+title: 'QSortFilterProxyModel排序不正确'
+date: '2019-03-27'
+tags: ['Windows', 'C/C++', 'Qt']
+draft: false
+summary: 客户端使用 QSortFilterProxyModel 时，频繁更新 model 致 table 行排序不正确。虽可手动调用 sort 及 invalidate，却在特定操作时会崩溃。可关 dynamicSortFilter 用 Timer 控制排序，通过相关函数控制触发间隔及在 model changed 槽函数启动 timer 来解决此问题。 
+---
+
+QSortFilterProxyModel排序不正确
+
+客户端遇到的问题是当频繁的更新model时发现table上的行排序不正确，默认使用的是setDynamicSortFilter为true的方式。
+
+在排除排序逻辑没有问题的情况下，能想到的方法是在model changed之后手动调用一下sort方法再重新排一下，但是这里遇到了一个问题，如果仅仅是调用sort发现没什么效果，在sort之前调用invalidate是可行的。然而当删除table行的时候触发上面的操作在delegate中的paint函数调用index.model()会造成崩溃，可能跟这个index被删除了有关系。
+
+后来看文档发现其实可以关掉dynamicSortFilter，全部由我们自己来触发排序，但是又不能触发的太频繁所以下面用一个Timer来控制排序。
+
+
+调用下面函数来控制触发排序的间隔时间
+```
+void ProxyModel::applyColumnOrder()
+{
+    //invalidate();
+    sort(sortColumn());
+}
+
+void ProxyModel::autoSortInterval(int millisecond)
+{
+    // 不使用动态排序，自动调用函数来进行排序
+    setDynamicSortFilter(millisecond > 0 ? false : true);
+    if (!sortTimer_) {
+        sortTimer_ = new QTimer(this);
+        sortTimer_->setSingleShot(true);
+        connect(sortTimer_, &QTimer::timeout, this, &ProxyModel::applyColumnOrder, Qt::QueuedConnection);
+    }
+    sortTimer_->setInterval(millisecond);
+}
+```
+
+在model changed的槽函数里面启动timer
+```
+void ProxyModel::onModelChanged()
+{
+    if (sortTimer_ && sortTimer_->interval() > 0 && dynamicSortFilter() == false) {
+        sortTimer_->start();
+    }
+}
+```

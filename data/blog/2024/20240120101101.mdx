@@ -1,0 +1,24 @@
+---
+title: 'ubuntu edge起不来解决方法'
+date: '2024-01-20'
+tags: ['Linux']
+draft: false
+summary: 本文记录了解决 Ubuntu 系统上 Microsoft Edge 浏览器启动失败的问题。通过删除配置目录 `~/.config/microsoft-edge` 下的 `Singleton*` 文件，成功解除文件锁定，使 Edge 重新正常启动。
+---
+
+edge第一次安装好后用的好好的，某天突然就不能用了，启动失败。
+
+找到edge的启动路径用命令行启动：  
+> cd /opt/microsoft/msedge  
+> ./msedge  
+
+报错大致信息如下：
+ubuntu This profile appears to be in use by another Microsoft Edge process (22286) on another computer
+
+花了不少时间才解决，记录一下。
+> 1. 找到edge的配置目录：~/.config/microsoft-edge
+> 2. rm -rf Singleton*
+
+再次启动msedge就成功了。
+
+猜测原因是某些文件被之前的进程锁定了，但是又没有正常解锁导致后面执行时启动失败，即使重新安装也没用，因为这个当前用户的配置文件重新安装并不会删除。

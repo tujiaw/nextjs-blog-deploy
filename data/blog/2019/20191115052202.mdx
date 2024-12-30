@@ -1,0 +1,112 @@
+---
+title: 'device-mapper-libs安装docker失败'
+date: '2019-11-15'
+tags: ['Linux']
+draft: false
+summary: 在 centos7 安装 docker 所需包（如 device-mapper-libs 等）时失败，经删除旧包再安装等操作后成功，还设置了存储仓库并安装了社区版 docker 引擎，启动后验证正常。 
+---
+
+在centos7上使用如下命令安装docker所需要的包失败了
+```
+sudo yum install -y yum-utils \
+  device-mapper-persistent-data \
+  lvm2
+```
+
+失败日志如下：
+```
+Error: Package: 7:device-mapper-libs-1.02.135-1.el7_3.4.x86_64 (@updates)
+           Requires: device-mapper = 7:1.02.135-1.el7_3.4
+           Removing: 7:device-mapper-1.02.135-1.el7_3.4.x86_64 (@updates)
+               device-mapper = 7:1.02.135-1.el7_3.4
+           Updated By: 7:device-mapper-1.02.158-2.el7_7.2.x86_64 (updates)
+               device-mapper = 7:1.02.158-2.el7_7.2
+           Removing: 7:device-mapper-1.02.146-4.el7.x86_64 (installed)
+               device-mapper = 7:1.02.146-4.el7
+           Updated By: 7:device-mapper-1.02.158-2.el7_7.2.x86_64 (updates)
+               device-mapper = 7:1.02.158-2.el7_7.2
+           Available: 7:device-mapper-1.02.158-2.el7.x86_64 (os)
+               device-mapper = 7:1.02.158-2.el7
+ You could try using --skip-broken to work around the problem
+** Found 273 pre-existing rpmdb problem(s), 'yum check' output follows:
+
+```
+
+# 安装基础包失败解决方法
+* 使用```rpm -qa device-mapper-libs```查找安装的包
+我的输出
+```
+device-mapper-libs-1.02.135-1.el7_3.4.x86_64
+device-mapper-libs-1.02.146-4.el7.x86_64
+```  
+* 强制删除上面两个包
+```
+rpm -e --nodeps --noscripts device-mapper-libs-1.02.135-1.el7_3.4.x86_64
+rpm -e --nodeps --noscripts device-mapper-libs-1.02.146-4.el7.x86_64
+```
+* 再次执行如下安装命令就成功了
+```
+sudo yum install -y yum-utils \
+  device-mapper-persistent-data \
+  lvm2
+```
+输出如下：
+```
+Installed:
+  lvm2.x86_64 7:2.02.185-2.el7_7.2
+
+Dependency Installed:
+  device-mapper-event.x86_64 7:1.02.158-2.el7_7.2    device-mapper-libs.x86_64 7:1.02.158-2.el7_7.2
+  lvm2-libs.x86_64 7:2.02.185-2.el7_7.2
+
+Updated:
+  device-mapper-persistent-data.x86_64 0:0.8.5-1.el7         yum-utils.noarch 0:1.1.31-52.el7
+
+Dependency Updated:
+  device-mapper.x86_64 7:1.02.158-2.el7_7.2    device-mapper-event-libs.x86_64 7:1.02.158-2.el7_7.2
+
+Complete!
+```
+* 设置存储仓库
+```
+sudo yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+```
+# 安装社区版docker引擎
+```
+sudo yum install docker-ce docker-ce-cli containerd.io
+```
+又遇到了以下问题，解决方法跟上面类似，删除了再装。
+```
+Error: Package: libselinux-python-2.5-6.el7.x86_64 (@anaconda)
+           Requires: libselinux(x86-64) = 2.5-6.el7
+           Removing: libselinux-2.5-6.el7.x86_64 (@anaconda)
+               libselinux(x86-64) = 2.5-6.el7
+           Updated By: libselinux-2.5-14.1.el7.x86_64 (os)
+               libselinux(x86-64) = 2.5-14.1.el7
+           Removing: libselinux-2.5-12.el7.x86_64 (installed)
+               libselinux(x86-64) = 2.5-12.el7
+           Updated By: libselinux-2.5-14.1.el7.x86_64 (os)
+               libselinux(x86-64) = 2.5-14.1.el7
+Error: Package: audit-2.6.5-3.el7_3.1.x86_64 (@updates)
+           Requires: audit-libs(x86-64) = 2.6.5-3.el7_3.1
+           Removing: audit-libs-2.6.5-3.el7_3.1.x86_64 (@updates)
+               audit-libs(x86-64) = 2.6.5-3.el7_3.1
+           Updated By: audit-libs-2.8.5-4.el7.x86_64 (os)
+               audit-libs(x86-64) = 2.8.5-4.el7
+           Removing: audit-libs-2.8.1-3.el7.x86_64 (installed)
+               audit-libs(x86-64) = 2.8.1-3.el7
+           Updated By: audit-libs-2.8.5-4.el7.x86_64 (os)
+               audit-libs(x86-64) = 2.8.5-4.el7
+
+```
+# 启动docker，验证
+````
+sudo systemctl start docker
+sudo docker run hello-world
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+````

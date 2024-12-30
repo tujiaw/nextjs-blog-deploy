@@ -1,0 +1,146 @@
+---
+title: 'QTableWidget整行高亮去虚线，样式定制'
+date: '2020-10-15'
+tags: ['Qt']
+draft: false
+summary: 文章介绍了 QTableWidget 整行高亮去虚线及样式定制方法。定义接口类存储 hovered 行和 split 行，表格绘制代理类实现 item 定制绘制，包括去掉焦点虚线框、hover 整行高亮等。table 具体应用结合两部分实现需求，通过 mouseMoveEvent 设 hovered 行，此分层方式灵活且易扩充功能。 
+---
+
+很常见的一种需求，但是很可惜Qt没有一种比较简单的实现方式。在网上找了很多资料也没有找到，实现方法比较复杂，但是经过
+我的实验，下面这种方法是可行的，而且有很多意想不到的好处。
+
+# 定义接口类
+存储当前hovered行，split行是实现其他需求的可以不考虑
+```
+	class IView
+	{
+	public:
+		virtual void setHoveredRow(int row) { row_ = row; }
+		virtual void setSplitRow(int row) { splitRow_ = row; }
+		int hoveredRow() const { return row_; }
+		int splitRow() const { return splitRow_; }
+
+	private:
+		int row_ = -1;
+		int splitRow_ = -1;
+	};
+```
+
+# 表格绘制代理类delegate
+这个类里面可以实现对每个item的定制化绘制，下面split相关的实现可以不考虑
+```
+	class Delegate : public QStyledItemDelegate
+	{
+	public:
+		Delegate(QObject *parent = 0);
+		~Delegate();
+		void setView(IView *view) { view_ = view; }
+		void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+	private:
+		IView *view_ = nullptr;
+	};
+	
+	Delegate::Delegate(QObject *parent /* = 0 */)
+		: QStyledItemDelegate(parent)
+	{
+	}
+
+	Delegate::~Delegate()
+	{
+	}
+
+	void Delegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+	{
+		QStyleOptionViewItem opt = option;
+		// 去掉焦点虚线框
+		if (opt.state & QStyle::State_HasFocus) {
+			opt.state = opt.state & ~QStyle::State_HasFocus;
+		}
+
+		// hover时整行高亮
+		if (index.row() == view_->hoveredRow()) {
+			opt.state |= QStyle::State_MouseOver;
+		} else {
+			opt.state &= ~QStyle::State_MouseOver;
+		}
+
+		// 表格上部分样式
+		int splitRow = view_->splitRow();
+		bool isFollower = index.row() <= splitRow;
+		painter->fillRect(opt.rect, isFollower ? QColor("#0C1E1E") : QColor("#000000"));
+
+		// 上下两部分分隔线
+		if (index.row() == splitRow) {
+			QRect rect = opt.rect;
+			rect.setTop(rect.top() + rect.height() - 2);
+			painter->fillRect(rect, QColor("#273F3D"));
+		}
+
+		QStyledItemDelegate::paint(painter, opt, index);
+	}
+```
+
+# table的具体应用
+结合上面两个类来实现我们的需求，由于去掉了一些业务代码下面的类并不完整，不过不影响我们要实现的需求。
+```
+	class TableWidget : public QTableWidget, public IView
+	{
+		Q_OBJECT
+	public:
+		TableWidget(QWidget *parent = 0);
+		
+	protected:
+		void mouseMoveEvent(QMouseEvent *event) override;
+		void leaveEvent(QEvent *event) override;
+	}
+	
+	TableWidget::TableWidget(QWidget *parent)
+		: QTableWidget(parent)
+	{
+		// 隐藏水平垂直头
+		this->verticalHeader()->hide();
+		this->horizontalHeader()->hide();
+		// 去掉虚线框
+		this->setShowGrid(false);
+		// 单行选择
+		this->setSelectionBehavior(QAbstractItemView::SelectRows);
+		this->setSelectionMode(QAbstractItemView::SingleSelection);
+		// 禁止编辑
+		this->setEditTriggers(QTableWidget::NoEditTriggers);
+		// 关闭水平垂直滚动条，使用自定义的悬浮滚动条（为了满足样式需求）
+		this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+		this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+		// 鼠标跟踪
+		this->setMouseTracking(true);
+		// 扩展最后一列
+		this->horizontalHeader()->setStretchLastSection(true);
+		// 支持拖拽
+		this->setDragDropMode(QAbstractItemView::DragDrop);
+		this->setDragEnabled(true);
+		this->setAcceptDrops(true);
+		// 应用基本qss样式
+		this->setProperty("qssname", "BindingTraderTable");
+
+		Delegate *delegate = new Delegate();
+		delegate->setView(this);
+		this->setItemDelegate(delegate);
+	}
+	
+	void TableWidget::mouseMoveEvent(QMouseEvent *event)
+	{
+		QModelIndex index = this->indexAt(event->pos());
+		if (index.isValid()) {
+			this->setHoveredRow(index.row());
+		}
+		QTableWidget::mouseMoveEvent(event);
+	}
+	
+	void TableWidget::leaveEvent(QEvent *event)
+	{
+		this->setHoveredRow(-1);
+		QTableWidget::leaveEvent(event);
+	}
+```
+主要是通过mouseMoveEvent来设置当前hovered的行，然后delegate就可以根据当前row来绘制样式。
+虽然上面实现看起来有些复杂，但是这种分层方式是很灵活的在业务中很多对于table的需求都是
+很有必要的，也容易扩充一些新的功能。

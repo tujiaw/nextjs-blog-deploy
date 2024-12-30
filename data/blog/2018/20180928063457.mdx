@@ -1,0 +1,111 @@
+---
+title: 'koa2处理get,post参数的常见方式'
+date: '2018-09-28'
+tags: ['Javascript', 'Node.js']
+draft: false
+summary: koa2 处理 get、post 参数常见方式：url 传参通过路由和 ctx 获取；表单 post 用 ctx.request.body 获表单参数；ajax post 若 data 为对象可直接获取，若为字符串需解析。多种请求应答处理参数方法已列举。 
+---
+
+koa2处理get,post参数的常见方式
+
+举几个常见的例子
+
+# url显示传参
+## 根据文章id获取这篇文章的内容  
+url：```https://www.ningto.com/post/5b8f371ce1d77b114b42306a```
+路由：
+```
+app.use(route.get('/post/:id', Posts.show))
+```
+处理：
+```
+module.exports.show = async function(ctx, id) {
+    // ...
+}
+```
+show函数的第二个参数id就是用户传过来的参数
+
+## 分页获取文章列表
+url:```https://www.ningto.com/?page=2&count=50```
+路由：
+```
+app.use(route.get('/api/list', Posts.list))
+```
+处理：
+```
+module.exports.list = async function(ctx) {
+  var page = ctx.query.page || 1
+  var count = ctx.query.count || 20
+  // ...
+}
+```
+通过ctx.query对象获取page和count这两个参数
+
+# post提交表单
+表单:
+```
+  <form class="form-signin" action="/user/signin" method="post">
+    <input type="text" name="username" class="form-control" placeholder="用户名" required autofocus>
+    <input type="password" name="password" class="form-control" placeholder="密码" required>
+    <div>
+      <a href="/user/githubLogin" target="_bank">Github登录</a>
+    </div>
+  </form>
+```
+路由：
+```
+app.use(route.post('/user/signin', User.reqSignin))
+```
+处理：
+```
+module.exports.reqSignin = async function(ctx) {
+  const req = ctx.request.body
+  if (req.username.length == 0 || req.password.length == 0) {
+    ctx.body = 'username or password error'
+  } 
+  // ...
+```
+通过ctx.request.body获取表单对象，其中username和password就是通过表单传过来的参数
+
+# ajax post
+ajax
+```
+  $.ajax({
+      type: 'POST',
+      url: 'search',
+      data: {keyword: keyword},
+      success: function(result) {
+          // ...
+      }
+  })
+```
+路由：
+```
+app.use(route.post('/search', Posts.reqSearch))
+```
+处理：
+```
+module.exports.reqSearch = async function(ctx, next) {
+  const req = ctx.request.body
+  const keyword = req.keyword
+  // ...
+```
+同上，通过ctx.request.body来获取参数  
+
+如果将ajax中的data参数改为字符串如：
+```
+  $.ajax({
+      type: 'POST',
+      url: 'search',
+      data: JSON.stringify({keyword: keyword}),
+      success: function(result) {
+          // ...
+      }
+  })
+```
+那么处理的时候需要进行解析：
+```
+JSON.parse(ctx.request.body);
+```
+
+以上就是常见的几种请求应答处理参数的方法。

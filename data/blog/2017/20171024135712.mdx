@@ -1,0 +1,166 @@
+---
+title: '表达式求值——栈'
+date: '2017-10-24'
+tags: ['C/C++']
+draft: false
+summary: 此代码实现表达式求值，通过栈实现。`Precede`函数获取运算符优先级，`Operate`函数进行运算。`EvaluateExpression`函数遍历表达式，根据优先级进行操作数和运算符的处理，最终返回结果。主函数测试了该功能。 
+---
+
+```
+
+#include <iostream>
+#include <stack>
+#include <cctype>
+
+/**
+ * 获取优先级符号，flag数组优先级关系是根据oper得来的，所以它们中元素的顺序不能轻易改变
+ * @param a[in] 先前的运算符
+ * @param b[in] 之后的运算符
+ * @return 成功返回运算符，失败返回空格字符
+ */
+char Precede(char a, char b)
+{
+	int i, x=-1, y=-1;
+	const char oper[7] = {'+', '-', '*', '/', '(', ')', '='};
+	const char flag[7][7] = {
+		'>', '>', '<', '<', '<', '>', '>',
+		'>', '>', '<', '<', '<', '>', '>',
+		'>', '>', '>', '>', '<', '>', '>',
+		'>', '>', '>', '>', '<', '>', '>',
+		'<', '<', '<', '<', '<', '=', ' ',
+		'>', '>', '>', '>', ' ', '>', '>',
+		'<', '<', '<', '<', '<', ' ', '='
+	};
+
+	for (i=0; i<7; i++)
+	{
+		if (oper[i] == a)
+		{
+			x = i;
+			break;
+		}
+	}
+
+	for (i=0; i<7; i++)
+	{
+		if (oper[i] == b)
+		{
+			y = i;
+			break;
+		}
+	}
+
+	if (-1!=x && -1!=y)
+	{
+		return flag[x][y];
+	}
+
+	return ' ';
+}
+
+/**
+ * 左右操作数求值
+ * @param x[in] 左边操作数
+ * @param theta[in] 运算符
+ * @param y[in] 右边操作数
+ * @return 成功返回运算结果，失败返回0
+ */
+int Operate(int x, char theta, int y)
+{
+	int ret = 0;
+	switch (theta)
+	{
+	case '+':
+		ret = x+y;
+		break;
+
+	case '-':
+		ret = x-y;
+		break;
+
+	case '*':
+		ret = x*y;
+		break;
+
+	case '/':
+		ret = x/y;
+		break;
+
+	default:
+		break;
+	}
+
+	return ret;
+}
+
+/**
+ * 表达式求值，表达式以‘=’结束，如：2*(3+5)=
+ * @param str[in] 字符串表达式指针
+ * @return 最终结果
+ */
+int EvaluateExpression(const char *str)
+{
+	char theta;
+	int x, y;
+	const char *left;
+	const char *right;
+	char tmp[16];
+	std::stack<int> opnd;
+	std::stack<char> optr;
+
+	optr.push('=');
+	while ((*str)!='=' || optr.top()!='=')
+	{
+		left = str;
+		if (isdigit(*left))
+		{
+			while (isdigit(*(++str)));
+			right = str;
+			memset(tmp, 0, sizeof(tmp));
+			strncpy(tmp, left, right-left);
+			opnd.push(atoi(tmp));
+		}
+		else if (isspace(*left))
+		{
+			++str;
+		}
+		else
+		{
+			switch (Precede(optr.top(), *left))
+			{
+			case '<':
+				optr.push(*left);
+				++str;
+				break;
+
+			case '=':
+				optr.pop();
+				++str;
+				break;
+
+			case '>':
+				theta = optr.top();
+				optr.pop();
+				y = opnd.top();
+				opnd.pop();
+				x = opnd.top();
+				opnd.pop();
+				opnd.push(Operate(x, theta, y));
+				break;
+
+			default:
+				break;
+			}
+		}
+	}
+
+	return opnd.top();
+}
+
+int main()
+{
+	int last = EvaluateExpression("20*(12+8)+100=");
+	std::cout << last << std::endl;
+	return 0;	
+}
+```

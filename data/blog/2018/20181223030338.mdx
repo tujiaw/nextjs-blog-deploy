@@ -1,0 +1,38 @@
+---
+title: 'Qt connect函数参数Qt  ConnectionType的使用场景'
+date: '2018-09-25'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: Qt connect 函数的 Qt::ConnectionType 参数决定信号投递和槽函数执行方式。有 Auto、Direct、Queued、BlockingQueued、Unique 等值，分别对应不同线程下的信号槽处理情况，可根据需求选择使用。 
+---
+
+Qt connect函数参数Qt::ConnectionType的使用场景
+
+信号槽作为Qt中的核心特性对于每一个使用Qt框架的人来说一定要掌握，connect函数是用来连接信号和槽的，虽然这个函数有多个重载的方式，但是这里仅介绍Qt::ConnectionType这个参数的含义以及使用场景。
+
+Qt::ConnectionType是个枚举类型，有如下值：
+```
+Qt::AutoConnection
+Qt::DirectConnection
+Qt::QueuedConnection
+Qt::BlockingQueuedConnection
+Qt::UniqueConnection
+```
+它决定了信号的投递方式以及槽函数的执行方式。
+
+# Qt::AutoConnection
+如果没有指定Qt::ConnectionType参数，默认就是使用这个值。它有两种表现形式：
+* 如果信号的发行者和接受者在同一个线程就使用Qt::DirectConnection参数
+* 如果信号的发行者和接受者不是同一个线程就使用Qt::QueuedConnection参数
+
+# Qt::DirectConnection
+当信号发出后槽函数会立刻执行，就像调用回调函数一样。槽函数必然是在发送信号的线程里执行。
+
+# Qt::QueuedConnection
+当信号发出后槽函数并不会马上执行，应该是投递到队列中，等待下一次的事件循环从队列中取出来再执行。发送者和接受者在不同的线程时你应该明确的使用此参数。
+
+# Qt::BlockingQueuedConnection
+同Qt::QueuedConnection类似，区别是发送信号的线程会阻塞直到槽函数被执行。所以要注意的是，如果发送者和接受者在同一个线程就会造成死锁。
+
+# Qt::UniqueConnection
+这个参数可以与上面的参数组合使用（Qt::UniqueConnection | Qt::QueuedConnection），它的作用是可以防止同一个信号槽被多次connect，如果对同一个信号槽进行多次connect，当信号发出后槽函数也会执行多次，如果同一个connect会执行多次你应该使用这个参数。当然还有一种方法是在connect之前先disconnect先前的信号槽。

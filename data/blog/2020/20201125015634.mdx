@@ -1,0 +1,71 @@
+---
+title: 'C++11 实现defer'
+date: '2020-11-25'
+tags: ['C/C++']
+draft: false
+summary: 文章介绍 C++11 实现的 defer 功能，内部 lambda 表达式捕获引用，同一作用域先定义后执行。通过 define 及连接符使局部变量名唯一，使用起来方便，给出源码及用法示例，如在不同函数中使用 defer 输出特定信息。 
+---
+
+defer函数功能还是蛮常用的，它是在出当前作用域的时候执行，用来回收资源非常合适，可惜C++里面没有，以前实现起来都比较别扭现在用C++11实现后看起来简单多了。
+
+此defer内部lambda表达式捕获的是引用；  
+
+同一个作用域内先定义的defer后执行；  
+
+使用define以及x##y连接符的作用是，每次定义的局部变量名都是唯一的，使用起来非常方便，否则你可能需要像下面这种写法，每次还要考虑局部变量名不能重名，可能是如下写法：
+```
+    auto _defer_ = defer_func([] {
+        std::cout << "defer" << std::endl;
+    });
+```
+定义宏之后用起来就简洁多了：
+```
+defer( std::cout << "defer" << std::endl );
+```
+
+源码如下：
+```
+#pragma once
+
+template <typename F>
+struct privDefer {
+    F f;
+    privDefer(F f) : f(f) {}
+    ~privDefer() { f(); }
+};
+
+template <typename F>
+privDefer<F> defer_func(F f) {
+    return privDefer<F>(f);
+}
+
+#define DEFER_1(x, y) x##y
+#define DEFER_2(x, y) DEFER_1(x, y)
+#define DEFER_3(x)    DEFER_2(x, __COUNTER__)
+#define defer(code)   auto DEFER_3(_defer_) = defer_func([&](){code;})
+```
+
+用法如下：
+```
+void foo1() {
+    defer(std::cout << "foo1 end" << std::endl);
+    std::cout << "foo1 start" << std::endl;
+}
+
+void foo2() {
+    std::cout << "foo2 start" << std::endl;
+    defer(std::cout << "fist defer" << std::endl);
+    std::cout << "foo2 handle" << std::endl;
+    defer(std::cout << "second defer" << std::endl);
+    defer(std::cout << "third defer" << std::endl);
+    std::cout << "foo2 end" << std::endl;
+}
+
+void foo3() {
+    int i = 0;
+    defer(std::cout << "foo3 i:" << i << std::endl;);
+    for (; i < 5; i++) {
+        std::cout << i << std::endl;
+    }
+}
+```

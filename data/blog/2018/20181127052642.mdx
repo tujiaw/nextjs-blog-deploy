@@ -1,0 +1,33 @@
+---
+title: 'qpid-cpp Windows编译'
+date: '2018-11-27'
+tags: ['Windows', 'C/C++', 'MQ']
+draft: false
+summary: 介绍 qpid-cpp Windows 编译，需先安装 boost 等，下载源码解压后用 CMake 配置，因缺 boost 设 BOOST_ROOT 路径，后用 vs 编译 ALL_BUILD 和 INSTALL，即便有 setlocal 错误，qpid-cpp 也已安装在 C:\Program Files (x86)\qpid-cpp 目录下。 
+---
+
+qpid-cpp Windows编译
+
+> 先要安装boost，cmake，python2.7，ruby  
+
+下载qpid-cpp源码  
+http://mirrors.hust.edu.cn/apache/qpid/cpp/1.39.0/qpid-cpp-1.39.0.tar.gz
+
+解压之后打开CMake(cmake-gui)工具  
+Browse Source选择：F:/qpid-cpp-1.39.0  
+Browse Build选择：F:/qpid-cpp-1.39.0/bld  
+
+点击configure后发现有错误，提示找不到boost。  
+点击Add Entry增加  
+```
+Name: BOOST_ROOT  
+Type: STRING  
+Value: C:\boost_1_59_0（填你自己的boost目录）
+```
+
+点击Generate  
+点击Open Project  
+
+使用vs编译ALL_BUILD  
+使用vs编译INSTALL  
+> 即使有setlocal错误也没关系，此时qpid-cpp已经安装好了，我的在C:\Program Files (x86)\qpid-cpp目录下

@@ -1,0 +1,126 @@
+---
+title: 'boost xml'
+date: '2017-10-24'
+tags: ['C/C++', 'Boost']
+draft: false
+summary: 介绍了使用 Boost 库读写 XML 文件的示例代码。通过`load`函数读取`testConfigRead.xml`文件内容并存储到结构体`TestConfig`中，通过`save`函数将结构体内容写入`testConfigWrite.xml`文件，展示了 Boost 库在 XML 操作方面的便捷性。 
+---
+
+读写XML文件：
+testConfigRead.xml
+
+```
+<?xml version="1.0" encoding="GB2312"?>
+<content>
+  <title value="xxxx"/>
+  <number>1234</number>
+  <groups>
+  	<class num="1" type="type1"/>
+  	<class num="2" type="type2"/>
+  	<class num="3" type="type3"/>
+  </groups>
+  <classes>
+  	<name>first</name>
+  	<name>second</name>
+  	<name>third</name>
+  </classes>
+</content>
+```
+```
+
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/foreach.hpp>
+#include <boost/typeof/std/utility.hpp>
+#include <string>
+#include <map>
+#include <set>
+#include <exception>
+#include <iostream>
+
+struct TestConfig
+{
+	std::string title;
+	int number;
+	std::map<int, std::string> groups;
+	std::set<std::string> classes;
+	void load(const std::string& filename);
+	void save(const std::string& filename);
+};
+
+void TestConfig::load(const std::string& filename)
+{
+	using boost::property_tree::ptree;
+	ptree pt;
+	read_xml(filename, pt, boost::property_tree::xml_parser::trim_whitespace);
+
+	title = pt.get_child("content.title").get<std::string>("<xmlattr>.value");
+	std::cout << title << std::endl;
+
+	number = pt.get<int>("content.number");
+	std::cout << number << std::endl;
+
+	ptree &groups_node = pt.get_child("content.groups");
+	BOOST_FOREACH(const ptree::value_type& vt, groups_node)
+	{
+		std::string num = vt.second.get<std::string>("<xmlattr>.num");
+		std::string type = vt.second.get<std::string>("<xmlattr>.type");
+		groups.insert(std::pair<int, std::string>(atoi(num.c_str()), type));
+		std::cout << num << "," << type << std::endl;
+	}
+
+	ptree &classes_node = pt.get_child("content.classes");
+	BOOST_FOREACH(const ptree::value_type& vt, classes_node)
+	{
+		classes.insert(vt.second.data());
+		std::cout << vt.second.data() << std::endl;
+	}
+}
+
+void TestConfig::save(const std::string& filename)
+{
+	using boost::property_tree::ptree;
+	ptree pt, pattr1;
+
+	pattr1.add<std::string>("<xmlattr>.value", title);
+	pt.add_child("content.title", pattr1);
+	pt.put("content.number", number);
+
+	typedef std::map<int, std::string> map_type;
+	BOOST_FOREACH(const map_type::value_type &grp, groups)
+	{
+		ptree pattr2;
+		pattr2.add<int>("<xmlattr>.num", grp.first);
+		pattr2.add<std::string>("<xmlattr>.type", grp.second);
+		pt.add_child("content.groups.class", pattr2);
+	}
+	
+	BOOST_FOREACH(const std::string& cls, classes)
+	{
+		pt.add("content.classes.name", cls);
+	}
+	
+	// 格式化输出，指定编码（默认utf-8）
+	boost::property_tree::xml_writer_settings<char> settings('\t', 1, "GB2312");
+	write_xml(filename, pt, std::locale(), settings);
+}
+
+
+int main()
+{
+    try
+    {
+		TestConfig tc;
+		tc.load("testConfigRead.xml");
+		tc.save("testConfigWrite.xml");
+        std::cout << "Success\n";
+    }
+    catch (std::exception &e)
+    {
+        std::cout << "Error: " << e.what() << "\n";
+    }
+
+	system("pause");
+    return 0;
+}
+```

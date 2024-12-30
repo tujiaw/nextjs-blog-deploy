@@ -1,0 +1,117 @@
+---
+title: 'API设计原则(上)'
+date: '2017-11-17'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 介绍 Qt API 设计原则，包括一致、易掌握、强大等特质，如极简、完备等。强调静态多态和基于属性的 API，举例说明好、差及值得斟酌的案例，还提及属性间关联处理及特殊值或重置方法等，有原文链接及译文稿。 
+---
+
+# 译序
+Qt的设计水准在业界很有口碑，一致、易于掌握和强大的API是Qt最著名的优点之一。此文既是Qt官网上的API设计指导准则，也是Qt在API设计上的实践总结。虽然Qt用的是C++，但其中设计原则和思考是具有普适性的（如果你对C++还不精通，可以忽略与C++强相关或是过于细节的部分，仍然可以学习或梳理关于API设计最有价值的内容）。整个篇幅中有很多示例，是关于API设计一篇难得的好文章。
+
+需要注意的是，这篇Wiki有一些内容并不完整，所以，可能会有一些阅读上的问题，我们对此做了一些相关的注释。
+
+PS：翻译中肯定会有不足和不对之处，欢迎评论&交流；另译文源码在GitHub的这个仓库中，可以[提交Issue/Fork后提交代码](https://github.com/oldratlee/translations/fork)来建议/指正。
+
+# API设计原则
+一致、易于掌握和强大的API是Qt最著名的优点之一。此文总结了我们在设计Qt风格API的过程中所积累的诀窍（know-how）。其中许多是通用准则；而其他的则更偏向于约定，遵循这些约定主要是为了与已有的API保持一致。
+
+虽然这些准则主要用于对外的API（public API），但在设计对内的API（private API）时也推荐遵循相同的技巧（techniques），作为开发者之间协作的礼仪（courtesy）。
+
+如有兴趣也可以读一下 Jasmin Blanchette 的[Little Manual of API Design (PDF)](http://www4.in.tum.de/~blanchet/api-design.pdf) 或是本文的前身 Matthias Ettrich 的Designing [Qt-Style C++ APIs](https://doc.qt.io/archives/qq/qq13-apis.html)。
+
+## 好API的6个特质
+API之于程序员就如同图形界面之于普通用户（end-user）。API中的『P』实际上指的是『程序员』（Programmer），而不是『程序』（Program），强调的是API是给程序员使用的这一事实。
+
+在第13期[Qt季刊](http://doc.qt.io/archives/qq/)，Matthias 的[关于API设计的文章](https://doc.qt.io/archives/qq/qq13-apis.html)中提出了观点：API应该极简（minimal）且完备（complete）、语义清晰简单（have clear and simple semantics）、符合直觉（be intuitive）、易于记忆（be easy to memorize）和引导API使用者写出可读代码（lead to readable code）。
+
+### 1. 极简
+极简的API是指每个class的public成员尽可能少，public的class也尽可能少。这样的API更易理解、记忆、调试和变更。
+
+### 2. 完备
+完备的API是指期望有的功能都包含了。这点会和保持API极简有些冲突。如果一个成员函数放在错误的类中，那么这个函数的潜在用户就会找不到，这也是违反完备性的。
+
+### 3. 语义清晰简单
+就像其他的设计一样，我们应该遵守最少意外原则（the principle of least surprise）。好的API应该可以让常见的事完成的更简单，并有可以完成不常见的事的可能性，但是却不会关注于那些不常见的事。解决的是具体问题；当没有需求时不要过度通用化解决方案。（举个例子，在Qt 3中，QMimeSourceFactory不应命名成QImageLoader并有不一样的API。）
+
+### 4. 符合直觉
+就像计算机里的其他事物一样，API应该符合直觉。对于什么是符合直觉的什么不符合，不同经验和背景的人会有不同的看法。API符合直觉的测试方法：经验不很丰富的用户不用阅读API文档就能搞懂API，而且程序员不用了解API就能看明白使用API的代码。
+
+### 5. 易于记忆
+为使API易于记忆，API的命名约定应该具有一致性和精确性。使用易于识别的模式和概念，并且避免用缩写。
+
+### 6. 引导API使用者写出可读代码
+代码只写一次，却要多次的阅读（还有调试和修改）。写出可读性好的代码有时候要花费更多的时间，但对于产品的整个生命周期来说是节省了时间的。
+
+最后，要记住的是，不同的用户会使用API的不同部分。尽管简单使用单个Qt类的实例应该符合直觉，但如果是要继承一个类，让用户事先看好文档是个合理的要求。
+
+## 静态多态
+相似的类应该有相似的API。在继承（inheritance）合适时可以用继承达到这个效果，即运行时多态。然而多态也发生在设计阶段。例如，如果你用QProgressBar替换QSlider，或是用QString替换QByteArray，你会发现API的相似性使的替换很容易。这即是所谓的『静态多态』（static polymorphism）。
+
+静态多态也使记忆API和编程模式更加容易。因此，一组相关的类有相似的API有时候比每个类都有各自的一套API更好。
+
+一般来说，在Qt中，如果没有足够的理由要使用继承，我们更倾向于用静态多态。这样可以减少Qt public类的个数，也使刚学习Qt的用户在翻看文档时更有方向感。
+
+### 1. 好的案例
+QDialogButtonBox与QMessageBox，在处理按钮（addButton()、setStandardButtons()等等）上有相似的API，不需要继承某个QAbstractButtonBox类。
+
+### 2. 差的案例
+QTcpSocket与QUdpSocket都继承了QAbstractSocket，这两个类的交互行为的模式（mode of interaction）非常不同。似乎没有什么人以通用和有意义的方式用过QAbstractSocket指针（或者 能 以通用和有意义的方式使用QAbstractSocket指针）。
+
+### 3. 值得斟酌的案例
+QBoxLayout是QHBoxLayout与QVBoxLayout的父类。好处：可以在工具栏上使用QBoxLayout，调用setOrientation()使其变为水平/垂直。坏处：要多一个类，并且有可能导致用户写出这样没什么意义的代码，((QBoxLayout *)hbox)->setOrientation(Qt::Vertical)。
+
+## 基于属性的API
+新的Qt类倾向于用『基于属性（property）的API』，例如：
+```
+QTimer timer;
+timer.setInterval(1000);
+timer.setSingleShot(true);
+timer.start();
+```
+这里的 属性 是指任何的概念特征（conceptual attribute），是对象状态的一部分 —— 无论它是不是Q_PROPERTY。在说得通的情况下，用户应该可以以任何顺序设置属性，也就是说，属性之间应该是正交的（orthogonal）。例如，上面的代码可以写成：
+```
+QTimer timer;
+timer.setSingleShot(true);
+timer.setInterval(1000);
+timer.start();
+```
+> 【译注】：正交性是指改变某个特性而不会影响到其他的特性。《程序员修炼之道》中讲了关于正交性的一个直升飞机坠毁的例子，讲得深入浅出很有画面感。
+
+为了方便，也写成：
+```
+timer.start(1000);
+```
+类似地，对于QRegExp会是这样的代码：
+```
+QRegExp regExp;
+regExp.setCaseSensitive(Qt::CaseInsensitive);
+regExp.setPattern(".");
+regExp.setPatternSyntax(Qt::WildcardSyntax);
+```
+为实现这种类型的API，需要借助底层对象的懒创建。例如，对于QRegExp的例子，在不知道模式语法（pattern syntax）的情况下，在setPattern()中去解释"."就为时过早了。
+
+属性之间常常有关联的；在这种情况下，我们必须小心处理。思考下面的问题：当前的风格（style）提供了『默认的图标尺寸』属性 vs. QToolButton的『iconSize』属性：
+```
+toolButton->setStyle(otherStyle);
+toolButton->iconSize();    // returns the default for otherStyle
+toolButton->setIconSize(QSize(52, 52));
+toolButton->iconSize();    // returns (52, 52)
+toolButton->setStyle(yetAnotherStyle);
+toolButton->iconSize();    // returns (52, 52)
+```
+提醒一下，一旦设置了iconSize，设置就会一直保持，即使改变当前的风格。这 很好。但有的时候需要能重置属性。有两种方法：
+
+* 传入一个特殊值（如QSize()、-1或者Qt::Alignment(0)）来表示『重置』
+* 提供一个明确的重置方法，如resetFoo()和unsetFoo()
+
+对于iconSize，使用QSize()（比如 QSize(–1, -1)）来表示『重置』就够用了。
+
+在某些情况下，getter方法返回的结果与所设置的值不同。例如，虽然调用了widget->setEnabled(true)，但如果它的父widget处于disabled状态，那么widget->isEnabled()仍然返回的是false。这样是OK的，因为一般来说就是我们想要的检查结果（父widget处于disabled状态，里面的子widget也应该变为灰的不响应用户操作，就好像子widget自身处于disabled状态一样；与此同时，因为子widget记得在自己的内心深处是enabled状态的，只是一直等待着它的父widget变为enabled）。当然诸如这些都必须在文档中妥善地说明清楚。
+
+[API设计原则(上)](http://3inns.cn/post/5a0eed10c0fd2b0eee159d0b)  
+[API设计原则(中)](http://3inns.cn/post/5a0eed56c0fd2b0eee159d0c)  
+[API设计原则(下)](http://3inns.cn/post/5a0eed71c0fd2b0eee159d0d)  
+
+原文链接：[API Design Principles – Qt Wiki](http://qt-project.org/wiki/API-Design-Principles)
+基于[Gary的影响力上](http://blog.csdn.net/gaoyingju) Gary Gao 的译文稿：[C++的API设计指导](http://blog.csdn.net/gaoyingju/article/details/8245108)

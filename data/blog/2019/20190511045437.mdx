@@ -1,0 +1,74 @@
+---
+title: 'go queue'
+date: '2019-05-11'
+tags: ['Go']
+draft: false
+summary: 文章介绍 go 语言实现的队列，元素用 interface ，有 Push、Pop、Front、Size 方法。通过代码展示了队列的基本操作，先压入四个元素，再循环取出，无元素时结束，代码简洁实用。 
+---
+
+队列是一个先进先出的数据结构，go语言实现一个队列，为了通用队列的元素使用了interface，通常一个队列有如下方法：
+* Push：向队列尾部压入一个元素
+* Pop：从队列头部弹出一个元素
+* Front：获取队列头部元素
+* Size：队列的长度
+
+```
+package queue 
+
+import "errors"
+import "fmt"
+
+type queue struct {
+	ls []interface{}
+}
+
+func New() *queue {
+	return &queue{}
+}
+
+func (q *queue)Push(i interface{}) {
+	q.ls = append(q.ls, i)
+}
+
+func (q *queue)Front() (interface{}, error) {
+	if len(q.ls) > 0 {
+		return q.ls[0], nil
+	}
+	return 0, errors.New("queue is empty")
+}
+
+func (q *queue)Pop() {
+	_, err := q.Front()
+	if err == nil {
+		q.ls = q.ls[1:]
+	}
+}
+
+func (q *queue)Size() int {
+	return len(q.ls)
+}
+
+func (q *queue)Print() {
+	fmt.Println(q.ls)
+}
+
+```
+
+使用方法：
+```
+	q := queue.New()
+	q.Push("a")
+	q.Push("b")
+	q.Push("c")
+	q.Push("d")
+	for {
+		if d, err := q.Front(); err == nil {
+			fmt.Println("pop:", d.(string))
+			q.Pop()
+			q.Print()
+		} else {
+			break
+		}
+	}
+```
+先向队列中压入四个元素，然后for循环不断从队列中取出元素，当队列中没有元素的时候结束循环。

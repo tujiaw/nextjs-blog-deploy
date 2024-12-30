@@ -1,0 +1,93 @@
+---
+title: 'Go 使用zip压缩文件目录'
+date: '2021-05-12'
+tags: ['Go']
+draft: false
+summary: 
+---
+
+使用archive/zip包可以压缩目录为zip文件，流程如下：
+1. 创建压缩后的目标文件（zip文件）；
+2. 使用zip writer向zip文件写入内容；
+3. 遍历要压缩的目录，如果是文件就用zip writer写入；
+4. 如果是目录，在父目录的基础上加上子目录名，递归遍历子目录；
+
+源码如下：
+```
+package main
+
+import (
+	"archive/zip"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+)
+
+func ZipWrite(srcDir string, dstFile string) ([]string, error) {
+	fileList := []string{}
+	if len(srcDir) == 0 || len(dstFile) == 0 {
+		return fileList, errors.New("zip write params error")
+	}
+
+	if srcDir[len(srcDir)-1] != '/' {
+		srcDir += "/"
+	}
+
+	// Get a Buffer to Write To
+	outFile, err := os.Create(dstFile)
+	if err != nil {
+		return fileList, err
+	}
+	defer outFile.Close()
+
+	// Create a new zip archive.
+	w := zip.NewWriter(outFile)
+
+	// Add some files to the archive.
+	addFiles(w, srcDir, "", &fileList)
+
+	// Make sure to check the error on Close.
+	if err := w.Close(); err != nil {
+		return fileList, err
+	}
+
+	return fileList, nil
+}
+
+func addFiles(w *zip.Writer, basePath, baseInZip string, successFileList *[]string) {
+	// Open the Directory
+	files, err := ioutil.ReadDir(basePath)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, file := range files {
+		if !file.IsDir() {
+			dat, err := ioutil.ReadFile(basePath + file.Name())
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			// Add some files to the archive.
+			f, err := w.Create(baseInZip + file.Name())
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			if _, err := f.Write(dat); err != nil {
+				fmt.Println(err)
+				continue
+			}
+			*successFileList = append(*successFileList, basePath+file.Name())
+		} else if file.IsDir() {
+			// Recurse
+			newBase := basePath + file.Name() + "/"
+			addFiles(w, newBase, baseInZip+file.Name()+"/", successFileList)
+		}
+	}
+}
+
+```

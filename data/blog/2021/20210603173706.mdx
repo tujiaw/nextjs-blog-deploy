@@ -1,0 +1,117 @@
+---
+title: 'Python 统计项目代码行数'
+date: '2021-06-03'
+tags: ['Python']
+draft: false
+summary: 
+---
+
+统计项目代码行数，下面代码统计的是C/C++语言项目的代码行数，要统计其他语言项目的代码行数也很容易，主要是更改以下地方：
+1. 修改invalid_prefix无效的前缀，valid_suffix有效的后缀
+2. count_code_line_from_text中修改单行注释和多行注释
+3. 如果要排除目录可以在valid_file_list函数里修改
+
+实现起来其实不难，大概过程是：读取目录里的所有文件，读取单个文件内容，将文件内容用'\n'分隔，然后排除注释和空行就可以了。
+
+需要注意的是不同文件的编码可能不一样，如果由于默认的文件编码读取失败，可以试着获取文件编码再次用新的编码读取。
+
+```
+import os
+import chardet
+
+'''
+遍历目录里的所有文件，过滤掉不统计的文件，返回完整的文件路径列表
+'moc_'前缀的文件不统计（Qt自动生成的）
+只统计后缀为'.h', '.cpp', '.c', '.hpp', '.cc'的文件
+'''
+def valid_file_list(dir):
+  def invalid_prefix(file):
+    for prefix in ['moc_']:
+      if file.startswith(prefix):
+        return True
+    return False
+
+  def valid_suffix(file):
+    for suffix in ['.h', '.cpp', '.c', '.hpp', '.cc']:
+      if file.endswith(suffix):
+        return True
+    return False
+
+  ls = []
+  for subdir, dirs, files in os.walk(dir):
+    for file in files:
+      if invalid_prefix(file):
+        continue
+      if not valid_suffix(file):
+        continue
+      filepath = subdir + os.sep + file  
+      ls.append(filepath)
+  return ls
+
+
+'''
+读取代码文件，默认使用utf-8编码打开。
+如果打开失败，使用chardet获取文件编码，再次使用新的编码打开，
+计算文件是什么编码相对而言是比较耗时的。
+'''
+def read_text(path):
+  encoding = 'utf-8'
+  try:
+    for _ in range(2):
+      try:
+        with open(path, encoding=encoding) as f:
+          return f.read()
+      except UnicodeError as e:
+        with open(path, 'rb') as f:
+          encoding = chardet.detect(f.read())['encoding']
+          print('detect encoding:', encoding)
+  except Exception as e:
+    print(e)
+  return ''
+
+
+'''
+统计文本中的代码行数
+排除C++注释，空行
+'''
+def count_code_line_from_text(text):
+  ls = str.split(text, '\n')
+  ignore = False
+  count = 0
+  for v in ls:
+    v = v.strip()
+    if len(v) == 0:
+      continue
+    if v.startswith('//'):
+      continue
+    if v.startswith('/*'):
+      ignore = True
+      # 注意这里不能用continue，否则在同一行会出问题
+    if ignore:
+      if v.endswith('*/'):
+        ignore = False
+      continue
+    count += 1
+  return count
+
+
+'''
+统计目录下所有有效代码文件行数，
+打印文件总数和代码总行数。
+'''
+def count_code_line_from_dir(dir):
+  files = valid_file_list(dir)
+  total = 0
+  for file in files:
+    text = read_text(file)
+    count = count_code_line_from_text(text)
+    print(file, count)
+    total += count
+  print('total files:%d, lines:%d' % (len(files), total))
+
+
+if __name__ == "__main__":
+  count_code_line_from_dir('E:\\project\\test')
+
+  
+```

@@ -1,0 +1,58 @@
+---
+title: 'Windows下使用VS2013编译Qt5.6源码'
+date: '2017-02-08'
+tags: ['Windows', 'Qt']
+draft: false
+summary: 介绍 Windows 下用 VS2013 编译 Qt5.6 源码的步骤，包括下载源码、安装相关工具、ICU 源码编译及环境变量设置等，还提及编译中常见问题及解决办法。 
+---
+
+Windows下使用VS2013编译Qt5.6源码
+
+#### 下载Qt开源源码
+[http://download.qt.io/archive/qt/](http://download.qt.io/archive/qt/)  
+我下载的是：qt-everywhere-opensource-src-5.6.1-1.zip  
+
+#### 确保下面工具被安装
+* Perl version 5.12 or later   [http://www.activestate.com/activeperl/]
+* Python version 2.7 or later  [http://www.activestate.com/activepython/]
+* Ruby version 1.9.3 or later  [http://rubyinstaller.org/]
+
+#### ICU源码编译，编译QtWebKit必须的
+* ICU源码下载：[http://site.icu-project.org/](http://site.icu-project.org/)
+* 解压后进入source->allinone
+* 用vs2013打开allinone.sln分别编译debug和release会自动生成include、lib、bin目录，等会编译Qt源码之前需要将它们增加到环境变量。
+
+#### 编译前需要注意的
+* Qt源码目录要简短，防止文件路径太长造成的编译错误。最好是将qt-everywhere-opensource-src-5.6.1-1改为src之类简短的名字
+* 目录尽量用英文名
+* 当编译QtWebKit的时候还需要修改系统的**区域和语言**，否则编译不过。你也可以先不设置（因为设置之后编译工具编译过程中的中文显示不出来），等出现问题的时候再设置重启电脑后，不需要再进行configure，使用nmake继续之前的编译
+  > 打开控制面板->区域和语言->管理->更改系统区域设置->英语(美国)
+* 使用管理员权限打开**VS2013 开发人员命令提示**工具
+* 在上面工具中，设置ICU生成的目录到环境变量  
+  > SET INCLUDE=F:\qt\icu\include;%INCLUDE%  
+  > SET LIB=F:\qt\icu\lib;%LIB%  
+  > SET PATH=F:\qt\icu\lib;%PATH%  
+  > SET PATH=F:\qt\icu\bin;%PATH%  
+* cd到Qt源码目录（qt.pro这个目录）
+* configure -prefix ./qtbase -opengl desktop -force-debug-info -nomake tests
+  > -opengl desktop可以支持XP系统
+  > -force-debug-info是为了生成release下的pdb文件，对于调试release下的dump很有用
+* nmake
+  > 使用nmake命令开始编译
+* nmake install
+  > 编译完成后使用nmake install进行安装，安装后的所有文件都在qtbase目录下的bin/qtbase中
+
+#### 我编译中遇到的问题
+* NMAKE:fatal error U1077 ninja.exe返回代码0x1 NMAKE:fatal error U1077 nmake 返回代码0x2，编译qtwebengine的时候出错，修改上面提到的区域和语言，重启电脑后继续nmake就可以了
+* 在编译examples\webenginewidgets\simplebrowser\webview.cpp的时候提示QDebug错误
+  > 解决方法：打开源码增加如下头文件，接着使用nmake继续编译  
+  ```#include <QDebug>```
+* 如果要重新进行configure，最好是解压一份新的qt-everywhere-opensource-src-5.6.1-1在新目录中进行
+* 因为编译要很久，如果人不在电脑旁的话更改**电源选项**不要让电脑进入睡眠状态
+* 在使用windeployqt.exe的时候提示“Unable to read qconfig.pri”，在bin中增加qt.conf文件，内容如下：
+  ```
+  [Paths]
+  Prefix=..
+  ```
+* 为了兼容XP可能还需要：
+  > 增加opengl32sw.dll，platforms插件中使用官方发布的对应版本替换qwindows.dll

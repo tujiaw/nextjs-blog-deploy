@@ -1,0 +1,109 @@
+---
+title: 'bat常用命令'
+date: '2021-10-28'
+tags: ['Windows']
+draft: false
+summary: 
+---
+
+# 当前所执行bat文件的路径
+cd "%~dp0"
+
+# 设置变量
+```
+set DIR=%~dp0
+```
+
+# 使用变量，注意路径中可能有空格要加双引号
+```
+%DIR%
+```
+
+# 强制杀死进程
+```
+taskkill /f /im "进程名"
+```
+
+# 删除文件
+```
+del "文件路径"
+```
+
+# 删除目录
+```
+rd "目录" /s /q
+```
+
+# 拷贝文件，自动确认
+```
+echo f | xcopy "源文件" "目标文件"
+```
+
+# 拷贝文件到目录
+```
+xcopy "文件路径" "目录" /y
+```
+
+# 判断目录存在再删除
+```
+if exist %APP% (
+rmdir /q /s %APP%
+)
+```
+
+# 调用其他脚本
+```
+call "其他脚本文件.bat"
+```
+
+# 7z.exe生成压缩文件
+```
+rem 生成app.zip
+7z.exe a "%DIR%\%NAME%.zip" "%DIR%\%NAME%\*.*"
+
+@set DestPath=%DIR%\%NAME%
+@echo off& setlocal EnableDelayedExpansion
+
+for /f "delims=" %%a in ('dir /ad/b %DestPath%') do (
+7z.exe a "%DIR%\%NAME%.zip" "%DIR%\%NAME%\%%a"
+@echo "compressing %DIR%\%NAME%\%%a"
+)
+
+```
+
+# 7z转zip
+```
+cd "%~dp0"
+set NAME=%1
+set DIR=%~dp0
+
+rem make %NAME%.zip
+
+7z.exe x -y %NAME%.7z -o%NAME%\%NAME%
+
+7z.exe a "%DIR%\%NAME%.zip" "%DIR%\%NAME%\*.*"
+
+@set DestPath=%DIR%\%NAME%
+@echo off& setlocal EnableDelayedExpansion
+
+for /f "delims=" %%a in ('dir /ad/b %DestPath%') do (
+7z.exe a "%DIR%\%NAME%.zip" "%DIR%\%NAME%\%%a"
+@echo "compressing %DIR%\%NAME%\%%a"
+)
+```
+
+# 7z解压排除文件
+```
+7z.exe x -x@exclude.txt -y src_path -o dst_path
+```
+exclude.txt
+```
+*.pdb
+```
+# 查询任务管理器中的进程IMECMNT.exe的会话ID
+```
+@echo off
+for /f "tokens=4* delims= " %%i in ('tasklist /fi "IMAGENAME eq IMECMNT.exe"') do set SESSIONID=%%i
+echo %SESSIONID%
+@pause
+```

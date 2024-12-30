@@ -1,0 +1,74 @@
+---
+title: 'zookeeper单机集群部署'
+date: '2019-06-26'
+tags: ['Linux']
+draft: false
+summary: Apache ZooKeeper 是用于集群协调的服务，提供多种常见服务。单机集群部署需准备、配置文件（在 /usr/local 下新建 zkcluster 目录及相关文件），然后启动三个服务（./zkServer.sh start 对应配置文件），myid 为服务唯一标识，server 格式包含通信和选举端口。 
+---
+
+# 什么是Apache ZooKeeper
+Apache ZooKeeper是由集群（节点组）使用的一种服务，用于在自身之间协调，并通过稳健的同步技术维护共享数据。ZooKeeper本身是一个分布式应用程序，为写入分布式应用程序提供服务。
+
+ZooKeeper提供的常见服务如下 :
+* 命名服务 - 按名称标识集群中的节点。它类似于DNS，但仅对于节点。  
+* 配置管理 - 加入节点的最近的和最新的系统配置信息。  
+* 集群管理 - 实时地在集群和节点状态中加入/离开节点。  
+* 选举算法 - 选举一个节点作为协调目的的leader。  
+* 锁定和同步服务 - 在修改数据的同时锁定数据。此机制可帮助你在连接其他分布式应用程序（如Apache HBase）时进行自动故障恢复。  
+* 高度可靠的数据注册表 - 即使在一个或几个节点关闭时也可以获得数据。  
+
+分布式应用程序提供了很多好处，但它们也抛出了一些复杂和难以解决的挑战。ZooKeeper框架提供了一个完整的机制来克服所有的挑战。竞争条件和死锁使用故障安全同步方法进行处理。另一个主要缺点是数据的不一致性，ZooKeeper使用原子性解析。
+
+# 单机集群部署
+生产环境下至少需要三台机器，开发环境下可以在单台机器上部署集群，这里会部署三个服务
+
+## 准备
+点击下载[apache-zookeeper-3.5.5-bin.tar.gz](https://www-eu.apache.org/dist/zookeeper/zookeeper-3.5.5/apache-zookeeper-3.5.5-bin.tar.gz)
+
+直接解压缩就可以使用了，在bin目录下：
+```
+tar -zxvf apache-zookeeper-3.5.5-bin.tar.gz
+cd apache-zookeeper-3.5.5-bin/bin
+```
+
+## 配置文件
+这里我在/usr/local下新建目录zkcluster
+```
+/usr/local/zkcluster
+  zk1
+    data
+      myid    
+    log
+    zoo.cfg
+  zk2
+    ...
+  zk3
+    ...
+```
+data：数据目录下面的myid文件内容分别是：1， 2， 3（就一个数字）  
+log：日志目录  
+zoo.cfg：配置文件，zk1的配置文件如下：
+```
+tickTime=2000
+initLimit=10
+syncLimit=5
+dataDir=/usr/local/zkcluster/zk1/data
+dataLogDir=/usr/local/zkcluster/zk1/log
+clientPort=2181
+server.1=127.0.0.1:2287:3387
+server.2=127.0.0.1:2288:3388
+server.3=127.0.0.1:2289:3389
+```
+zk2和zk3的zoo.cfg内容跟上面一样，只是将dataDir和dataLogDir中的zk1改为自己目录的名字，clientPort分别是：2181，2182，2183
+
+## 启动三个服务
+```
+./zkServer.sh start /usr/local/zkcluster/zk1/zoo.cfg
+./zkServer.sh start /usr/local/zkcluster/zk2/zoo.cfg
+./zkServer.sh start /usr/local/zkcluster/zk3/zoo.cfg
+```
+这样很简单的zookeeper集群就部署好了
+
+## 解释
+myid：服务的唯一标识，对应server.1，server.2，server.3后面的数字，1~255之间  
+server.1：格式是host:port:port，第一个端口是zookeeper服务器之间的通信端口，第二个端口是选举leader的端口

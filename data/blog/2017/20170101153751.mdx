@@ -1,0 +1,26 @@
+---
+title: 'mongodb安装（windows, ubuntu）'
+date: '2017-01-01'
+tags: ['Windows', 'MongoDB', 'Database']
+draft: false
+summary: 文章介绍 mongodb 在 windows 和 ubuntu 上的安装及相关操作。windows 需官网下载安装，指定路径创建 data/db 目录，安装服务并指定日志和数据库路径，可通过命令启动或停止；ubuntu 直接 apt install mongodb，可用相应命令启动和关闭服务，还介绍了基本命令及跨平台界面管理工具。 
+---
+
+## windows安装
+1. 官网下载[MongoDB](https://www.mongodb.com/)安装；
+2. 找到安装后的目录，如：E:/MongoDB, 使用**管理员权限**打开命令行工具，cd到bin目录下；
+3. 在E:/MongoDB下新建data/db目录，下一步用得到；
+4. 安装mongo服务，必须指定日志路径和数据库路径，如下：
+> mongod --install --serviceName MongoDB --serviceDisplayName MongoDB --logpath "e:/MongoDB/mongo.log" --dbpath "e:/MongoDB/data/db"
+5. 有没有成功可以看MongoDB下的日志，如果成功使用如下命令：
+> 启动MongoDB：net start MongoDB  
+> 停止MongoDB：net stop MongoDB
+
+## ubuntu安装
+直接：apt install mongodb
+启动和关闭服务
+> sudo service mongodb start   
+sudo service mongodb stop
+
+[MongoDB基本命令用](http://blog.csdn.net/tujiaw/article/details/48130493?locationNum=1&fps=1)  
+[Robomongo跨平台界面管理工具](https://robomongo.org/)

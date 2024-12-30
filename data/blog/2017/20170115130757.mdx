@@ -1,0 +1,57 @@
+---
+title: 'gtk窗口拖动（迁移2010-12-31）'
+date: '2017-01-15'
+tags: ['Linux']
+draft: false
+summary: 文章介绍 gtk 窗口拖动相关内容。先加入事件，关联信号与 button 按下事件，实现窗口拖动。还能使窗口不能移出桌面最左边并在标题栏显示位置坐标，通过关联信号与事件及相应实现函数来完成。 
+---
+
+1. 加入事件    gtkwidgetaddevents(window, GDKBUTTONPRESSMASK);    2. 关联信号与button按下的事件    gsignalconnect(GOBJECT(window), "button-press-event", GCALLBACK(windowdrag), NULL);    3. 窗口拖动事件的...
+---
+### 实现按下鼠标左键拖动窗口  
+---
+1. 加入事件:
+```
+gtk_widget_add_events(window, GDK_BUTTON_PRESS_MASK);
+```
+2. 关联信号与button按下的事件:
+```
+g_signal_connect(G_OBJECT(window), "button-press-event", G_CALLBACK(window_drag), NULL);
+```
+3. 窗口拖动事件的实现:
+```
+gboolean window_drag(GtkWidget *widget, GdkEventButton *event, GdkWindowEdge edge)
+{
+    if (event->button == 1)
+    {
+        gtk_window_begin_move_drag(GTK_WINDOW(gtk_widget_get_toplevel(widget)), event->button, event->
+x_root, event->y_root, event->time);
+    }
+    
+    return FALSE;
+```
+
+### 使窗口不能移出桌面最左边,在标题栏显示当前窗口的位置坐标
+---
+1. 关联信号与事件:
+```
+g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(window_move), NULL);
+```
+2. 窗口移动事件的实现:
+```
+gboolean window_move(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+    gint x, y;
+    gchar buf[10] = {0};
+    x = event->configure.x;
+    y = event->configure.y;
+    if (x <= 0)//如果窗口超出桌面最左边框
+    {
+        x = 0;
+        gtk_window_move(GTK_WINDOW(widget), x, y);
+    }
+    sprintf(buf, "%d,%d", x, y);
+    gtk_window_set_title(GTK_WINDOW(widget), buf);
+    return TRUE;
+}
+```

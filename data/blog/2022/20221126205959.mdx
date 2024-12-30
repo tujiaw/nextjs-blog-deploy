@@ -1,0 +1,81 @@
+---
+title: 'Effective Python'
+date: '2022-11-26'
+tags: ['Python']
+draft: false
+summary: 本文记录了《Effective Python》中的部分练习和建议，涵盖命名规范、空值判断简化、列表切片、遍历优化及函数默认参数的正确使用，帮助编写更高效的Python代码。
+---
+
+读Effective Python的一些练习和记录
+# 关于命名的建议
+PEP 8 建议采用不同的方式来给 Python 代码中的各个部分命名，这样在阅读代码时， 就可以根据这些名称看出它们在 Python 语言中的角色。
+
+* 函数、变量及属性用小写字母来拼写，各单词之间用下划线相连，例如：lowercase_underscore 。
+* 受保护的实例属性，用一个下划线开头，例如：_leading_underscore 。
+* 私有的实例属性，用两个下划线开头，例如：__double_leading_underscore 。
+* 类（包括异常）命名时，每个单词的首字母均大写，例如：CapitalizedWord 。
+* 模块级别的常量，所有字母都大写，各单词之间用下划线相连，例如：ALL_CAPS 。
+* 类中的实例方法，应该把第一个参数命名为 self，用来表示该对象本身。
+* 类方法的第一个参数，应该命名为 cls，用来表示这个类本身。
+
+# 判断字符串或列表是否为空
+```
+# 字符串
+if len(s) == 0
+# 列表
+if len(ls) == 0
+```
+建议
+```
+# 不为空
+if s
+# 为空
+if not s
+```
+# if else可以用or来简化代码（适合短语句）
+如果or左边成立（整型不为0，字符串、列表不为空等）右边就不执行
+```
+a = b or c
+```
+# list切片会生成新对象，有新地址，而引用不会
+```
+    a = [1, 2, 3]
+    b = a
+    c = a[:]
+    a[0] = 'A'
+    print(a) # ['A', 2, 3]
+    print(b) # ['A', 2, 3]
+    print(c) #[1, 2, 3]
+```
+# 遍历需要下标时用enumerate替代range
+```
+    a = [x*100 for x in range(1, 10) if x % 2 == 0]
+    for i, ele in enumerate(a):
+        print(i, ele)
+    print('enumerate替代range')
+    for i in range(len(a)):
+        print(i, a[i])
+输出：
+0 200
+1 400
+2 600
+3 800
+```
+# 函数的参数不要是动态默认值
+```
+def print_now(t=datetime.now()):
+    print(t)
+
+print_now()
+time.sleep(1)
+print_now()
+
+输出：
+2022-11-26 21:30:39.749402
+2022-11-26 21:30:39.749402
+
+可以这样写：
+def print_now(t=None):
+    t = t or datetime.now()
+    print(t)
+```

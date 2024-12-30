@@ -1,0 +1,56 @@
+---
+title: '阿里云OSS链接去掉签名信息'
+date: '2024-12-07'
+tags: ['Web']
+draft: false
+summary: 本文介绍了如何去掉阿里云OSS链接中的签名信息，通过将Object设置为公共读权限（`oss2.OBJECT_ACL_PUBLIC_READ`），使链接公开且无时间限制。此操作虽简化了URL生成，但可能增加访问量和成本，需谨慎考虑。文章提供了上传字节流并设置权限的代码示例，以及生成公共访问URL的方法。
+---
+
+要想去掉阿里云oss链接中的签名信息，至少要将此object设置为public read，也就是这个链接是公开的任何人都可以读，而且没有时间限制。
+这可能会造成访问量增大新增很多额外成本，这个一定要考虑清楚。
+
+在下面上传字节流到oss的函数中新增了permission参数，要将其设置为oss2.OBJECT_ACL_PUBLIC_READ
+```
+    def upload_bytes(self, object_key: str = "", data: bytes = b"", **kwargs) -> dict:
+        """
+        上传字节流到 OSS
+        """
+        result = self._bucket.put_object(object_key, data=data)
+        if kwargs.get("permission"):
+            self._bucket.put_object_acl(object_key, kwargs["permission"])
+
+        # HTTP返回码。
+        self._logger.debug("http status: %s", result.status)
+        # 请求ID。请求ID是本次请求的唯一标识，强烈建议在程序日志中添加此参数。
+        self._logger.debug("request_id: %s", result.request_id)
+        # ETag是put_object方法返回值特有的属性，用于标识一个Object的内容。
+        self._logger.debug("ETag: %s", result.etag)
+        # HTTP响应头部。
+        self._logger.debug("date: %s", result.headers["date"])
+        return {
+            "status": result.status,
+            "request_id": result.request_id,
+            "etag": result.etag,
+            "date": result.headers["date"],
+        }
+```
+
+public read权限上传的字节流可以直接通过object_key拼接出url，不需要额外去服务器请求，如下：
+```
+def get_oss_public_url(object_key: str) -> str:
+    assert OSS_ENDPOINT is not None
+    assert OSS_BUCKET_NAME is not None
+    pos = OSS_ENDPOINT.find("//")
+    if pos:
+        url = f"{OSS_ENDPOINT[0:pos+2]}{OSS_BUCKET_NAME}.{OSS_ENDPOINT[pos+2:]}"
+    else:
+        url = f"https://{OSS_BUCKET_NAME}.{OSS_ENDPOINT}"
+    return f"{url}{object_key}" if url.endswith("/") else f"{url}/{object_key}"
+```
+
+否则，你需要通过如下方式去获取url:
+```
+    def get_download_url(self, object_key):
+        if self._bucket.object_exists(object_key):
+            return self._bucket.sign_url("GET", object_key, 15 * 24 * 3600)
+```

@@ -1,0 +1,115 @@
+---
+title: 'nodejs下载图片保存到本地'
+date: '2017-08-17'
+tags: ['Node.js']
+draft: false
+summary: 文章介绍 nodejs 下载图片保存到本地，因浏览器端有防盗链限制而后端无，可通过获取图片 url 在服务端下载保存。给出创建本地目录、下载并写入的代码，还展示了删除大于 100k 文件的方法。 
+---
+
+我们经常在使用别人图片url的时候发现图片显示不了，很可能对方做防盗链处理。在浏览器端有这个限制但是在后端就没有这个问题了。所以我们可以通过图片的url在服务端将这个图片下载下来保存在服务器上，然后客户端去访问我们自己的服务器，为了保证最小的改动，最好是保持原来url的图片路径，我们只需要换url前面的域名就可以了。
+
+# 分析源url，创建本地目录以及解析出新的写入路径
+使用mkdirSync函数同步的进行循环递归创建目录
+```
+function mkdirSync(dirname) {
+    if (fs.existsSync(dirname)) {
+        return true;
+    } else {
+        if (mkdirSync(path.dirname(dirname))) {   
+            fs.mkdirSync(dirname);
+            return true;
+        }
+    }
+    return false
+}
+```
+
+如：http://api.3inns.cn/mito/uploadImages/2015/355/17/8032VO7EM87O_113.jpg，的图片路径应该是：
+当前目录/mito/uploadImages/2015/355/17/8032VO7EM87O_113.jpg
+
+# 下载并写入
+```
+request(url).pipe(fs.createWriteStream(dstpath))
+```
+
+完整代码如下：
+```
+var request = require('request')
+var fs = require('fs')
+var path = require('path')
+
+const dirname = 'uploadImages'
+const hostdir = "./public/mito/"
+function mkdirSync(dirname) {
+    if (fs.existsSync(dirname)) {
+        return true;
+    } else {
+        if (mkdirSync(path.dirname(dirname))) {   
+            fs.mkdirSync(dirname);
+            return true;
+        }
+    }
+    return false
+}
+
+function downloadUrl(urlList) {
+    for (const url of urlList) {
+      const first = url.indexOf(dirname)
+      const last = url.lastIndexOf('/')
+      if (first > 0 && last > 0) {
+        const name = url.substr(last + 1)
+        const dir = url.substr(first, last - first)
+        const dstpath = hostdir + dir + '/' + name
+        if (name.length && dir.length && !fs.existsSync(dstpath)) {
+          if (mkdirSync(hostdir + dir)) {
+            console.log(dstpath)
+            request(url).pipe(fs.createWriteStream(dstpath))
+          }
+        }
+      }
+    }
+}
+```
+
+# 删除大于100k的文件
+```
+var exec = require('child_process').exec;
+var fs = require('fs')
+var path = require('path')
+var util = require('util')
+
+const hostdir = path.join(__dirname, 'uploadImages')
+const readAllFilePathSync = (function() {
+    const resultList = []
+    return {
+        execute: function execute(dir) {
+            if (fs.existsSync(dir)) {
+                const stats = fs.statSync(dir)
+                if (stats.isFile()) {
+                    resultList.push(dir);
+                } else if (stats.isDirectory()) {
+                    const subdir = fs.readdirSync(dir)
+                    if (subdir.length) {
+                        subdir.forEach(function(sub) {
+                            execute(path.join(dir, sub))
+                        })
+                    }
+                }
+            }
+        },
+        result: function() {
+            return resultList;
+        }
+    }
+}())
+
+readAllFilePathSync.execute(hostdir);
+readAllFilePathSync.result().forEach(function(path) {
+    //path = path.replace(/\\/g, '\\\\'); // windows路径
+    const stats = fs.statSync(path)
+    if (stats.size > 100 * 1024) {
+        exec('rm -f ' + path)
+        console.log(path)
+    }
+})
+```

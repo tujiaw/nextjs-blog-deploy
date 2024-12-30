@@ -1,0 +1,27 @@
+---
+title: 'visual studio低版本打开高版本建的工程'
+date: '2017-04-15'
+tags: ['Windows']
+draft: false
+summary: 总结：高版本 visual studio 可直接打开低版本工程需转换，低版本打开高版本工程需改动，如用 vs2003 打开 vs2008 建的工程，需将 tjw.sln 的 Format Version 10.00 改为 8.00，tjw.vcproj 的 Version="9.00"改为"7.10"。 
+---
+
+我们都知道高版本的visual studio直接打开低版本的工程是可以的，只不过需要转换。但是低版本的打开高版本的工程是不行的，需要进行一些改动才可以，如下只试验了vs2003与vs2008，按照下面方法，如果知道其他版本信息的话应该也是可以的。
+
+工程名：tjw
+怎样用vs2003打开vs2008建的工程？
+
+1. 将如下两个文件用记事本打开;
+2. tjw.sln将Format Version 10.00改为对应的版本Format Version 8.00(不要写成8或8.0)，
+还要注意"...\tjw.project"与改后的project名是否相同;
+3. tjw.vcproj将Version="9.00"改为Version="7.10".
+```
+ vs2003
+  tjw.sln      Format Version 8.00
+  tjw.vcproj   Version="7.10"
+
+ vs2008
+  tjw.sln      Format Version 10.00
+  tjw.vcproj   Version="9.00"
+```
+> 2011-07-29

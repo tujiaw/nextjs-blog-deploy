@@ -1,0 +1,125 @@
+---
+title: '多文件统计字频'
+date: '2017-04-16'
+tags: ['C/C++', 'Windows']
+draft: false
+summary: 本文介绍多文件统计字频，有 60 个文件如 zipin1.txt 到 zipin60.txt，格式相同词频不同。通过 C++代码实现将各文件相同词语词频相加并写至 main.txt，代码中定义 Word 类，在构造函数和更新函数中处理文件数据，最后输出结果，计算耗时。 
+---
+
+假如有60个文件， 文件名为：zipin1.txt到zipin60.txt
+文件格式（词语是汉字串，词频是数字）：
+> 词语 词频    
+   词语 词频    
+    .    
+    .   
+    .   
+
+所有文件中的词语包括顺序都是一样的，只是词频不一样， 现在要把所有文件中相同词语的词频加起来以相同的格式写到main.txt文件中。	
+```
+#include <windows.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+using namespace std;
+
+const int g_line = 64;
+
+class Word
+{
+public:
+	Word(const string srcPath);
+	~Word();
+	bool UpdateNum(const string srcPath);
+	void Output(const string destPath) const;
+
+private:
+	vector<string> m_strName;
+	vector<int> m_nNum;
+};
+
+Word::Word(const string srcPath)
+{
+	if (!(srcPath.empty()))
+	{
+		char szLine[g_line] = {0};
+		char *pName = NULL;
+		char *pNum = NULL;
+		string strTemp;
+		ifstream is(srcPath.c_str());
+		while (is.getline(szLine, g_line))
+		{
+			pName = strtok(szLine, "-");
+			m_strName.push_back(pName);
+			pNum = strtok(NULL, "-");
+			m_nNum.push_back(atoi(pNum));
+		}
+		is.close();
+	}
+}
+
+Word::~Word()
+{
+}
+
+bool Word::UpdateNum(const string srcPath)
+{	
+	if (!(srcPath.empty()))
+	{
+		char	szLine[g_line] = {0};
+		char	*pNum = NULL;
+		int		nNum = 0;
+		int		i = 0;
+		ifstream is(srcPath.c_str());
+		while (is.getline(szLine, g_line))
+		{
+			strtok(szLine, "-");
+			pNum = strtok(NULL, "-");
+			nNum = atoi(pNum);
+			m_nNum.at(i++) += nNum;
+		}
+		is.close();
+	}
+
+
+	return true;
+}
+
+void Word::Output(const string destPath) const
+{
+	vector<string>::const_iterator itName;
+	vector<int>::const_iterator itNum;
+
+	ofstream os(destPath.c_str());
+	for (itName = m_strName.begin(), itNum = m_nNum.begin();
+		itName != m_strName.end(); ++itName, ++itNum)
+	{
+		os << *itName << " " << *itNum << endl;
+	}
+	os.close();
+}
+
+int main(void)
+{
+	DWORD dwStart = ::GetTickCount();
+
+	Word word("zipin1.txt");
+	char szPath[_MAX_PATH];
+	for (int i = 2; i <= 60; i++)
+	{
+		memset(szPath, 0, sizeof(szPath));
+		sprintf(szPath, "zipin%d.txt", i);
+		word.UpdateNum(szPath);
+	}
+	word.Output("main.txt");
+
+
+	DWORD dwEnd = ::GetTickCount();
+	cout << "elapse time: " << dwEnd - dwStart << endl;
+
+	system("pause");
+	return 0;
+}
+```
+
+> 2011-08-15

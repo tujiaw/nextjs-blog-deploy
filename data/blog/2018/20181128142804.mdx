@@ -1,0 +1,61 @@
+---
+title: 'linux实用命令备忘录'
+date: '2018-11-28'
+tags: ['Linux', 'Shell']
+draft: false
+summary: 这是 linux 实用命令备忘录，包含查看进程是否存在、端口占用、端口连接数、进程线程数等命令，还有 nginx 相关操作及 shell 脚本获取当前路径等，以及查看运行进程所在目录和目录文件大小的命令。 
+---
+
+### 查看某个进程是否存在
+```
+ps -ef | grep 进程名
+```
+
+### 查看一个端口被什么进程占用
+```
+netstat -tnlp | grep 端口号
+-t或--tcp：显示TCP传输协议的连线状况；
+-n或--numeric：直接使用ip地址，而不通过域名服务器； 
+-l或--listening：显示监控中的服务器的Socket； 
+-p或--programs：显示正在使用Socket的程序识别码和程序名称； 
+```
+
+### 查看某个端口TCP的连接数
+```
+netstat -n | grep tcp | grep 5672 | wc -l
+```
+
+### 查看某个进程使用的线程数
+```
+ps -efL | grep MyDataServer | wc -l
+```
+
+### nginx
+```
+nginx -t  #修改配置后检查nginx配置是否有效
+nginx -s reload #修改配置后使配置生效
+systemctl restart nginx # 重启nginx
+```
+
+### shell
+```
+curpath=$(cd `dirname $0`; pwd) # 将当前的绝对路径赋值给一个变量
+dirname $0，取得当前执行的脚本文件的父目录  
+cd `dirname $0`，进入这个目录(切换当前工作目录)  
+pwd，显示当前工作目录(cd执行后的)  
+```
+
+# 查看运行进程所在目录
+如查看qpid进程  
+先查看进程ID为9786  
+```ps -ef | grep qpidd```  
+然后列出进程信息   
+```ll /proc/9786```  
+exe -> 所指向的就是完整路径
+
+# 目录文件大小
+```
+df -h # 查看文件系统空间
+du -sh # 当前目录大小
+du -h # 列出各个子目录和文件大小
+```

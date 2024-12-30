@@ -1,0 +1,25 @@
+---
+title: 'WTL对话框应用程序常用头文件'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 文章介绍 WTL 对话框应用程序常用头文件，包括提前声明 CString 类的 _WTL_USE_CSTRING，以及 atlbase、atlapp 等多个用于基本类、窗口类、数据交换类等的头文件，方便开发。 
+---
+
+在用WTL的时候经常会遇到因为某某头文件没有包含而报错的问题，现将我常用的几个头文件列出来
+```
+
+#define _WTL_USE_CSTRING		// 提前声明CString类
+#include <atlbase.h>			// 基本的ATL类
+#include <atlapp.h>				// 基本的WTL类
+extern CAppModule _Module;		// WTL派生的CComModule版本
+#include <atlwin.h>				// ATL窗口类
+#include <atlddx.h>				// WTL数据交换类
+#include <atlframe.h>			//WTL主框架窗口类
+#include <atlctrls.h>			//WTL控件类
+#include <atlctrlx.h>			
+#include <atldlgs.h>			//WTL对话框类
+#include <atlctrlw.h>			
+#include <atlmisc.h>			// WTL使用工具类，包含：CString
+```
+> 2011-05-06

@@ -1,0 +1,129 @@
+---
+title: 'Qt自定义Tooltip'
+date: '2018-03-09'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 文章介绍 Qt 自定义 Tooltip，从 QDialog 继承，设置无边框属性，鼠标点击其他处自动关闭及自动析构等操作。给出 tooltip.h 和 tooltip.cpp 源码，用法为 Tooltip::popup(QCursor::pos(), "hello")。 
+---
+
+系统自带的tooltip太简单了，自定义tooltip就灵活多了，可以定义各种各样的控件样式。
+
+# 从QDialog继承
+```
+class Tooltip : public QDialog
+```
+
+# 设置无边框属性
+```
+setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
+```
+
+# 在鼠标点击其他地方的时候自动关闭  
+* 安装this->installEventFilter(this);  
+* 处理eventFilter
+```
+bool Tooltip::eventFilter(QObject *obj, QEvent *e)
+{
+    if (obj == this){
+        if (QEvent::WindowDeactivate == e->type()){
+            this->close();
+            e->accept();
+            return true;
+        }
+    }
+    return QWidget::eventFilter(obj, e);
+}
+```
+
+# 自动析构
+在tooltip关闭后自动销毁自身对象
+```
+setAttribute(Qt::WA_DeleteOnClose);
+```
+
+# 源码
+tooltip.h
+```
+#ifndef TOOLTIP_H
+#define TOOLTIP_H
+
+#include <QDialog>
+
+class QLabel;
+class Tooltip : public QDialog
+{
+public:
+    Tooltip(QWidget *parent = nullptr);
+    ~Tooltip();
+
+    void setText(const QString &text);
+    static void popup(QPoint pos, const QString &text);
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *e);
+
+private:
+    QLabel *label_;
+};
+
+#endif // TOOLTIP_H
+
+```
+
+tooltip.cpp
+```
+#include "tooltip.h"
+#include <QLabel>
+#include <QHBoxLayout>
+#include <QEvent>
+#include <QDebug>
+
+Tooltip::Tooltip(QWidget *parent)
+    : QDialog(parent)
+{
+    setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
+    setAttribute(Qt::WA_DeleteOnClose);
+
+    label_ = new QLabel(this);
+    QHBoxLayout *mLayout = new QHBoxLayout(this);
+    mLayout->addWidget(label_);
+
+    this->installEventFilter(this);
+    this->setStyleSheet("QWidget { background: grey; }");
+}
+
+Tooltip::~Tooltip()
+{
+}
+
+void Tooltip::setText(const QString &text)
+{
+    label_->setText(text);
+}
+
+bool Tooltip::eventFilter(QObject *obj, QEvent *e)
+{
+    if (obj == this){
+        if (QEvent::WindowDeactivate == e->type()){
+            this->close();
+            e->accept();
+            return true;
+        }
+    }
+    return QWidget::eventFilter(obj, e);
+}
+
+void Tooltip::popup(QPoint pos, const QString &text)
+{
+    Tooltip *t = new Tooltip();
+    t->setText(text);
+    t->show();
+    t->move(pos);
+}
+
+```
+
+# 用法
+```
+Tooltip::popup(QCursor::pos(), "hello");
+```

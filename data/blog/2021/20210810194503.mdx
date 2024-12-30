@@ -1,0 +1,46 @@
+---
+title: 'Qt怎样将gif作为窗口背景'
+date: '2021-08-10'
+tags: ['Qt']
+draft: false
+summary: 
+---
+
+很多窗口会在背景展示一些动态的信息，此时用gif是比较合适的，Qt窗口使用gif作用背景步骤如下：
+
+1. 定义一个movie对象
+```
+QScopedPointer<QMovie> movie_;
+```
+
+2. 设置movie
+```
+movie_.reset(new QMovie(path));
+connect(movie_.get(), &QMovie::frameChanged, this, &FramelessWidget::onPaintNewFrame);
+movie_->start();
+
+// update会进行重绘
+void FramelessWidget::onPaintNewFrame(int frameNumber)
+{
+	update();
+}
+```
+
+3. 实现paintEvent
+要想将图片绘制到背景上需要实现paintEvent接口
+```
+	if (movie_) {
+		QPixmap pixmap = movie_->currentPixmap();
+		if (!pixmap.isNull()) {
+			pixmap_ = pixmap;
+		}
+	}
+
+
+	if (!pixmap_.isNull()) {
+		QPainter painter(this);
+		painter.drawPixmap(0, 0, pixmap_.scaled(this->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation)); // 绘制不规则背景
+	}
+```
+
+这样就让背景动起来了，不过如果想实现一些动画效果还是有些不足。

@@ -1,0 +1,84 @@
+---
+title: 'js库支持CommonJs和浏览器的标准写法'
+date: '2017-08-01'
+tags: ['Javascript']
+draft: false
+summary: 文章介绍了 github 开源 js 库同时支持 CommonJs 和浏览器的写法。以 A.js 和 B.js 为例，说明了在不同环境下的引用方式及代码结构，还给出了浏览器端和 nodejs 端的测试代码。 
+---
+
+现在github上的很多开源js库都同时支持CommonJs和浏览器，简单的介绍一下写法。
+
+如有两个库A.js和B.js，B.js引用了A.js，如果我们要使用B.js库，那应该怎么写呢？
+
+A.js源码
+```
+(function(global, factory) {
+
+    /* CommonJS */ if (typeof require === 'function' && typeof module === "object" && module && module["exports"])
+        module['exports'] = (function() {
+            return factory();
+        })();
+    /* Global */ else
+        global["A"] = factory();
+
+})(this, function() {
+    "use strict";
+    return {
+      sum: function(x, y) {
+        return x + y;
+      }
+    }
+});
+```
+
+B.js源码
+```
+(function(global, factory) {
+    /* CommonJS */ if (typeof require === 'function' && typeof module === "object" && module && module["exports"])
+        module['exports'] = (function() {
+            var A; try { A = require("./A"); } catch (e) {}
+            return factory(A);
+        })();
+    /* Global */ else
+        global["B"] = factory(global["A"]);
+
+})(this, function(A) {
+    "use strict";
+    return {
+      output: function(x, y) {
+        var result = A.sum(x, y);
+        console.log(result);
+      }
+    }
+});
+```
+> 从上面代码可以看出B.js使用A.js的方法，统一从参数传进去。如果A.js模块是通过npm安装在node_modules里面，B.js引入的时候就不用写相对路径了，直接 A = require("A")
+
+# 浏览器端测试
+index.html中使用，直接把index.html拖到浏览器中，通过开发者工具的Console可以看到输出日志  
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="./A.js"></script>
+  <script src="./B.js"></script>
+  <script>
+    B.output(3, 4)
+  </script>
+</body>
+</html>
+```
+
+# nodejs端测试
+index.js中使用，打印输入7
+```
+var B = require('./B')
+B.output(3, 4);
+```

@@ -1,0 +1,99 @@
+---
+title: 'C++ 智能指针简单实现'
+date: '2019-08-05'
+tags: ['C/C++']
+draft: false
+summary: 这是 C++ 智能指针简单实现代码，仅用于学习，生产勿用。通过模板类`SmartPtr`及内部结构`Counter`实现计数功能。测试代码展示了其基本用法，包括对象创建、赋值和销毁等操作。 
+---
+
+此实现仅做学习之用，生产中不要使用，可以使用std::shared_ptr和boost::shared_ptr。
+代码很少相信大家都看得懂。
+
+```
+template<class T>
+class SmartPtr
+{
+    struct Counter {
+        Counter() : count(1){}
+        int count;
+    };
+
+public:
+    SmartPtr(): c_(NULL), p_(NULL) {}
+    explicit SmartPtr(T *p) : c_(new Counter()), p_(p) {}
+    SmartPtr(const SmartPtr &p) : c_(p.c_), p_(p.p_){ inc(); }
+    SmartPtr& operator=(const SmartPtr &p) {
+        if (this != &p) {
+            dec();
+            c_ = p.c_;
+            p_ = p.p_;
+            inc();
+        }
+        return *this;
+    }
+    ~SmartPtr() { dec(); }
+    T* operator->() const { return p_; }
+    T& operator*() const { return *p_; }
+    operator bool() const { return !!p_; }
+    bool operator!() const { return !p_; }
+    T* get() const { return p_; }
+
+private:
+    void inc() {
+        if (c_) {
+            c_->count++;
+        }
+    }
+    void dec() {
+        if (c_ && --c_->count == 0) {
+            delete p_;
+            delete c_;
+        }
+    }
+private:
+    Counter *c_;
+    T* p_;
+};
+```
+
+测试：
+```
+class Widget {
+public:
+    Widget()
+    {
+        std::cout << "Widget\n";
+    }
+    ~Widget()
+    {
+        std::cout << "~Widget\n";
+    }
+    void show()
+    {
+        std::cout << "show\n";
+    }
+};
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+    {
+        SmartPtr<Widget> p4;
+        {
+            SmartPtr<Widget> p(new Widget());
+            SmartPtr<Widget> p2(new Widget());
+            SmartPtr<Widget> p3 = p;
+            p3->show();
+            p2 = p3;
+            p2->show();
+            p4 = p2;
+        }
+        if (p4) {
+            p4->show();
+            p4.get()->show();
+        }
+    }
+
+    system("pause");
+	return 0;
+}
+```

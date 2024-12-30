@@ -1,0 +1,162 @@
+---
+title: 'Qt 客户端应用程序多开要注意的问题'
+date: '2018-10-15'
+tags: ['C/C++', 'Qt', 'Windows']
+draft: false
+summary: Qt 客户端多开需注意本地配置、进程名及全局信息。可通过 RunGuard 类保证同一程序仅运行一个进程，多开时要保证目录和进程名不同，若已有进程运行则打开其主窗口。  
+---
+
+Qt 客户端应用程序多开要注意的问题
+
+很多客户端程序同一台电脑只允许开启一个进程，这个是很有必要的。那将一个原本单开的程序改为允许多开要注意些什么呢？
+
+# 本地配置
+如果多个进程读写同一个配置会造成混乱（只读的配置除外），所以要控制同一个目录不允许开两个。
+
+# 进程名
+如果两个进程的进程名相同，当通过进程名做某件事的时候会出问题（通过进程名关闭，显示程序），所以要保证进程名不一样。
+
+当我们把某些信息存储在系统的一些标准目录下时（如AppData低权限读写目录）如果进程名相同，那么两个进程会读写同一个文件也会造成问题。
+
+# 全局信息
+比如客户端连接的是qpid broker，当与服务端通信的时候需要指定消息队列，如果两个进程用的都是同一个消息队列，很明显会造成其中一个客户端收不到消息，此时可以在消息队列名后面加一个当前进程ID来解决这个问题
+ 
+下面这段代码可以用来保证同一个程序只有运行一个进程：  
+RunGuard.h
+```
+#pragma once
+
+#include <QObject>
+#include <QSharedMemory>
+#include <QSystemSemaphore>
+
+class RunGuard
+{
+
+public:
+	RunGuard(const QString& key);
+	~RunGuard();
+
+	bool isAnotherRunning();
+	bool tryToRun();
+	void release();
+
+private:
+	const QString key;
+	const QString memLockKey;
+	const QString sharedmemKey;
+
+	QSharedMemory sharedMem;
+	QSystemSemaphore memLock;
+
+	Q_DISABLE_COPY(RunGuard)
+};
+
+```
+RunGuard.cpp
+```
+#include "RunGuard.h"
+
+#include <QCryptographicHash>
+#include <QDebug>
+
+namespace
+{
+	QString generateKeyHash(const QString& key, const QString& salt)
+	{
+		QByteArray data;
+
+		data.append(key.toUtf8());
+		data.append(salt.toUtf8());
+		data = QCryptographicHash::hash(data, QCryptographicHash::Sha1).toHex();
+
+		return data;
+	}
+
+    class MemLockGuard {
+    public:
+        MemLockGuard(QSystemSemaphore &lock) : lock_(lock) { lock_.acquire(); }
+        ~MemLockGuard() { lock_.release(); }
+
+    private:
+        QSystemSemaphore &lock_;
+    };
+}
+
+RunGuard::RunGuard(const QString& key)
+	: key(key)
+	, memLockKey(generateKeyHash(key, "_memLockKey_"))
+	, sharedmemKey(generateKeyHash(key, "_sharedmemKey_"))
+	, sharedMem(sharedmemKey)
+	, memLock(memLockKey, 1)
+{
+    MemLockGuard lock(memLock);
+	{
+		QSharedMemory fix(sharedmemKey);
+		fix.attach();
+	}
+}
+
+RunGuard::~RunGuard()
+{
+	release();
+}
+
+bool RunGuard::isAnotherRunning()
+{
+    if (sharedMem.isAttached()) {
+        return false;
+    }
+
+    MemLockGuard lock(memLock);
+    const bool isRunning = sharedMem.attach();
+    if (isRunning) {
+        sharedMem.detach();
+    }
+
+	return isRunning;
+}
+
+bool RunGuard::tryToRun()
+{
+    qDebug() << "try run key:" << key;
+    // Extra check
+    if (isAnotherRunning()) {
+        qDebug() << "try run failed, key:" << key;
+        return false;
+    }
+
+    bool result = false;
+    {
+        MemLockGuard lock(memLock);
+        result = sharedMem.create(sizeof(quint64));
+    }
+	
+	if (!result) {
+        qDebug() << "try run failed, create error:" << sharedMem.errorString();
+		release();
+	}
+    return result;
+}
+
+void RunGuard::release()
+{
+    MemLockGuard lock(memLock);
+    if (sharedMem.isAttached()) {
+        sharedMem.detach();
+    }
+}
+```
+
+多开保证目录和进程名不同：
+```
+    QString programPath = QString::fromStdWString(AnsiToUnicode(argv[0]));
+    int lastSlash = programPath.replace('/', '\\').lastIndexOf('\\');
+    RunGuard dirGuard(programPath.mid(0, lastSlash).toLower());    
+    RunGuard nameGuard(programPath.mid(lastSlash + 1).toLower());
+    if (!dirGuard.tryToRun() || !nameGuard.tryToRun()) {
+        // 通过进程名打开先前进程的主窗口
+        ShowMainWindow(programPath.mid(lastSlash + 1).toStdWString().c_str());
+        return 0;
+    }
+```

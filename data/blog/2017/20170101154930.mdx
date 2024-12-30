@@ -1,0 +1,22 @@
+---
+title: 'linux git ssh配置'
+date: '2017-01-01'
+tags: ['Tools']
+draft: false
+summary: 介绍了 linux git ssh 配置步骤，先设置用户信息，再进入 ~/.ssh 目录生成密钥对，拷贝 id_rsa.pub 内容添加到 github，最后通过 ssh -T git@github.com 验证，即可使用 git clone 命令。 
+---
+
+- git config —global user.name “tujiaw”  
+- git config —global user.email “tujiaw@163.com”
+- cd ~/.ssh
+- ssh-keygen -t rsa -C “tujiaw@163.com”
+- 直接按回车，目录下会产品两个文件：id_rsa和id_rsa.pub
+
+打开id_rsa.pub文件  
+vi id_rsa.pub   
+拷贝里面的全部内容添加到github中  
+登录github打开profile中的setting->SSH and GPG keys->New SSH key粘贴到key中  
+验证：
+> ssh -T git@github.com  
+
+最后就可以用git clone命令了

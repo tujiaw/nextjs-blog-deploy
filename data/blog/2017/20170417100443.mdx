@@ -1,0 +1,77 @@
+---
+title: '统计程序实例的个数'
+date: '2017-04-17'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 此为统计程序实例个数的代码，在 Windows 下用 C/C++编写。通过共享数据段和特定消息，实现应用程序知晓自身运行实例个数，在 WinMain 函数中进行相关操作和消息传递。  
+---
+
+```
+/**********windows核心编程实例17-AppInst**********/
+/***展示：应用程序如何知道在任一时刻有多少个自己的实例正在运行***/
+
+#include <windows.h>
+#include "resource.h"
+
+int g_uMsgAppInstCountUpdate = WM_APP + 123;
+
+#pragma data_seg("Shared")
+volatile LONG g_lApplicationInstances = 0;
+#pragma data_seg()
+
+#pragma comment(linker, "/Section:Shared,RWS") // 引号内不能加空格
+
+void DlgCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
+{
+	switch (id)
+	{
+	case IDCANCEL:
+		EndDialog(hwnd, id);
+		break;
+
+	default:
+		break;
+	}
+}
+
+INT_PTR WINAPI DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	if (uMsg == g_uMsgAppInstCountUpdate)
+	{
+		SetDlgItemInt(hwnd, IDC_COUNT, g_lApplicationInstances, FALSE);
+	}
+
+	switch (uMsg)
+	{
+	case WM_INITDIALOG:
+		PostMessage(HWND_BROADCAST, g_uMsgAppInstCountUpdate, 0, 0);
+		break;
+
+	case WM_COMMAND:
+		DlgCommand(hwnd, LOWORD(wParam), (HWND)lParam, uMsg);
+		break;
+
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PTSTR, int)
+{
+	g_uMsgAppInstCountUpdate = RegisterWindowMessage(TEXT("MsgAppInstCountUpdate"));
+	
+	InterlockedExchangeAdd(&g_lApplicationInstances , 1);
+	
+	DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, DlgProc);
+
+	InterlockedExchangeAdd(&g_lApplicationInstances, -1);
+
+	PostMessage(HWND_BROADCAST, g_uMsgAppInstCountUpdate, 0, 0);
+
+	return 0;
+}
+```
+
+> 2011-08-10

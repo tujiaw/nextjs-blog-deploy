@@ -1,0 +1,36 @@
+---
+title: 'mysql备份、恢复表'
+date: '2019-08-23'
+tags: ['Database']
+draft: false
+summary: 本文介绍了 mysql 备份、恢复表的方法。包括备份单个表的不同方式（如普通 dump、远程 dump）及恢复语句，还提及备份恢复压缩表的相关操作（dump 时压缩、restore 时解压），方便用户进行数据库表管理。 
+---
+
+# 备份恢复单个表
+## dump
+```
+mysqldump db_name table_name > table_name.sql
+```
+## 远程dump
+```
+mysqldump -u <db_username> -h <db_host> -p db_name table_name > table_name.sql
+```
+## 恢复
+```
+mysql -u <user_name> -p db_name
+mysql> source <full_path>/table_name.sql
+```
+或者，一行的写法
+```
+mysql -u username -p db_name < /path/to/table_name.sql
+```
+
+# 备份恢复压缩表
+## dump
+```
+mysqldump db_name table_name | gzip > table_name.sql.gz
+```
+## restore
+```
+gunzip < table_name.sql.gz | mysql -u username -p db_name
+```

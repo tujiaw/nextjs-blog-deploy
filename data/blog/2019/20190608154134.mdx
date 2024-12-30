@@ -1,0 +1,150 @@
+---
+title: 'go 第三方github登录'
+date: '2019-06-08'
+tags: ['Go']
+draft: false
+summary: 文章介绍了 go 第三方 github 登录的实现步骤。先在 github 新建 oauth app 获相关信息，通过 html 标签和路由实现点击 github 登录，再处理 github 登录成功后的回调，获取 access token 及用户信息，判断并处理用户，将 token 保存在 session 中，还定义了 github 返回的 json 应答结构体。 
+---
+
+给本网站加了一个第三方github登录的功能
+
+# 在github上新建oauth app
+* 登录github，在用户菜单中选择Settings->Deleloper settings->OAuth Apps->New OAuth App
+* 记住Client ID，Client Secret，Authorization callback URL
+
+# 点击github登录
+html标签
+```
+<a href="/githublogin">github</a>
+```
+路由
+```
+router.GET("/githublogin", controller.GithubLogin)
+```
+处理登录，向github发起login请求
+```
+func GithubLogin(c *gin.Context) {
+	c.Redirect(http.StatusMovedPermanently, "https://github.com/login/oauth/authorize?client_id=531ad8e4517595748d97&state=123456789")
+}
+```
+此时会打开github授权登录的页面，输入用户名和密码授权登录
+
+# github登录成功后回调
+上文中设置的Authorization callback URL就是回调到本网站的地址，如我的是：
+```
+http://ningto.com/github_oauth_callback_comment
+```
+给它增加路由
+```
+router.GET("/github_oauth_callback_comment", controller.GithubOAuthCallbackComment)
+```
+处理github回调后的路由
+```
+func GithubOAuthCallbackComment(c *gin.Context) {
+	errmsg := ""
+	for {
+		// 第一步，获取github回调的code和state
+		code := c.Query("code")
+		state := c.Query("state")
+	
+		// 第二步，POST获取access token
+		payload := make(map[string]interface{})
+		payload["client_id"] = "531ad8e4517595xxxxxx"
+		payload["client_secret"] = "bf123fc9fe25a30e3e33d7a07daf825b73xxxxxx"
+		payload["code"] = code
+		payload["state"] = state
+		data, err := json.Marshal(payload)
+		if err != nil {
+			errmsg = "json marsha1 error"
+			break
+		}
+		reader := bytes.NewReader(data)
+		url := "https://github.com/login/oauth/access_token"
+		request, err := http.NewRequest("POST", url, reader)
+		if err != nil {
+			errmsg = "http new post request error"
+			break
+		}
+		request.Header.Set("Accept", "application/json;charset=UTF-8")
+		request.Header.Set("Content-Type", "application/json;charset=UTF-8")
+		client := http.Client{}
+		rsp, err := client.Do(request)
+		if err != nil {
+			errmsg = "client do request error"
+			break
+		}
+		var jsonAccessToken AccessTokenResponse
+		err = json.NewDecoder(rsp.Body).Decode(&jsonAccessToken)
+		if err != nil {
+			errmsg = "json decoder access token response error"
+			break
+		}
+		token := jsonAccessToken.AccessToken
+	
+		// 第三步，使用access token获取用户基本信息
+		url = "https://api.github.com/user?access_token=" + token
+		rsp, err = http.Get(url)
+		if err != nil {
+			errmsg = "http get access token error"
+			break
+		}
+	
+		var jsonLogin GithubLoginResponse
+		err = json.NewDecoder(rsp.Body).Decode(&jsonLogin)
+		if err != nil {
+			errmsg = "json decode error"
+			break
+		}
+	
+		// 第四步，判断数据库中是否已存在此用户
+		user, err := model.GetUser("github", jsonLogin.Login)
+		if err != nil {
+			newUser := model.User {
+				Id: bson.NewObjectId(),
+				Provider: "github",
+				Login: jsonLogin.Login,
+				Password: "",
+				Token: token,
+			}
+			model.InsertUser(newUser)
+		} else {
+			model.UpdateUserToken(user, token)
+		}
+	
+		// 第五步，将token保存在session中，浏览器端会将token加密后放在cookie中，
+		// 当前用户再次进行http请求时判断浏览器传过来的token是否在session中，
+		// 如果存在表示已登录
+		session := sessions.Default(c)
+		session.Set("token", token)
+		if session.Save() != nil {
+			errmsg = "session save token failed"
+		}
+		break
+	}
+
+	// 完成
+	if len(errmsg) > 0 {
+		c.HTML(http.StatusOK, "login.tmpl", gin.H{
+			"errmsg": errmsg,
+		})
+	} else {
+		c.Redirect(http.StatusFound, "/")
+	}
+}
+```
+下面定义的两个结构体是github返回的json应答，由于我只需要用到部分数据，所以没有全部定义
+```
+type (
+	AccessTokenResponse struct {
+		AccessToken string `json:"access_token"`
+		TokenType string `json:"token_type"`
+		Scope string `json:"scope"`
+	}
+
+	GithubLoginResponse struct {
+		Login string `json:"login"`
+		Id int `json:"id"`
+		AvatarUrl string `json:"avatar_url"`
+	}
+)
+```

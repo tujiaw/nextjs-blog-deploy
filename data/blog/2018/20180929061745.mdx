@@ -1,0 +1,60 @@
+---
+title: 'bug修复，浮点型计算'
+date: '2018-09-29'
+tags: ['C/C++']
+draft: false
+summary: '这篇文章介绍了在C++中修复浮点型计算bug的方法。作者指出，在进行浮点型计算和类型转换时需要特别小心，因为浮点型转换为整型时会省略小数部分。作者还介绍了C++11中可以使用`std::lround`函数将浮点型转换为整型，以避免这种错误。'
+---
+
+bug修复，浮点型计算
+
+注意：  
+遇到浮点型计算、转型的时候一定要小心！！！  
+遇到浮点型计算、转型的时候一定要小心！！！  
+遇到浮点型计算、转型的时候一定要小心！！！  
+
+请看一下代码：
+```
+double a = 5000.11;
+int b = a * 100;
+double c = a * 100;
+```
+b和c它们的值是什么？  
+当你拿着b或者c去参与其他计算的时候，可能认为结果差不多。  
+
+看如下结果：
+```
+b = 500010
+c = 500010.99999999994
+```
+你会发现它们之间相差1，之所以会这样是因为double转换为int时会省略掉小数部分。我们可能还认为a乘以100应该为500011实际上结果是c。
+
+C++11中可以使用std::lround将double转为整型
+```
+Defined in header <cmath>
+float round( float arg );
+(1)	(since C++11)
+double round( double arg );
+(2)	(since C++11)
+long double round( long double arg );
+(3)	(since C++11)
+double round( IntegralType arg );
+(4)	(since C++11)
+long lround( float arg );
+(5)	(since C++11)
+long lround( double arg );
+(6)	(since C++11)
+long lround( long double arg );
+(7)	(since C++11)
+long lround( IntegralType arg );
+(8)	(since C++11)
+long long llround( float arg );
+(9)	(since C++11)
+long long llround( double arg );
+(10)	(since C++11)
+long long llround( long double arg );
+(11)	(since C++11)
+long long llround( IntegralType arg );
+(12)	(since C++11)
+```
+[https://en.cppreference.com/w/cpp/numeric/math/round](https://en.cppreference.com/w/cpp/numeric/math/round)

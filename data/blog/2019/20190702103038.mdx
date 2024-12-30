@@ -1,0 +1,106 @@
+---
+title: 'golang slice切片作为函数参数时的陷阱'
+date: '2019-07-02'
+tags: ['Go']
+draft: false
+summary: Golang 中 slice 作为函数参数易掉陷阱。例 1 说明传参时 slice 被拷贝，函数内修改会影响原 slice；例 2 因 append 超出 cap 导致底层内存重分配及数据拷贝。正确方法是遵守规则，无返回参数不修改 slice，要修改则通过返回值返回，如需修改又不想改外值应深拷贝后再修改。 
+---
+
+直接用例子说话  
+例1：
+```
+func main() {
+	s := make([]int, 1, 3) // 创建一个长度为1，容量为3的切片
+	fmt.Printf("before: slice addr %p point %p, val %v, len %d, cap %d\n", &s, s, s, len(s), cap(s))
+
+	modifySlice1(s)
+	fmt.Printf("after: slice addr %p point %p, val %v, len %d, cap %d\n", &s, s, s, len(s), cap(s))
+}
+
+func modifySlice1(s []int) {
+	s = append(s, 2)
+	s[0] = 1
+	fmt.Printf("modify: slice addr %p point %p, val %v, len %d, cap %d\n", &s, s, s, len(s), cap(s))
+}
+```
+运行结果：
+```
+before: slice addr 0xc000004480 point 0xc00000a480, val [0], len 1, cap 3
+modify: slice addr 0xc000004500 point 0xc00000a480, val [1 2], len 2, cap 3
+after: slice addr 0xc000004480 point 0xc00000a480, val [1], len 1, cap 3
+```
+* 通过参数传过去的slice地址不一样，说明slice进行了拷贝(见：addr)
+* 函数里面修改了slice后原先的slice内容也改变了说明他们的底层指向的是同一份数据(见：point)
+
+例2，与上面代码的区别是append了三个元素
+```
+func main() {
+	s := make([]int, 1, 3) // 创建一个长度为1，容量为3的切片
+	fmt.Printf("before: slice addr %p point %p, val %v, len %d, cap %d\n", &s, s, s, len(s), cap(s))
+
+	modifySlice2(s)
+	fmt.Printf("after: slice addr %p point %p, val %v, len %d, cap %d\n", &s, s, s, len(s), cap(s))
+}
+
+func modifySlice2(s []int) {
+	s = append(s, 2, 3, 4)
+	s[0] = 1
+	fmt.Printf("modify: slice addr %p point %p, val %v, len %d, cap %d\n", &s, s, s, len(s), cap(s))
+}
+```
+运行结果：
+```
+before: slice addr 0xc000054420 point 0xc00005c140, val [0], len 1, cap 3
+modify: slice addr 0xc0000544a0 point 0xc000088030, val [1 2 3 4], len 4, cap 6
+after: slice addr 0xc000054420 point 0xc00005c140, val [0], len 1, cap 3
+```
+* 函数里面slice底层point指向的地址变了，是由于append的元素个数超出了原先的cap，底层进行了内存重分配以及数据拷贝
+* 函数里面的修改并没有影响到外面的slice
+
+通过上面两个例子就可以看出这样使用slice容易掉入陷阱，函数外面并不知道slice被修改了。  
+
+解决方法，遵守这两个规则：
+* 无返回参数的函数我们不应该去修改slice，只进行读取
+* 如果要修改slice那就应该通过返回值返回
+
+所以正确的修改slice的方法是：
+```
+func main() {
+	s := make([]int, 1, 3) // 创建一个长度为1，容量为3的切片
+	fmt.Printf("before: slice addr %p point %p, val %v, len %d, cap %d\n", &s, s, s, len(s), cap(s))
+
+	s = modifySlice3(s)
+	fmt.Printf("after3: slice addr %p point %p, val %v, len %d, cap %d\n", &s, s, s, len(s), cap(s))
+
+	s = modifySlice4(s)
+	fmt.Printf("after4: slice addr %p point %p, val %v, len %d, cap %d\n", &s, s, s, len(s), cap(s))
+}
+
+func modifySlice3(s []int) []int {
+	s = append(s, 2)
+	s[0] = 1
+	fmt.Printf("modify3: slice addr %p point %p, val %v, len %d, cap %d\n", &s, s, s, len(s), cap(s))
+	return s
+}
+
+func modifySlice4(s []int) []int {
+	s = append(s, 3, 4, 5, 6)
+	s[0] = 1
+	fmt.Printf("modify4: slice addr %p point %p, val %v, len %d, cap %d\n", &s, s, s, len(s), cap(s))
+	return s
+}
+```
+输出结果：
+```
+before: slice addr 0xc00004e420 point 0xc000054140, val [0], len 1, cap 3
+modify3: slice addr 0xc00004e4a0 point 0xc000054140, val [1 2], len 2, cap 3
+after3: slice addr 0xc00004e420 point 0xc000054140, val [1 2], len 2, cap 3
+modify4: slice addr 0xc00004e540 point 0xc000080030, val [1 2 3 4 5 6], len 6, cap 6
+after4: slice addr 0xc00004e420 point 0xc000080030, val [1 2 3 4 5 6], len 6, cap 6
+```
+这样不管底层数据有没有产生拷贝，表现在外的值都是一致的。
+
+结论：
+* 函数返回值没有返回slice时，应该只读
+* 函数修改了slice时，应该通过返回值返回slice
+* 如果在函数里面确实要修改slice而又不想改变外面的值时，您应该深拷贝一份slice再进行修改。

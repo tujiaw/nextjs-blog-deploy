@@ -1,0 +1,95 @@
+---
+title: 'QProcess 7z.exe 解压进度'
+date: '2022-07-06'
+tags: ['Qt']
+draft: false
+summary: 通过 QProcess 结合 7z.exe 实现解压进度，在 Worker 线程中读取进度信息，利用相关信号处理解压过程，避免主界面卡顿。
+---
+
+我们使用一个简单的方法来实现，使用7z提供的sdk实现太麻烦了。
+
+# 7z命令行
+使用7z的命令行来解压要获取进度必须要读取到stdout里面的进度信息，关键参数是：-bsp1，只有这样才能在readyReadStandardOutput信号中不断读取到进度信息。
+```
+const QString command = QString("7z.exe x -bsp1 -sccUTF-8 -y -o\"%1\" \"%2\"").arg(outDir).arg(filePath);
+```
+
+# Worker线程
+由于解压是一个耗时的操作我们不能让他卡住主界面所以在单独线程里做
+```
+class Worker : public QThread
+{
+    Q_OBJECT
+public:
+    Worker(QObject *parent);
+    void setWorkingDirectory(const QString &path);
+    void runCommand(const QString &command);
+
+signals:
+    void progress(int percentage);
+    void resultReady(const QString &data);
+
+protected:
+    void run() override;
+
+private:
+    QString command_;
+    QProcess *process_;
+};
+```
+```
+Worker::Worker(QObject *parent)
+    : process_(new QProcess(this))
+{
+    process_->setReadChannel(QProcess::StandardOutput);
+    connect(process_, &QProcess::readyReadStandardOutput, [this]() {
+        QString data = QString::fromUtf8(process_->readAllStandardOutput());
+        QStringList lineList = data.split("\r\n");
+        if (!lineList.isEmpty()) {
+            QString line = lineList.last().trimmed();
+            if (!line.isEmpty()) {
+                bool ok = false;
+                int n = line.split(" ").first().remove("%").toInt(&ok);
+                if (ok) {
+                    emit progress(n);
+                }
+            }
+        }
+    });
+}
+
+void Worker::setWorkingDirectory(const QString& path)
+{
+    process_->setWorkingDirectory(path);
+}
+
+void Worker::runCommand(const QString& command)
+{
+    command_ = command;
+    start();
+}
+
+void Worker::run()
+{
+    process_->start(command_);
+    process_->waitForFinished(-1);
+    emit resultReady("");
+}
+```
+
+# QProcess使用
+progress：即当前解压的百分比信号  
+resultReady：任务结束信号  
+```
+const QString command = QString("7z.exe x -bsp1 -sccUTF-8 -y -o\"%1\" \"%2\"").arg(outDir).arg(filePath);
+Worker *worker = new Worker(this);
+connect(worker, &Worker::finished, worker, &QObject::deleteLater);
+connect(worker, &Worker::progress, [](int n) {
+    qDebug() << n;
+});
+connect(worker, &Worker::resultReady, [](const QString&) {
+    qDebug() << 100;
+});
+worker->setWorkingDirectory(currentDir);
+worker->runCommand(command);
+```

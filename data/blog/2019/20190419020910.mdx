@@ -1,0 +1,125 @@
+---
+title: 'C++保证指针对象正确的销毁'
+date: '2019-04-19'
+tags: ['C/C++']
+draft: false
+summary: C++中保证指针对象正确销毁，可通过 RAII 惯用法或 std::unique_ptr。RAII 需自定义类保证对象在作用域结束时销毁，std::unique_ptr 可自动管理对象并在离开作用域时释放，还可自定义销毁函数，能更方便地处理资源管理。 
+---
+
+我们知道new一个对象要自己去delete，这样的代码写多了很容易漏掉，常见漏掉的情况如下：
+* 忘了写
+* 写了，但是某个分支提前return了
+* 逻辑中抛出异常，直接跳过正常逻辑
+
+假设有这样一个简单的类：
+```
+class ConnTest {
+public:
+    ConnTest() { std::cout << "ConnTest" << std::endl; }
+    ~ConnTest() { std::cout << "~ConnTest" << std::endl; }
+    void open() { std::cout << "open" << std::endl; }
+    void close() { std::cout << "close" << std::endl; }
+    void doSomething() { std::cout << "do something" << std::endl; }
+
+    static ConnTest* create() { return new ConnTest(); }
+};
+```
+简单用法：
+```
+    ConnTest *conn = ConnTest::create();
+    if (conn) {
+        conn->open();
+        conn->doSomething();
+        conn->close();
+        delete conn;
+    }
+```
+这里逻辑简单清晰不太会出什么问题，一旦逻辑复杂了怎么办呢？
+
+# RAII惯用法
+我们可以自己写个类来保证对象在出作用域的时候销毁
+```
+class ConnTestGuard {
+public:
+    ConnTestGuard(ConnTest *p) : p_(p) {}
+    ~ConnTestGuard() { if (p_) delete p_; }
+
+private:
+    ConnTest *p_;
+};
+```
+用法：
+```
+ConnTestGuard connGuard(ConnTest::create()); 
+```
+这样失去了if判断和指针对函数的调用，可能要写个get()方法获取原始指针，或者直接把原始指针暴露出去
+```
+    ConnTest *conn = ConnTest::create();
+    ConnTestGuard connGuard(conn);
+```
+这样写多出一行不说，conn单独在外面很有可能不明真相的人会去调用delete conn。  
+
+那怎样保证原始调用的代码不变又能自动销毁，需要在ConnTestGuard中实现两个操作符
+```
+class ConnTestGuard {
+public:
+    ConnTestGuard(ConnTest *p) : p_(p) {}
+    ~ConnTestGuard() { if (p_) delete p_; }
+
+    ConnTest* operator->() const { return p_; }
+    operator bool() const { return !!p_; }
+
+private:
+    ConnTest *p_;
+};
+```
+用法：
+```
+    ConnTestGuard conn(ConnTest::create());
+    if (conn) {
+        conn->open();
+        conn->doSomething();
+        conn->close();
+    }
+```
+这样就不用delete，当然如果有需要你也可以把close放在ConnTestGuard析构函数里面。  
+但是上面的类不通用，该std::unique_ptr上场了。
+
+# std::unique_ptr
+std::unique_ptr 是通过指针占有并管理另一对象，并在 unique_ptr 离开作用域时释放该对象的智能指针
+```
+std::unique_ptr<ConnTest> conn(new ConnTest());
+if (conn) {
+    conn->open();
+    conn->doSomething();
+    conn->close();
+}
+```
+默认情况下它只负责delete，那close怎么办，这里只是举个例子通常close我们会写在ConnTest析构函数里面，如果确实有这个需求unique_ptr可以自定义销毁函数 
+```
+// 用法一：
+    auto connTestDelete = [](ConnTest *conn) {
+        if (conn) {
+            conn->close();
+            delete conn;
+        }
+    };
+    std::unique_ptr<ConnTest, decltype(connTestDelete)> p(new ConnTest());
+
+// 用法二：
+    std::unique_ptr<ConnTest, std::function<void(ConnTest*)>> p(new ConnTest(), [](ConnTest* p) {
+        if (p) {
+            p->close();
+            delete p;
+        }
+    });
+```
+是不是有点麻烦，这里用到了c++11的一些特性，如果不用c++11会更麻烦些。所以把该清理的动作还是放在析构函数里吧，这样只需要delete，它会在析构函数里面帮你清理所有资源。  
+
+你也可以直接返回unique_ptr对象，这样用户一看就明白了，也不用关系资源的销毁
+```
+    static std::unique_ptr<ConnTest> create() {
+        std::unique_ptr<ConnTest> p(new ConnTest());
+        return p;
+    }
+```

@@ -1,0 +1,157 @@
+---
+title: 'localtime线程不安全造成的线上问题'
+date: '2020-07-23'
+tags: ['Linux', 'C/C++', 'Bug']
+draft: false
+summary: 线上出现日期赋值异常，经调查确定是 localtime 函数线程不安全导致。通过 demo 模拟，多个线程运行时 t2 的时间会误赋值给 t1。应使用线程安全的 localtime，如在 windows 下直接使用 localtime，linux 下使用 localtime_r。 
+---
+
+线上出现了一个比较奇怪的问题，日期B的时间赋值给了日期A，但是浏览代码发现根本没有这样的逻辑。
+
+经过一番调查基本能确定是localtime函数线程不安全造成的。
+
+下面使用demo来模拟一下出现问题的情况  
+t1和t2是两个时间，使用GetTimeString转换的时候t2的时间可能会赋值给t1.
+
+test.cpp
+```
+#include <time.h>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <boost/thread.hpp>
+#include <boost/shared_ptr.hpp>
+
+const time_t t1 = 1595486546;
+const time_t t2 = 2530972800;
+const std::string &T1 = "2020-07-23 14:42:26";
+const std::string &T2 = "2050-03-16 00:00:00";
+const int COUNT = 100000;
+
+
+std::string GetTimeString(time_t t) 
+{
+	if (t == -1) {
+		return "";
+	}
+
+	struct tm *local = localtime(&t);
+
+	char timeChars[50];
+	strftime(timeChars, 50, "%Y-%m-%d %H:%M:%S", local);
+
+	return std::string(timeChars);
+}
+
+
+void foo1()
+{
+	for (int i = 0; i < COUNT; i++) {
+		std::string str = GetTimeString(t1);
+		if (str != T1) {
+			std::cout << "foo1 ERROR i:" << i << " " << str << std::endl;
+			break;
+		}
+	}
+}
+
+void foo2()
+{
+	for (int i = 0; i < COUNT; i++) {
+		std::string str = GetTimeString(t2);
+		if (str != T2) {
+			std::cout << "foo2 ERROR i:" << i << " " << str << std::endl;
+			break;
+		}
+	}
+}
+
+int main()
+{
+
+	std::cout << "t1:" << GetTimeString(t1) << std::endl;
+	std::cout << "t2:" << GetTimeString(t2) << std::endl;
+	std::cout << "-------------start-----------" << std::endl;
+
+	std::vector<boost::shared_ptr<boost::thread> > threadList;
+	for (int i = 0; i < 10; i++) {
+		if (i % 2 != 0) {
+			boost::shared_ptr<boost::thread> p(new boost::thread(foo1));
+			threadList.push_back(p);
+		} else {
+			boost::shared_ptr<boost::thread> p(new boost::thread(foo2));
+			threadList.push_back(p);
+		}
+	}
+	for (int i = 0; i < threadList.size(); i++) {
+		if (threadList[i]->joinable()) {
+			threadList[i]->join();
+		}
+	}
+
+	std::cout << "exit" << std::endl;
+	return 0;
+}
+
+```
+CMakeLists.txt
+```
+cmake_minimum_required(VERSION 2.8)
+project( process )
+
+SET(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+find_package(Boost REQUIRED COMPONENTS
+thread   
+)
+if(NOT Boost_FOUND)
+    message("Not found Boost")
+endif()
+
+include_directories(${Boost_INCLUDE_DIRS})
+message("${Boost_INCLUDE_DIRS}")
+message("${Boost_LIBRARIES}")
+
+add_executable( process test.cpp )
+target_link_libraries(process ${Boost_LIBRARIES})
+~
+
+```
+编译：
+```
+cmake .
+make
+```
+运行：
+```
+./process
+```
+结果：
+```
+[root@node172 tujiaw]# ./process
+t1:2020-07-23 14:42:26
+t2:2050-03-16 00:00:00
+-------------start-----------
+foo2 ERROR i:25281 2050-03-16 00:00:26
+foo2 ERROR i:25611 2050-03-16 06:42:26
+foo1 ERROR i:18045 2050-03-16 00:00:00
+foo2 ERROR i:41655 2050-03-23 14:42:26
+foo2 ERROR i:25632 2050-03-16 06:42:26
+foo1 ERROR i:84292 2020-07-23 06:42:26
+exit
+```
+以上是跑多次下来的结果，可以看到第一条foo1正确数据应该是t1，结果变成了2050年。
+
+
+应该使用线程安全的localtime，如下代码在windows和linux下是线程安全的：
+```
+struct tm* LocalTimeSafe(time_t t, struct tm &local)
+{
+#ifdef WIN32
+    // 目前的版本windows是线程安全的
+    return localtime(&t);
+#else
+    // linux下localtime_r是线程安全的, localtime线程不安全
+    return localtime_r(&t, &local);
+#endif
+}
+```

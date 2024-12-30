@@ -1,0 +1,178 @@
+---
+title: '快速遍历磁盘'
+date: '2020-07-23'
+tags: ['Windows']
+draft: false
+summary: 介绍快速遍历磁盘方法，不用遍历每个目录，用 DeviceIoControl 函数需管理员权限，还可通过命令行工具“dir c:\*.* /b /s /a-d >>c:\allfile.txt”。给出 C++代码可遍历磁盘文件及目录信息。 
+---
+
+快速遍历磁盘，不用遍历每个目录，主要使用DeviceIoControl 函数  
+需要用管理员权限运行
+
+[参考链接](https://docs.microsoft.com/en-us/windows/win32/DevIO/calling-deviceiocontrol)  
+
+使用命令行工具也可以遍历出所有文件：  
+注意C盘需要管理员权限
+```
+dir c:\*.* /b /s /a-d >>c:\allfile.txt
+```
+
+```
+// ConsoleApplication1.cpp : 定义控制台应用程序的入口点。
+//
+
+#include "stdafx.h"
+#include <Windows.h>
+#include <string>
+#include <iostream>
+#include <unordered_map>
+#include <unordered_set>
+#include <algorithm>
+
+struct Record {
+	uint64_t parentNumber;	// 父目录编号
+	std::wstring name;		// 文件名
+	uint32_t attr;			// 文件属性
+};
+
+// driveletter	- 磁盘，如："E:"
+// fileRecord	- 文件记录
+// dirRecord	- 目录记录
+// ignores		- 忽略的文件
+void GetRecord(const std::wstring &driveletter, std::unordered_map<uint64_t, Record> &fileRecord, std::unordered_map<uint64_t, Record> &dirRecord, std::unordered_set<uint64_t> &ignores)
+{
+	HANDLE hVol = CreateFile(driveletter.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+	USN_JOURNAL_DATA journalData;
+	PUSN_RECORD usnRecord;
+	DWORD dwBytes;
+	DWORD dwRetBytes;
+	char buffer[USN_PAGE_SIZE];
+	BOOL bDioControl = DeviceIoControl(hVol, FSCTL_QUERY_USN_JOURNAL, NULL, 0, &journalData, sizeof(journalData), &dwBytes, NULL);
+	if (!bDioControl)
+	{
+		printf("[!]DeviceIoControl error\n");
+		return;
+	}
+
+	MFT_ENUM_DATA med;
+	med.StartFileReferenceNumber = 0;
+	med.LowUsn = 0;
+	med.HighUsn = journalData.NextUsn;
+	int count = 0;
+	while (dwBytes > sizeof(USN))
+	{
+		memset(buffer, 0, sizeof(USN_PAGE_SIZE));
+		bDioControl = DeviceIoControl(hVol, FSCTL_ENUM_USN_DATA, &med, sizeof(med), &buffer, USN_PAGE_SIZE, &dwBytes, NULL);
+		if (!bDioControl)
+			break;
+		dwRetBytes = dwBytes - sizeof(USN);
+		usnRecord = (PUSN_RECORD)(((PUCHAR)buffer) + sizeof(USN));
+		while (dwRetBytes > 0)
+		{
+			count++;
+			int len = usnRecord->FileNameLength / 2;
+			if (len > 0) {
+				std::wstring name;
+				name.resize(len, 0);
+				wmemcpy_s(&name[0], len, usnRecord->FileName, len);
+				if (usnRecord->FileAttributes & FILE_ATTRIBUTE_SYSTEM) {
+					ignores.emplace(usnRecord->FileReferenceNumber);
+					std::wcout << "ignore system:" << name << std::endl;
+				}
+				else if (usnRecord->FileAttributes & FILE_ATTRIBUTE_HIDDEN) {
+					ignores.emplace(usnRecord->FileReferenceNumber);
+					std::wcout << "ignore hidden:" << name << std::endl;
+				}
+				else {
+					if (usnRecord->FileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+						dirRecord[usnRecord->FileReferenceNumber] = Record{ usnRecord->ParentFileReferenceNumber, name, usnRecord->FileAttributes };
+					}
+					else {
+						fileRecord[usnRecord->FileReferenceNumber] = Record{ usnRecord->ParentFileReferenceNumber, name, usnRecord->FileAttributes };
+					}
+				}
+			}
+
+			//printf("%.*ws\n", (int)(usnRecord->FileNameLength / 2), usnRecord->FileName);
+			dwRetBytes -= usnRecord->RecordLength;
+			usnRecord = (PUSN_RECORD)(((PCHAR)usnRecord) + usnRecord->RecordLength);
+		}
+		med.StartFileReferenceNumber = *(DWORDLONG*)buffer;
+	}
+	CloseHandle(hVol);
+	std::cout << "total:" << count << std::endl;
+}
+
+void GetAllFiles(const std::wstring driver, std::vector<std::wstring> &allFiles)
+{
+	std::unordered_map<uint64_t, Record> files;
+	std::unordered_map<uint64_t, std::wstring> fullDirs;
+	{
+		std::unordered_map<uint64_t, Record> dirs;
+		std::unordered_set<uint64_t> ignores;
+		GetRecord(L"\\\\.\\" + driver, files, dirs, ignores);
+
+// 拼装完整目录
+		for (auto &dir : dirs) {
+			uint64_t number = dir.second.parentNumber;
+			std::wstring full = dir.second.name;
+			bool ignore = false;
+			while (1) {
+				if (ignores.find(number) != ignores.end()) {
+					ignore = true;
+					break;
+				}
+				auto i = dirs.find(number);
+				if (i == dirs.end()) {
+					break;
+				}
+				full.insert(0, i->second.name + L"\\");
+				number = i->second.parentNumber;
+			}
+			if (ignore) {
+				continue;
+			}
+			full.insert(0, driver + L"\\");
+			fullDirs[dir.first] = full;
+		}
+	}
+
+	for (auto &file : files) {
+		auto iter = fullDirs.find(file.second.parentNumber);
+		if (iter != fullDirs.end()) {
+			allFiles.emplace_back(iter->second + L"\\" + file.second.name);
+		}
+	}
+}
+
+int wmain(int argc, wchar_t *argv[])
+{
+	setlocale(LC_ALL, "");
+
+	if (argc != 2) {
+		std::wcout << L"please input driver name!" << std::endl;
+		return 1;
+	}
+
+	std::wstring driver(argv[1]);
+	if (driver.empty()) {
+		std::wcout << L"params error" << std::endl;
+		return 1;
+	}
+
+	if (driver[driver.size() - 1] != L':') {
+		driver += L":";
+	}
+
+	std::wcout << L"fetch dir " << driver << std::endl;
+	std::vector<std::wstring> allFiles;
+	GetAllFiles(driver, allFiles);
+
+	std::wcout << L"----------------------------------------" << std::endl;
+	std::wcout << L"files:" << allFiles.size() << std::endl;
+
+	system("pause");
+    return 0;
+}
+
+```

@@ -1,0 +1,42 @@
+---
+title: 'Go Buffer重用，避免频繁内存分配'
+date: '2021-03-23'
+tags: ['Go']
+draft: false
+summary: 
+---
+
+在我们写代码的过程中如果多次使用make([]byte, 4096)，那就要考虑使用下面的方法了。当然你不要想着把这个buffer保存为全局变量，多线程下会有竞态问题，实现代码：
+```
+var blackHoleUsed = make(chan []byte, 1)
+
+func blackHoleGet() []byte {
+	select {
+	case b := <-blackHoleUsed:
+		return b
+	default:
+	}
+	return make([]byte, 4096)
+}
+
+func blackHolePut(b []byte) {
+	select {
+	case blackHoleUsed <- b:
+	default:
+	}
+}
+
+```
+我们在这里把这个buffer叫黑洞。使用的时候，用完之后应该再把这个buffer放进去，用defer很方便。
+```
+func test() {
+	b := blackHoleGet()
+	defer blackHolePut(b)
+	fmt.Printf("%p\n", b)
+}
+```
+这样，在同一个线程里调用多次test()发现打印的地址是一样的，说明这个buffer被重用了，也就达到了我们的目的。
+
+如果，我们用不同的goroutine来执行test，打印的地址就不一样了，这样虽然多了次内存分配，但是是必须的。因为不这样做的话多个线程操作同一个buffer会出现竞态问题。当然如果多个goroutine执行的间隔不那么密集buffer也是会重用的。
+
+这样能尽可能的避免多次内存分配，多线程也是安全的。

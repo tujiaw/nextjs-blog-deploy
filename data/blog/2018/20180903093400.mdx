@@ -1,0 +1,25 @@
+---
+title: '比较QKeyEvent和shortcut的按键信息'
+date: '2018-09-03'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 文章主要比较 QKeyEvent 和 shortcut 的按键信息，通过 setShortcut 给 button 设置快捷方式，用 QKeyEvent 的 modifiers 和 key 函数获取按键，将其转换为 QKeySequence 后与 shortcut 比较，经处理使格式一致，常见组合键判断没问题但不排除特殊情况。 
+---
+
+QKeyEvent来自于键盘的按键事件，shortcut是快捷方式，这里我用setShortcut函数给button设置了一个快捷方式，现在我想比较QKeyEvent的按键与button的shortcut是否相同。
+
+QKeyEvent主要是通过modifiers和key这两个函数来获取当前的按键，shortcut使用QKeySequence来表示按键信息的。
+
+根据QKeySequence的构造函数将QKeyEvent转换成QKeySequence，但是直接跟shortcut相比的话不是我们想要的结果。后来通过toString来比较他们的值发现两种表示格式是不一样的，但是主要内容是一致的，所以这里做了一个处理，让他们的格式一致。
+
+常见的组合键判断都是没问题的，不排除特殊的可能有问题。
+```
+QKeyEvent *e;
+// ...
+QKeySequence curKey(e->modifiers() != 0 ? e->modifiers() : e->key(), e->modifiers() != 0 ? e->key() : 0);
+QString curStr = curKey.toString();
+curStr = curStr.remove(" ").split(",").join("");
+if (curStr == button->shortcut().toString()) {
+    // 相同
+}
+```

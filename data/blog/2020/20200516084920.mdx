@@ -1,0 +1,42 @@
+---
+title: '外网访问mysql'
+date: '2020-05-16'
+tags: ['Database']
+draft: false
+summary: 将 mysql 部署在 Centos7 云服务器上，需登录控制台添加入站规则，开放防火墙端口，在 mysql 配置文件中修改设置并重启，最后进入命令行给用户授权，完成外网访问 mysql 的操作。 
+---
+
+我的mysql部署在云服务器上，系统是Centos7。
+
+1. 首先，登录云服务提供商的控制台，在服务器的安全组规则中添加入站规则（允许tcp:3306，来源是0.0.0.0/0）
+
+2. 开放防火墙端口
+```
+firewall-cmd --zone=public --add-port=3306/tcp --permanent
+firewall-cmd --reload
+```
+
+3. mysql设置
+```
+vi /etc/my.cnf
+```
+在[mysqld]下面添加：
+```
+#bind-address=127.0.0.1
+#skip-networking
+```
+重新启动mysql
+```
+systemctl restart mysqld
+```
+进入mysql命令行操作界面，给用户授权：
+```
+mysql -u root -p
+mysql> USE mysql;
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'USERNAME'@'%' IDENTIFIED BY 'PASSWORD' WITH GRANT OPTION;    
+mysql> FLUSH PRIVILEGES;     
+mysql> exit
+```
+USERNAME和PASSWORD替换成你自己的用户名密码  
+
+经过以上操作应该就可以了。

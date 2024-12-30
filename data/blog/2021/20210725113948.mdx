@@ -1,0 +1,38 @@
+---
+title: 'Python 更新xml文件非常方便'
+date: '2021-07-25'
+tags: ['Python']
+draft: false
+summary: 文章介绍 Python 更新 xml 文件很方便，起初查找相关库眼花缭乱，后找到方法。通过`updateAppCfg`函数，可修改`app.xml`中`startup`下`project`和`version`的文本内容，最终成功更新。 
+---
+
+以前没怎么用过Python，想实现一个简单的读写xml功能，网上查找了一下相关的库，有点眼花缭乱有的用起来也不方便。还好最终找到了，如果你也有这样的需求可以试一下下面的方法。
+
+# xml原文
+```
+<?xml version='1.0' encoding='utf-8'?>
+<appcfg>
+    <startup>
+        <project>Hello</project>
+        <version>2.0.0</version>
+    </startup>
+</appcfg>
+```
+# 修改project和version的文本内容
+```
+from xml.etree import ElementTree as etree
+
+
+def updateAppCfg(project, version):
+    app_cfg_path = './app.xml'
+    root = etree.parse(app_cfg_path)
+    startup = root.find('startup')
+    startup.find('project').text = project
+    startup.find('version').text = version
+    root.write(app_cfg_path, encoding='utf-8', xml_declaration=True)
+
+
+if __name__ == '__main__':
+    updateAppCfg('Hello', '2.0.0')
+
+```

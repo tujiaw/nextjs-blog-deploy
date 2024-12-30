@@ -1,0 +1,20 @@
+---
+title: 'antd按需加载'
+date: '2017-11-21'
+tags: ['React']
+draft: false
+summary: Ant Design 是提升体验的中后台设计语言，react 首页渲染慢，按需加载的方法。 
+---
+
+Ant Design 是一个致力于提升『用户』和『设计者』使用体验的中后台设计语言，利用统一的设计规范、前端实现、设计/研发工具链对产品研发赋能，全面提高中后台产品体验和研发效率。
+
+本来react首页渲染速度就很慢，ant按需加载是非常有必要的。
+
+* 打开react-script/config/webpack.config.dev.js
+* 找到“Process JS with Babel.”
+* 在options中增加如下代码
+```
+plugins: [
+	['import', { libraryName: 'antd', style: 'css' }],
+],
+```

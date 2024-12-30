@@ -1,0 +1,43 @@
+---
+title: 'QTableView多选'
+date: '2018-01-09'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 介绍了 QTableView 多选，需了解 setSelectionBehavior 和 setSelectionMode 接口。初始化后用特定代码达不到要求，需使用 select 接口的新用法，封装了 selectMulRows 方法实现多选。 
+---
+
+首先要了解它的setSelectionBehavior和setSelectionMode这两个接口，接下来再来考虑选中的问题。查看官方文档，setSelectionBehavior用来设置选中的是单元格，行还是列，setSelectionMode用来设置用户点击后的界面响应：单选，多选，扩展选择（Ctrl+Shift键），相邻，不选中。这里仅介绍设置为ExtendedSelection mode后的多选问题。
+
+当QTableView进行如下初始化后：
+```
+tableview->setSelectionBehavior(QAbstractItemView::SelectRows);
+tableview->setSelectionMode(QAbstractItemView::ExtendedSelection);
+```
+
+用代码进行多选的时候，调用QTableView::selectRow或者tableview->selectionModel()->select都达不到我们的要求。
+
+查看API，发现select有两种用法：
+```
+virtual void select(const QModelIndex &index, QItemSelectionModel::SelectionFlags command);
+virtual void select(const QItemSelection &selection, QItemSelectionModel::SelectionFlags command);
+```
+之前我们使用的是上面一种，没错下面的接口才是我们需要的。看起来不知道怎么使用，下面是封装后的方法：
+```
+void selectMulRows(const QModelIndexList &indexes)
+{
+	QItemSelectionModel* selection_model = tableview_->selectionModel();
+	if (indexes.isEmpty() || !selection_model || !model_) {
+		return;
+	}
+
+	QItemSelection selection;
+	foreach(QModelIndex index, indexes) {
+		QModelIndex left = model_->index(index.row(), 0);
+		QModelIndex right = model_->index(index.row(), model_->columnCount() - 1);
+		QItemSelection sel(left, right);
+		//将每一个单元格/每一行都作为一个QItemSelection 对象，并拼接到总的QItemSelection 对象中
+		selection.merge(sel, QItemSelectionModel::Select);
+	}
+	selection_model->select(selection, QItemSelectionModel::Select);
+}
+```

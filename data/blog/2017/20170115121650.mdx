@@ -1,0 +1,41 @@
+---
+title: 'const_cast、static_cast、reinterpret_cast、dynamic_cast（迁移2010-12-27）'
+date: '2017-01-15'
+tags: ['C/C++']
+draft: false
+summary: C++有 const_cast、static_cast、reinterpret_cast、dynamic_cast 等转型。const_cast 剥除 const 修饰符；static_cast 用于类的父子类转换需显式说明；reinterpret_cast 用于指针转换，字节数相同可按位转换；dynamic_cast 用于多态类型向下转型，执行运行期检查。 
+---
+
+C++语言中这几种转型相信大家并不陌生但是很容易混淆，下面来看下区别和用法。
+* const_cast  
+```
+const Person *getEmployee() { ... }
+Person *anEmployee = const_cast<Person *>(getEmployee());
+```
+> 使用const_cast来剥除getEmployee返回类型中的const修饰符。  
+* static_cast  
+```
+Shape *sp = new Circle;//子类转换为父类不需要说明
+Circle *cp = static_cast<Circle *>(sp);//父类转换为子类要进行显示说明
+```
+> 可以这样说：圆是形状中的一种， 但是形状不一定就是圆的。 
+注意：如果sp是Shape的其他派生实例，进行
+```Circle *cp = static_cast<Circle *>(sp)
+```
+转换时就会报错，如果用旧的强制类型转换Circle *cp = (Circle*)sp，编译器就不会发现这个错误了，所以应该用static_cast进行转换。
+* reinterpret_cast  
+> reinterpret_caset一般用于指针之间的转换。 
+对于字节数相同的类型，例如整形和指针型，可以实现完全的按位转换。这意味着你可以把一个整数赋给一个指针，也可以把一个指针转换成整数，也可以实现各种不兼容指针的转换。  
+对于字节数不同的类型，这个操作符不能使用。
+```
+例如: int   x   =   reinterpret_cast <int> (3.14);//错误
+double *y; *y = 3.14; int *x = reinterpret_cast<int *>(y);//正确
+```
+> reinterpret_cast通常只是将基类指针假装成一个派生类指针而不改变其值，而static_cast则将执行正确的地址操作。
+* dynamic_cast
+> dynamic_cast通常用于执行从指向基类的指针安全地向下转型为指向派生类的指针。不同于static_cast的是， dynamic_cast仅用于对多态类型进行向下转型（也就是说，被转型的表达式的类型，必须是一个指向带有虚函数的类类型的指针），并且执行运行期检查工作，来判定转型的正确性。这种转型是需要付出代价的而static_cast则不需要。
+```
+const Circle *cp = dynamic_cast<const Circle *>(getNextShape());
+```
+> 如果getNextShape返回一个指向Circle的指针（或者从Circle共有派生的东西，换句话说，一些和Circle之间存在着is-a关系的东西），那么转型就是成功的，并且cp将会指向一个Circle，否则cp将为空。 
+> 习惯上，对一个指针进行dynamic_cast等于在说：“这个Shape指针真的指向一个Circle吗？如果不是，我可以处理这种情况”。

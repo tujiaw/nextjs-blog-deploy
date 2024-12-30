@@ -1,0 +1,179 @@
+---
+title: 'mongodb replica set部署与测试'
+date: '2017-12-03'
+tags: ['Database', 'MongoDB']
+draft: false
+summary: 在 windows 一台机器上部署 3 个端口不同的副本集，先创建并初始化，再新增成员。通过 nodejs 测试，关闭主服务后写入数据会失败十几秒后自动补上，至少两个成员存活才能完成自动切换到 primary，副本集个数需满足“大多数”概念，奇数个至少 3 个，偶数个需部署仲裁者。 
+---
+
+# 环境
+在windows一台机器上部署3个副本集(replica set)，端口分别是：27020, 27021, 27022，在e://mongo//replset下新建三个目录，分别是：27020,27021,27023。
+
+# 创建副本集
+打开命令行工具执行：
+```
+mongod --port 27020 --replSet rs0 --dbpath e://mongo/replset//27020
+```
+
+# 初始化副本集
+打开命令行工具，连接到先前的服务：mongo --port 27020
+
+初始化只有一个成员的副本集，后面可以新增（也可以初始化多个）。
+```
+rs.initiate({_id: "rs0", members:[{_id: 0, host: "127.0.0.1:27020"}]})
+```
+> rs.conf()查看副本集配置， rs.status()查看副本集状态
+
+# 新增副本集
+打开新的命令行工具，开启新的服务，这里开启两个（可以开启多个）
+```
+mongod --port 27021 --replSet rs0 --dbpath e://mongo/replset//27021
+mongod --port 27022 --replSet rs0 --dbpath e://mongo/replset//27022
+```
+连接到primary服务，也就是之前的27020端口，执行：
+```
+rs.add("127.0.0.1:27021")
+rs.add("127.0.0.1:27022")
+```
+
+rs.status()可以看到如下信息：
+```
+{
+        "set" : "rs0",
+        "date" : ISODate("2017-12-03T05:49:38.949Z"),
+        "myState" : 1,
+        "term" : NumberLong(1),
+        "heartbeatIntervalMillis" : NumberLong(2000),
+        "optimes" : {
+                "lastCommittedOpTime" : {
+                        "ts" : Timestamp(1512280173, 1),
+                        "t" : NumberLong(1)
+                },
+                "appliedOpTime" : {
+                        "ts" : Timestamp(1512280173, 1),
+                        "t" : NumberLong(1)
+                },
+                "durableOpTime" : {
+                        "ts" : Timestamp(1512280173, 1),
+                        "t" : NumberLong(1)
+                }
+        },
+        "members" : [
+                {
+                        "_id" : 0,
+                        "name" : "127.0.0.1:27020",
+                        "health" : 1,
+                        "state" : 1,
+                        "stateStr" : "PRIMARY",
+                        "uptime" : 888,
+                        "optime" : {
+                                "ts" : Timestamp(1512280173, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2017-12-03T05:49:33Z"),
+                        "electionTime" : Timestamp(1512279507, 1),
+                        "electionDate" : ISODate("2017-12-03T05:38:27Z"),
+                        "configVersion" : 3,
+                        "self" : true
+                },
+                {
+                        "_id" : 1,
+                        "name" : "127.0.0.1:27021",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 178,
+                        "optime" : {
+                                "ts" : Timestamp(1512280173, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDurable" : {
+                                "ts" : Timestamp(1512280173, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2017-12-03T05:49:33Z"),
+                        "optimeDurableDate" : ISODate("2017-12-03T05:49:33Z"),
+                        "lastHeartbeat" : ISODate("2017-12-03T05:49:37.825Z"),
+                        "lastHeartbeatRecv" : ISODate("2017-12-03T05:49:38.841Z"),
+                        "pingMs" : NumberLong(0),
+                        "configVersion" : 3
+                },
+                {
+                        "_id" : 2,
+                        "name" : "127.0.0.1:27022",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 5,
+                        "optime" : {
+                                "ts" : Timestamp(1512280173, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDurable" : {
+                                "ts" : Timestamp(1512280173, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2017-12-03T05:49:33Z"),
+                        "optimeDurableDate" : ISODate("2017-12-03T05:49:33Z"),
+                        "lastHeartbeat" : ISODate("2017-12-03T05:49:37.825Z"),
+                        "lastHeartbeatRecv" : ISODate("2017-12-03T05:49:35.213Z"),
+                        "pingMs" : NumberLong(0),
+                        "configVersion" : 3
+                }
+        ],
+        "ok" : 1
+}
+```
+副本集有三个成员，其中_id为0的是primary
+
+# nodejs测试
+首先安装：npm install mongodb --save  
+代码如下：
+```
+var MongoClient = require('mongodb').MongoClient;
+var DB_CONN_STR = 'mongodb://localhost:27020,localhost:27021,localhost:27022/test?replicaSet=rs0';
+ 
+var insertData = function(db, callback) {  
+    //连接到表 site
+    var collection = db.collection('test');
+    //插入数据
+    var data = [{"name":"hello","url":"3inns.cn"}];
+    collection.insert(data, function(err, result) { 
+        if(err)
+        {
+            console.log('Error:'+ err);
+            return;
+        }     
+        callback(result);
+    });
+}
+ 
+MongoClient.connect(DB_CONN_STR, function(err, db) {
+    console.log("连接成功！");
+    let i = 0;
+    setInterval(function() {
+        console.log(i++);
+        insertData(db, function(result) {
+            console.log(result);
+            // db.close();
+        });
+    }, 5000);
+});
+```
+注意副本集的url配置：mongodb://localhost:27020,localhost:27021,localhost:27022/test?replicaSet=rs0
+
+每五秒钟向test数据库的test集合插入一条数据。当我关掉primary主服务后（目前是27020端口）nodejs程序写入数据会失败个10几秒钟，过一会就正常了，而且之前写入失败的数据也会自动补上的。
+
+此时再用rs.status()查看发现27022变成了primary，27020not reachable/healthy
+
+如果再关掉27022服务，发现nodejs程序写数据一直是失败的，看来副本集中至少要有两个成员存活才能完成自动切换到primary
+
+启动27022服务，写入就正常了，之前写入失败的操作也会重新补上。  
+再启动27020就完整了，查看各个服务中数据库的数据是否一致。
+
+# 副本集个数
+需要满足“大多数”的概念，有两种方式：
+* 奇数个，至少要部署3个
+* 偶数个，需要再部署一个仲裁者
+
+此个数是配置的个数，并不是运行中的成员个数。所以当某台服务挂了副本集的个数还是不变的。

@@ -1,0 +1,28 @@
+---
+title: 'gtk改变button的字体大小（迁移2011-01-09 ）'
+date: '2017-01-22'
+tags: ['Linux', 'C/C++']
+draft: false
+summary: 2017 年 1 月 22 日，文章介绍通过取出 GtkButton 里的 label 并更改其字体来改变 button 字体大小，利用 pango 相关代码实现，安装 gtk 后自带 pango。 
+---
+
+pango可以改变gtk中label的字体（我安装gtk后里面就包含了pango）， 但是对于GtkButton上显示的字体却不能直接改变的。  
+我自己想出来的一种方法是：  
+> 取出GtkButton里面的label， 再来更改这个label就可以了， 代码如下： 
+ 
+```
+GtkWidget *labelChild;
+PangoFontDescription *font;
+wshort fontSize = 25;
+
+font = pango_font_description_from_string("Sans");//"Sans"字体名
+pango_font_description_set_size(font, fontSize * PANGO_SCALE);//设置字体大小
+
+labelChild = gtk_bin_get_child(GTK_WIDGET(button));//取出GtkButton里的label
+gtk_widget_modify_font(GTK_WIDGET(labelChild), font);//设置label的字体， 这样这个GtkButton上面显示的字体就变了
+
+
+
+
+
+```

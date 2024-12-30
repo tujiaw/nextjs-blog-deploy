@@ -1,0 +1,13 @@
+---
+title: 'swift UILabel不显示html标签'
+date: '2017-06-10'
+tags: ['Mobile']
+draft: false
+summary: 2017 年 6 月 10 日，关于 swift UILabel 不显示 html 标签的讨论。通过将带 html 标签的文本转成 NSAttributedString 并设置给 label 的 attributedText 来尝试显示，但未成功。  
+---
+
+带html标签的文本srcText  
+```
+var attrStr = NSAttributedString(data: srcText.dataUsingEncoding(NSUnicodeStringEncoding, allowLossyConversion: true)!, options: [NSDocumentTypeDocumentAttribute: NSHTMLTextDocumentType], documentAttributes: nil, error: nil)
+```
+label.attributedText = attrStr

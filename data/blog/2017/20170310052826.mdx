@@ -1,0 +1,43 @@
+---
+title: 'C++获取输入法名字，调整输入法候选框位置'
+date: '2017-03-10'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 文章介绍 C++获取输入法名字及调整输入法候选框位置。可通过窗口布局或 HKL 获取，给出获取名字的函数及调整位置的代码，还包含相关头文件，支持 win7 及以下系统。 
+---
+
+可以根据窗口布局或HKL获取输入名字，windows消息WM_INPUTLANGCHANGE的LPARAM就是HKL  
+```
+QString getImeNameFromHKL(HKL hkl) {
+	const int BUF_LEN = 1024;
+	wchar_t buf[BUF_LEN] = { 0 };
+	ImmGetIMEFileName(hkl, buf, BUF_LEN - 2);
+	QString result = QString::fromStdWString(buf);
+	return result;
+}
+
+QString getImeNameFromWnd(HWND hwnd) {
+	DWORD threadId = GetWindowThreadProcessId(hwnd, NULL);
+	HKL hkl = GetKeyboardLayout(threadId);
+	return getImeNameFromHKL(hkl);
+}
+``` 
+
+调整输入法候选框位置  
+```
+HIMC himc = ImmGetContext(hwnd);
+CANDIDATEFORM cand;
+cand.dwIndex = 0;
+cand.dwStyle = CFS_CANDIDATEPOS;
+cand.ptCurrentPos.x = 0;
+cand.ptCurrentPos.y = 0;
+ImmSetCandidateWindow(himc, &cand);
+ImmReleaseContext(hwnd, himc);
+```
+
+包含头文件 
+```
+#include <Windows.h>
+#pragma comment(lib, "Imm32.lib")
+```
+> 支持win7及以下系统，win8及以上的系统可能用的新输入法框架

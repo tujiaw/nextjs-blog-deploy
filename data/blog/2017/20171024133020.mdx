@@ -1,0 +1,172 @@
+---
+title: '我的emacs 23配置'
+date: '2017-10-24'
+tags: ['Linux']
+draft: false
+summary: 介绍了 emacs 23 配置，包括设置插件路径、显示行号和时间、提示位置、支持粘贴、选择颜色主题、设置括号配对等功能，还定义了多个快捷键及 C/C++相关设置。 
+---
+
+emacs-site插件文件夹可以在下面地址下载，里面也有个emacs配置不过是旧的。
+[http://download.csdn.net/detail/tujiaw/3736262](http://download.csdn.net/detail/tujiaw/3736262)
+
+```
+
+;;设置一个读取插件的默认路径
+(add-to-list 'load-path "~/emacs-site/")
+
+;;显示行号
+(global-linum-mode t)
+
+;;显示时间，格式如下
+(display-time-mode t)
+(setq display-time-24hr-format t)
+(setq display-time-day-and-date t)
+
+;;在标题栏提示你目前在什么位置
+;;(setq frame-title-format "root@%b")
+(defun frame-title-string ()
+  "Return the file name of current buffer, using ~ if under home directory"
+  (let
+      ((fname (or
+	       (buffer-file-name (current-buffer))
+	       (buffer-name)))
+       (max-len 100))
+    (when (string-match (getenv "HOME") fname)
+      (setq fname (replace-match "~" t t fname)))
+    (if (> (length fname) max-len)
+	(setq fname
+	      (concat "..."
+		      (substring fname (- (length fname) max-len)))))
+    fname))
+(setq frame-title-format '("tjw-emacs@"(:eval (frame-title-string))))
+
+;;支持emacs和外部程序粘贴
+(setq x-select-enable-clipboard t)
+
+;;选择一个颜色主题
+(require 'color-theme)
+(color-theme-dark-blue)
+
+;;设置括号配对功能
+(show-paren-mode t)
+(setq show-paren-style 'parentheses)
+
+;;查找\打开文件时,列出文件列表
+(require 'ido)
+(ido-mode t)
+
+;;设置文件的标题栏
+(require 'tabbar)
+(tabbar-mode)
+
+;;语法加亮
+(global-font-lock-mode t)
+
+;;高亮显示区域选择
+(transient-mark-mode t)
+
+;;shift键加方向键选取
+(pc-selection-mode)
+
+;;标题栏切换的快捷键
+(global-set-key [M-up] 'tabbar-backward-group)
+(global-set-key [M-down] 'tabbar-forward-group)
+(global-set-key [M-left] 'tabbar-backward)
+(global-set-key [M-right] 'tabbar-forward)
+
+(setq gdb-many-windows t)
+;;...
+(load-library "multi-gud.el")
+(load-library "multi-gdb-ui.el")
+
+;;设置快捷键
+(global-set-key [f1] 'kill-buffer)
+
+(global-set-key [f3] 'goto-line)
+(global-set-key [f4] 'set-mark-command)
+(global-set-key [f5] 'compile)
+(global-set-key [f6] 'gdb)
+(global-set-key [f7] 'bookmark-set)
+(global-set-key [f8] 'bookmark-jump)
+(global-set-key [f9] 'cvs-update)
+
+;;定义F12键为激活ecb
+(global-set-key [f12] 'ecb-activate) 
+
+(global-set-key [(control tab)] 'switch-to-buffer)
+
+(global-set-key (kbd "M-]") 'comment-dwim)
+(global-set-key [delete] 'delete-region)
+(global-set-key "%" 'match-paren)
+          
+(defun match-paren (arg)
+  "Go to the matching paren if on a paren; otherwise insert %."
+  (interactive "p")
+  (cond ((looking-at "\\s\(") (forward-list 1) (backward-char 1))
+	((looking-at "\\s\)") (forward-char 1) (backward-list 1))
+	(t (self-insert-command (or arg 1)))))
+(global-set-key "%" 'match-paren)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;C/C++
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun linux-cpp-mode ()
+"my cpp mode define"
+(interactive)
+(c-set-style "K&R")
+(setq c-basic-offset 4)
+(c-toggle-hungry-state)
+;(c-toggle-auto-state)
+(define-key c++-mode-map [return] 'newline-and-indent) 
+)
+
+(add-hook 'c-mode-hook 'linux-c-mode)
+(add-hook 'c++-mode-hook 'linux-cpp-mode)
+;; 设置imenu的排序方式为按名称排序
+(setq imenu-sort-function 'imenu--sort-by-name)
+
+(defun linux-c-mode()
+;;将回车代替C-j的功能，换行的同时对齐
+(define-key c-mode-map [return] 'newline-and-indent)
+;;(interactive)
+;;设置C程序的对齐风格
+(c-set-style "Stroustrup")
+;;自动模式，在此种模式下当你键入{时，会自动根据你设置的对齐风格对齐
+;;(c-toggle-auto-state)
+;;此模式下，当按Backspace时会删除最多的空格,使得if缩进正常
+(c-toggle-hungry-state)
+;;TAB键的宽度设置为4
+(setq c-basic-offset 4)
+;; 在菜单中加入当前Buffer的函数索引
+(imenu-add-menubar-index)
+;; 在状态条上显示当前光标在哪个函数体内部
+(which-function-mode)
+ )
+
+(defun geosoft-backward-word ()
+   ;; Move one word backward. Leave the pointer at start of word
+   ;; Treat _ as part of word
+   (interactive)
+   (backward-word 1)
+   (backward-char 1)
+   (cond ((looking-at "_") (geosoft-backward-word))
+         (t (forward-char 1)))) 
+
+(setq default-directory "~")
+
+(setq-default indent-tabs-mode nil)
+(setq nxml-child-indent 4)
+
+(global-auto-revert-mode t);
+(tool-bar-mode nil);
+;;(setq c-default-style
+;;'((c-mode . "Stroustrup")))
+(setq-default tab-width 4)
+(setq c-basic-offset 4)
+(setq default-fill-column 80)
+(setq column-number-mode t)
+(setq make-backup-files nil)
+
+(put 'upcase-region 'disabled nil)
+```

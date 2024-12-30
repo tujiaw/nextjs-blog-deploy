@@ -1,0 +1,186 @@
+---
+title: 'DLL的编写与调用，简单示例（迁移2011-03-06）'
+date: '2017-01-26'
+tags: ['C/C++']
+draft: false
+summary: 介绍了 DLL 的编写与调用，包括新建 DLL 类型应用程序（myDll.cpp）及调用（TestDll.cpp）的代码，还提及显式和隐式调用方式及相关函数，如 extern "C"、_declspec 等，以及一个 apr 中的例子。 
+---
+
+#### 新建一个DLL类型的应用程序，如：myDll.cpp
+```
+#include <windows.h>
+#include <iostream>
+extern "C" int _declspec(dllexport) DllAdd(int a, int b)
+{
+	return  a + b;
+}
+```
+*extern "C"*  
+在 DLL的设计中中，，如果使用C++开发，通常在导出函数的定义中使用extern "C",为什么呢？因为当用户使用"运行时动态链接"的时候将使用GetProcAddress函数得到导出函数的地址，该函数是通过导出函数的函数名定位导出函数的，而C++编译器因为函数重载的原因会对开发者定义的函数名进行修饰，导致导出表中的函数名通常不是开发者使用的函数名，比如函数 ExportedFn可能被修饰成??ExportedFn@QAEX 。所以使用extern "C"通知编译器按照C的格式进行编译，而不是使用C++的方法进行编译。使用VS提供的一个工具Dependency Walker可以查看DLL的导出函数。
+
+*_declspec*  
+[http://support.microsoft.com/kb/132044](http://support.microsoft.com/kb/132044)
+
+#### 新建一个win32控制台应用程序，如：TestDll.cpp
+```
+// TestDll.cpp : 定义控制台应用程序的入口点。
+//
+#include "stdafx.h"
+#include <windows.h>
+#include <stdlib.h>
+typedef int (*FUNC)(int , int );
+int _tmain(int argc, _TCHAR* argv[])
+{
+	FUNC fun;
+	int a = 0, b = 0, c = 0;
+	HMODULE m_hModule = ::LoadLibrary(L"..//Debug//myDll.dll");
+	if (!m_hModule)
+	{
+		printf("加载DLL文件失败！/n");
+	}
+	else
+	{
+		fun = (FUNC)GetProcAddress(m_hModule, "DllAdd");
+		printf("请输入两个数：");
+		scanf("%d%d", &a, &b);
+		c = fun(a, b);
+		printf("%d + %d = %d/n", a, b, c);
+	}
+	FreeLibrary(m_hModule);
+	system("pause");
+	return 0;
+}
+
+```
+- typedef int (*FUNC)(int , int)
+> 函数指针，用以指向DLL中的函数， 返回值、参数个数要与其匹配
+- LoadLibrary(...)
+> 载入指定的动态链接库，并将它映射到当前进程使用的地址空间。一旦载入，即可访问库内保存的资源。
+- GetProcAddress(...)
+> 检索指定的动态链接库(DLL)中的输出库函数地址。
+- FreeLibrary(...)
+> 释放指定的动态链接库，它们早先是用LoadLibrary API函数装载的。
+
+#### 上面是DLL的显示调用，看起来比较麻烦但是它只要一个dll文件就可以了；
+下面是DLL的隐式调用， 用起来比较简单但是它需要三个文件：.h， .lib， .dll。
+新建一个dll工程，注意工程属性->Preprocessor里面会有个_USRDLL宏  
+如下代码：
+```
+// dlltest.h
+#ifndef _DLL_TEST_H_
+#define _DLL_TEST_H_
+
+#ifdef _USRDLL
+ #define DLLTEST_API __declspec(dllexport)
+#else
+ #define DLLTEST_API __declspec(dllimport)
+#endif
+
+DLLTEST_API int Sum(int x, int y);
+
+class DLLTEST_API Coord
+{
+public:
+	Coord(int x, int y);
+	void Print();
+
+private:
+	int x_, y_;
+};
+
+#endif // _DLL_TEST_H_
+```
+```
+// dlltest.cpp
+#include "dlltest.h"
+#include <iostream>
+
+int Sum(int x, int y)
+{
+	return x+y;
+}
+
+Coord::Coord(int x, int y)
+ : x_(x), y_(y)
+{
+}
+
+void Coord::Print()
+{
+	std::cout << "x = " << x_ << ", y = " << y_ << std::endl;
+}
+```
+编译会生成dlltest.lib和dlltest.dll  
+#### 测试DLL
+- 首先，在用的时候包含dlltest.h头文件，测试程序C/C++->Additional Include Directories里面指定dlltest.h目录；
+- 其次，Linker->Additional Library Directories里面指定dlltest.lib目录，以及
+ Linker->Input->Additional Dependencies里面填写dlltest.lib，这样就可以通过编译；
+- 最后，要运行还需要dlltest.dll文件，将其文件放在与测试程序exe同一目录下即可（当然系统目录下也可以只要exe运行时可以找到）。
+
+这是apr里面的一个例子：
+```
+// The following ifdef block is the standard way of creating macros which make exporting 
+// from a DLL simpler. All files within this DLL are compiled with the SAMPLEDLL_EXPORTS
+// symbol defined on the command line. this symbol should not be defined on any project
+// that uses this DLL. This way any other project whose source files include this file see 
+// SAMPLEDLL_API functions as being imported from a DLL, wheras this DLL sees symbols
+// defined with this macro as being exported.
+#ifdef SAMPLEDLL_EXPORTS
+#define SAMPLEDLL_API __declspec(dllexport)
+#else
+#define SAMPLEDLL_API __declspec(dllimport)
+#endif
+
+// This class is exported from the SampleDLL.dll
+class SAMPLEDLL_API CSampleDLL {
+public:
+	CSampleDLL(void);
+	// TODO: add your methods here.
+};
+
+extern SAMPLEDLL_API int nSampleDLL;
+
+SAMPLEDLL_API int fnSampleDLL(void);
+
+```
+```
+// SampleDLL.cpp : Defines the entry point for the DLL application.
+//
+
+#include "stdafx.h"
+#include "SampleDLL.h"
+
+BOOL APIENTRY DllMain( HANDLE hModule, 
+                       DWORD  ul_reason_for_call, 
+                       LPVOID lpReserved
+					 )
+{
+    switch (ul_reason_for_call)
+	{
+		case DLL_PROCESS_ATTACH:
+		case DLL_THREAD_ATTACH:
+		case DLL_THREAD_DETACH:
+		case DLL_PROCESS_DETACH:
+			break;
+    }
+    return TRUE;
+}
+
+
+// This is an example of an exported variable
+SAMPLEDLL_API int nSampleDLL=0;
+
+// This is an example of an exported function.
+SAMPLEDLL_API int fnSampleDLL(void)
+{
+	return 42;
+}
+
+// This is the constructor of a class that has been exported.
+// see SampleDLL.h for the class definition
+CSampleDLL::CSampleDLL()
+{ 
+	return; 
+}
+
+```

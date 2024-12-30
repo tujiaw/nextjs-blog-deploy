@@ -1,0 +1,69 @@
+---
+title: 'golang 下载大文件进度'
+date: '2021-08-13'
+tags: ['Go']
+draft: false
+summary: 
+---
+
+使用io.Copy将下载的部分内容不断写入文件，重载io.Reader的Read函数，使用Read读取数据和大小，通过http的ContentLength获取total大小。
+```
+package goutil
+
+import (
+	"io"
+	"net/http"
+	"os"
+)
+
+type ChunkReader struct {
+	io.Reader
+	Total int64
+	Offset int64
+	Progress func(offset, total int64)
+}
+
+func(r *ChunkReader)Read(b []byte)(n int, err error) {
+	n, err = r.Reader.Read(b)
+	r.Offset += int64(n)
+	if r.Progress != nil {
+		r.Progress(r.Offset, r.Total)
+	}
+	return
+}
+
+func DownloadFile(url, filepath string, progress func(offset, total int64)) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	f, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	r := &ChunkReader{
+		Reader: resp.Body,
+		Total: resp.ContentLength,
+		Progress: progress,
+	}
+	if _, err := io.Copy(f, r); err != nil {
+		return err
+	}
+	return nil
+}
+
+```
+```
+	progress := func(offset, total int64) {
+		if total > 0 {
+			fmt.Printf("\r%.2f%%", float64(offset*100/total))
+		} else {
+			fmt.Printf("\r%d", offset)
+		}
+	}
+	url := "http://dldir1.qq.com/weixin/Windows/WeChat_3.2.1_update154.dat"
+	goutil.DownloadFile(url, "111.dat", progress)
+```

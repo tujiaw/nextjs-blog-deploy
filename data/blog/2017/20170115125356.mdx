@@ -1,0 +1,103 @@
+---
+title: '拷贝构造与赋值操作(string实例)（迁移2010-12-28）'
+date: '2017-01-15'
+tags: ['C/C++']
+draft: false
+summary: 介绍了 C++中 MyString 类的拷贝构造与赋值操作，若未自定义这两个操作，C++会生成缺省操作符，导致内存泄漏等问题，如 str1 和 str2 赋值后指向同一内存，析构时会出错。  
+---
+
+拷贝构造和赋值这两个操作总是被成对地声明并且兼容，为什么要自定义这两个操作呢？看下面的例子。
+```
+// MyString.cpp : 定义控制台应用程序的入口点。
+//
+#include "stdafx.h"
+#include <stdio.h>
+#include <string.h>
+class MyString
+{
+public:
+	MyString(const char *str = NULL);
+	MyString(const MyString &other);
+	~MyString(void);
+	MyString & operator = (const MyString &other);
+	int OutputStr(void);
+private:
+	char *m_data;
+};
+MyString::MyString(const char *str)//普通的构造函数
+{
+	if (str == NULL)
+	{
+		m_data = new char[1];
+		*m_data = '/0';
+	}
+	else
+	{
+		int length = strlen(str);
+		m_data = new char[length + 1];
+		strcpy(m_data, str);
+	}
+}
+MyString::MyString(const MyString &other)//拷贝构造函数
+{
+	int length = strlen(other.m_data);
+	m_data = new char[length + 1];
+	strcpy(m_data, other.m_data);
+}
+MyString::~MyString(void)
+{
+	delete [] m_data;
+}
+MyString & MyString::operator = (const MyString &other)//赋值操作
+{
+	if (this == &other)
+	{
+		return *this;
+	}
+	delete [] m_data;
+	int length = strlen(other.m_data);
+	m_data = new char[length + 1];
+	strcpy(m_data, other.m_data);
+	return *this;
+}
+int MyString::OutputStr(void)
+{
+	int length = 0;
+	length = strlen(m_data);
+	printf("the output string is : %s", m_data);
+	return length;
+}
+int _tmain(int argc, _TCHAR* argv[])
+{
+	MyString str("hello, world");//进入普通构造函数
+	MyString str2 = str;//初始化,进入拷贝构造函数
+	MyString str3(str);//初始化,进入拷贝构造函数
+	str2 = str;//赋值,进入赋值操作
+	str2.OutputStr();
+	//MyString *str = new MyString("hello, world");//普通构造函数
+	//MyString *str2 = new MyString(*str);//拷贝构造函数
+	//*str2 = *str;//赋值操作
+	//str2->OutputStr();
+	getchar();
+	return 0;
+}
+```
+假如：MyString类没有声明拷贝构造和赋值操作。  
+MyString str1("hello");  
+MyString str2("world");  
+其结果就会如下所以：
+str1: m_data ——>"hello/0"  
+str2: m_data ——>"world/0"
+  
+对象str1的内部是一个指向包含字符串"hello"的内存的指针，  
+对象str2的内部是一个指向包含字符串"world"的内存的指针。  
+如果进行下面的赋值：  
+str2 = str1;  
+
+因为没有自定义operator=可以调用，C++会生成并调用一个缺省的operator=操作符。这个缺省的赋值操作符会执行从str1的成员到str2的成员的逐个成员的赋值操作，对指针(str1.m_data和str2.m_data）来说就是位拷贝(位拷贝拷贝的是地址，而值拷贝则拷贝的是内容)。赋值后的结果如下所示：  
+str1: m_data ——>"hello/0"  
+str2: m_data ——>"hello/0"  
+
+这种情况至少有两个问题。
+1. str2曾指向的内存永远不会被删除，因而会永远丢失，造成内存泄漏；
+2. 现在str1和str2包含的指针指向同一个字符串，那么只要其中一个离开了它的生存空间，其析构函数就会删除掉另一个指针还指向的那块内存。

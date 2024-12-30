@@ -1,0 +1,21 @@
+---
+title: 'bug修复，for循环倒叙遍历的时候千万不要用size_t等无符号整型'
+date: '2018-05-10'
+tags: ['C/C++']
+draft: false
+summary: 2018 年 5 月 10 日的 C/C++相关文章指出，for 循环倒叙遍历勿用 size_t 等无符号整型，如上述代码，size_t 为无符号整型，i 为 0 时继续减会变为 UINT_MAX 导致越界崩溃，结论是逆序遍历用 int 别用 size_t。 
+---
+
+bug修复，for循环倒叙遍历的时候千万不要用size_t
+
+如下代码：
+```
+	std::vector<int> x = { 1, 2, 3, 4, 5 };
+	for (size_t i = x.size() - 1; i >= 0; i--) {
+		std::cout << x[i] << std::endl;
+	}
+```
+
+由于size_t是unsigned int无符号整型，所以当i为0时候再继续i--就会变成一个UINT_MAX（头文件climits），此时i为4294967295。x[i]必然会越界造成程序崩溃。
+
+结论：在for循环中逆序遍历的时候要用int不要用size_t

@@ -1,0 +1,157 @@
+---
+title: 'golang上传图片文件'
+date: '2021-02-25'
+tags: ['Go']
+draft: false
+summary: 
+---
+
+使用golang来实现图片的上传，服务端我们使用gin框架来接收保存图片
+# 服务端
+## 服务端路由
+```
+router.POST("/uploadimage", controller.UploadImage)
+```
+
+## 服务端保存上传的图片
+这里设置了一个简单的认证，上传文件的时候需要带一个pass字段里面存储了需要认证的字符串，防止非法上传。  
+上传的图片设置了最大不能超过5M  
+```
+func UploadImage(c *gin.Context) {
+	var resp RespData
+	pass := c.Request.FormValue("pass")
+	if pass != "ningto" {
+		resp.ErrCode = http.StatusBadRequest
+		resp.ErrMsg = "No Auth"
+		c.JSON(resp.ErrCode, resp)
+		return
+	}
+
+	header, err := c.FormFile("file")
+	if err != nil {
+		resp.ErrCode = http.StatusBadRequest
+		resp.ErrMsg = err.Error()
+		c.JSON(resp.ErrCode, resp)
+		return
+	}
+
+	if header.Size > (5 * 1024 * 1024) {
+		resp.ErrCode = http.StatusBadRequest
+		resp.ErrMsg = fmt.Sprintf("Picture is too big, size:%v bytes", header.Size)
+		c.JSON(resp.ErrCode, resp)
+		return
+	}
+
+	newFilename := fmt.Sprintf("%s-%s", time.Now().Format("20060102"), header.Filename)
+	imagePath := path.Join(configs.UploadDir(), newFilename)
+	if !util.PathExist(imagePath) {
+		if err := c.SaveUploadedFile(header, imagePath); err != nil {
+			resp.ErrCode = http.StatusInternalServerError
+			resp.ErrMsg = err.Error()
+			c.JSON(resp.ErrCode, resp)
+			return
+		}
+	}
+
+	resp.ErrCode = 0
+	resp.ErrMsg = ""
+	resp.Content = c.Request.Host + "/upload/" + newFilename
+	c.JSON(200, resp)
+}
+```
+## 服务端应答
+统一使用RespData结构来应答，正常为ErrCode为0，失败为非0，ErrMsg是失败的信息，Content是成功后的应答内容。
+```
+type RespData struct {
+	ErrCode int    `json:"errcode"`
+	ErrMsg  string `json:"errmsg"`
+	Content string `json:"content"`
+}
+```
+# 客户端
+客户端直接看代码，从命令行传入两个参数：上传的url和图片路径。
+```
+package main
+
+import (
+	"bytes"
+	"flag"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
+	"net/http"
+	"os"
+)
+
+func main() {
+	var paramImgPath string
+	var paramUrl string
+	flag.StringVar(&paramUrl, "url", "", "url")
+	flag.StringVar(&paramImgPath, "path", "", "image path")
+	flag.Parse()
+
+	if len(paramUrl) == 0 || len(paramImgPath) == 0 {
+		fmt.Println("url or path is empty")
+		return
+	}
+
+	data := map[string]string{
+		"pass": "ningto",
+	}
+	b, err := PostFile(paramImgPath, data, paramUrl)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(b))
+}
+
+func PostFile(filename string, data map[string]string, targetUrl string) ([]byte, error) {
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+
+	for k, v := range data {
+		if err := bodyWriter.WriteField(k, v); err != nil {
+			fmt.Println("write filed error, k:", k, ", v:", v)
+		}
+	}
+
+	// open file handle
+	fh, err := os.Open(filename)
+	if err != nil {
+		fmt.Println("error opening file")
+		return []byte{}, err
+	}
+	defer fh.Close()
+
+	fi, err := fh.Stat()
+	if err != nil {
+		return []byte{}, err
+	}
+
+	// this step is very important
+	fileWriter, err := bodyWriter.CreateFormFile("file", fi.Name())
+	if err != nil {
+		fmt.Println("error writing to buffer")
+		return []byte{}, err
+	}
+
+	//iocopy
+	_, err = io.Copy(fileWriter, fh)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	contentType := bodyWriter.FormDataContentType()
+	bodyWriter.Close()
+
+	resp, err := http.Post(targetUrl, contentType, bodyBuf)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer resp.Body.Close()
+	resp_body, err := ioutil.ReadAll(resp.Body)
+	return resp_body, err
+}
+```

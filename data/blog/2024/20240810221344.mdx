@@ -1,0 +1,83 @@
+---
+title: 'shell脚本实现批量切换git分支'
+date: '2024-12-07'
+tags: ['Shell']
+draft: false
+summary: 本文介绍了一 shell 脚本，用于批量切换 Git 项目及其子模块的分支，简化多模块项目分支管理，提高开发效率。
+---
+
+一个项目中使用到了多个子模块，切分支的时候每次都要切好几次，使用下面脚本方便批量切分支。
+
+
+# 用法
+.switch_branch.sh dev  
+.switch_branch.sh beta  
+.switch_branch.sh prod  
+
+# 源码
+```
+#!/bin/bash
+
+# 函数：获取脚本所在目录的绝对路径
+get_script_dir() {
+    local SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do # 解析符号链接
+        local DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # 如果不是绝对路径，则添加前缀
+    done
+    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
+# 函数：检查 git 分支切换是否成功
+checkout_branch() {
+    local dir=$1
+    local branch=$2
+
+    if [ ! -d "$dir" ]; then
+        echo "Error: Directory $dir does not exist."
+        exit 1
+    fi
+
+    cd "$dir" || exit 1
+
+    if ! git checkout "$branch" &> /dev/null; then
+        echo "Error: Failed to checkout branch '$branch' in directory '$dir'."
+        exit 1
+    else
+        echo "Switched to branch '$branch' in directory '$dir'."
+    fi
+}
+
+# 检查是否提供了参数
+if [ -z "$1" ]; then
+    echo "Usage: $0 <branch-name>"
+    exit 1
+fi
+
+# 获取分支名参数
+BRANCH=$1
+
+# 获取脚本所在目录的绝对路径
+SCRIPT_DIR=$(get_script_dir)
+echo "Script directory: $SCRIPT_DIR"
+
+# 定义需要切换分支的子模块列表
+SUBMODULES=(
+    "$SCRIPT_DIR/libs/project1"
+    "$SCRIPT_DIR/libs/project2"
+    "$SCRIPT_DIR/libs/project3"
+    "$SCRIPT_DIR/libs/project4"
+)
+
+# 切换主仓库分支
+checkout_branch "$SCRIPT_DIR" "$BRANCH"
+
+# 遍历子模块列表并切换分支
+for submodule in "${SUBMODULES[@]}"; do
+    checkout_branch "$submodule" "$BRANCH"
+done
+
+echo "All repositories have been switched to branch '$BRANCH'."
+
+```

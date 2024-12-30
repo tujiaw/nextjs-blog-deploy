@@ -1,0 +1,62 @@
+---
+title: '降权启动应用'
+date: '2022-04-02'
+tags: ['Windows']
+draft: false
+summary: 介绍了在 Windows 中降权启动应用的方法，指出 WTSQueryUserToken 在普通会话下调用常失败但在 session 0 服务中可成功，给出代码`runProcessAsUser`，但强调此代码未严谨测试仅供参考。 
+---
+
+如果应用是管理员权限，它再去启其他进程时也会是管理员权限，那么怎样降权呢？让它以普通用户的权限来启动，下面代码提供了一种实现方法。
+
+注意！！！  
+WTSQueryUserToken在普通会话下调用总是失败，但是在session 0上的服务是可以调用成功的。
+
+下面是MSDN的官方文档说明：  
+Obtains the primary access token of the logged-on user specified by the session ID. To call this function successfully, the calling application must be running within the context of the LocalSystem account and have the SE_TCB_NAME privilege.
+
+Caution  WTSQueryUserToken is intended for highly trusted services. Service providers must use caution that they do not leak user tokens when calling this function. Service providers must close token handles after they have finished using them.
+```
+BOOL runProcessAsUser(const std::string& command, bool isShow)
+{
+    HANDLE hToken = NULL;
+    unsigned long sessionId = 0;
+    if (!getCurrentSessionId(sessionId)) {
+        std::cout << "getCurrentSessionId error";
+        return FALSE;
+    }
+
+    if (FALSE == ::WTSQueryUserToken(sessionId, &hToken)) {
+        std::cout << "WTSQueryUserToken error";
+        return FALSE;
+    }
+
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&pi, sizeof(PROCESS_INFORMATION));
+
+    LPVOID pPEB;
+    CreateEnvironmentBlock(&pPEB, hToken, TRUE);
+
+    STARTUPINFO si;
+    ZeroMemory(&si, sizeof(STARTUPINFO));
+    si.cb = sizeof(STARTUPINFO);
+    si.lpDesktop = TEXT("winsta0\\default");
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = isShow ? SW_SHOW : SW_HIDE;
+
+    BOOL result = FALSE;
+    LPSTR pcmd = _strdup(command.c_str());
+    if (::CreateProcessAsUser(hToken, NULL, pcmd, NULL, NULL, FALSE,
+        NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE | CREATE_UNICODE_ENVIRONMENT, pPEB, NULL, &si, &pi)) {
+        result = TRUE;
+    } else {
+        std::cout << "CreateProcessAsUser error:" << GetLastError() << std::endl;
+    }
+
+    free(pcmd);
+    DestroyEnvironmentBlock(pPEB);
+    CloseHandle(hToken);
+    return result;
+}
+
+```
+**此代码没有经过严谨的测试，仅供参考。**

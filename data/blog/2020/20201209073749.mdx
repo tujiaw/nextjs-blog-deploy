@@ -1,0 +1,24 @@
+---
+title: 'CentOS7 debuginfo-install'
+date: '2020-12-09'
+tags: ['Linux']
+draft: false
+summary: CentOS7 的 debuginfo-install 步骤：先允许 debuginfo 源（改 /etc/yum.repos.d/CentOS-Debuginfo.repo 中 enabled 为 1），再安装 glibc-debuginfo 和 yum-utils，最后安装调式信息包及依赖（如 libgcc 等）。 
+---
+
+CentOS7 debuginfo-install
+
+# 允许debuginfo源
+```
+vim /etc/yum.repos.d/CentOS-Debuginfo.repo
+```
+将enabled改为1
+
+# 安装debuginfo-install
+```
+yum install glibc-debuginfo yum-utils
+```
+# 安装调式信息包和依赖
+```
+debuginfo-install libgcc-4.8.5-44.el7.x86_64 libstdc++-4.8.5-44.el7.x86_64 libuuid-2.23.2-65.el7.x86_64 nss-softokn-freebl-3.53.1-6.el7_9.x86_64
+```

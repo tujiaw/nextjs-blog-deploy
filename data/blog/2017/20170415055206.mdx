@@ -1,0 +1,349 @@
+---
+title: '设计模式-抽象工厂模式'
+date: '2017-04-15'
+tags: ['Design', 'C/C++']
+draft: false
+summary: 抽象工厂模式为产品家族提供统一创建接口，可在运行时创建系列产品族。文中以 Button 和 Border 为例，创建 Mac 和 Win 系列工厂，客户可根据需求选择创建。还给出了具体产品类和工厂类代码，以及适用性和优缺点等。 
+---
+
+wiki上的抽象工厂模式讲的蛮好的，尤其是例子选的很好。
+
+**抽象工厂模式**（英语：Abstract Factory）是一种常见的设计模式。此模式为一个产品家族提供了统一的创建接口。当需要这个产品家族的某一系列的时候，可以从抽象工厂中选出相对系的系列来创建一个具体的工厂类别。
+假设我们有两种产品接口 Button 和 Border ，每一种产品都支持多种系列，比如 Mac 系列和 Windows 系列。这样每个系列的产品分别是 MacButton, WinButton, MacBorder, WinBorder 。为了可以在运行时刻创建一个系列的产品族，我们可以为每个系列的产品族建立一个工厂 MacFactory 和 WinFactory 。每个工厂都有两个方法 CreateButton 和 CreateBorder 并返回对应的产品，可以将这两个方法抽象成一个接口 AbstractFactory 。这样在运行时刻我们可以选择创建需要的产品系列。
+我们的产品结构是这样的
+```
+class Button; // Abstract Class
+ 
+class MacButton: public Button {};
+ 
+class WinButton: public Button {};
+ 
+class Border; // Abstract Class
+ 
+class MacBorder: public Border {};
+ 
+class WinBorder: public Border {};
+
+```
+对应的工厂是这样的
+```
+class AbstractFactory {
+public:
+    virtual Button* CreateButton() =0;
+    virtual Border* CreateBorder() =0;
+};
+ 
+class MacFactory: public AbstractFactory {
+public:
+    MacButton* CreateButton() { return new MacButton; }
+    MacBorder* CreateBorder() { return new MacBorder; }
+};
+ 
+class WinFactory: public AbstractFactory {
+public:
+    WinButton* CreateButton() { return new WinButton; }
+    WinBorder* CreateBorder() { return new WinBorder; }
+};
+
+```
+那么客户可以根据需要选择 Mac 风格或者 Win 风格来创建 Button 或 Border
+```
+AbstractFactory* fac;
+switch (style) {
+case MAC:
+    fac = new MacFactory;
+    break;
+case WIN:
+    fac = new WinFactory;
+    break;
+}
+Button* button = fac->CreateButton();
+Border* border = fac->CreateBorder();
+
+```
+
+## 适用性
+在以下情况可以使用抽象工厂模式
+* 一个系统要独立于它的产品的创建、组合和表示时。
+* 一个系统要由多个产品系列中的一个来配置时。
+* 当你要强调一系列相关的产品对象的设计以便进行联合使用时。
+* 当你提供一个产品类库，而只想显示它们的接口而不是实现时。
+## 优点
+* 具体产品从客户代码中被分离出来
+* 容易改变产品的系列
+* 将一个系列的产品族统一到一起创建
+## 缺点
+* 在产品族中扩展新的产品是很困难的，它需要修改抽象工厂的接口
+
+下面程序是在之上的基础上实现的
+```
+// Product.h
+
+#ifndef _PRODUCT_H_
+#define _PRODUCT_H_
+
+class Button
+{
+protected:
+	Button();
+
+public:
+	virtual ~Button();
+};
+
+class Border
+{
+protected:
+	Border();
+
+public:
+	virtual ~Border();
+};
+
+class MacButton : public Button
+{
+public:
+	MacButton();
+	~MacButton();
+};
+
+class WinButton : public Button
+{
+public:
+	WinButton();
+	~WinButton();
+};
+
+class MacBorder : public Border
+{
+public:
+	MacBorder();
+	~MacBorder();
+};
+
+class WinBorder : public Border
+{
+public:
+	WinBorder();
+	~WinBorder();
+};
+
+#endif // _PRODUCT_H_
+```
+```
+
+// Product.cpp
+
+#include <iostream>
+using namespace std;
+
+#include "Product.h"
+
+////////////////////Button/////////////////////
+Button::Button()
+{
+}
+
+Button::~Button()
+{
+}
+
+///////////////////Border////////////////////////
+Border::Border()
+{
+}
+
+Border::~Border()
+{
+}
+
+////////////////////MacButton/////////////////////
+MacButton::MacButton()
+{
+	cout << "MacButton::MacButton" << endl;
+}
+
+MacButton::~MacButton()
+{
+	cout << "MacButton::~MacButton" << endl;
+}
+
+///////////////////WinButton///////////////////////
+WinButton::WinButton()
+{
+	cout << "WinButton::WinButton" << endl;
+}
+
+WinButton::~WinButton()
+{
+	cout << "WinButton::~WinButton" << endl;
+}
+
+///////////////////MacBorder////////////////////////
+MacBorder::MacBorder()
+{
+	cout << "MacBorder::MacBorder" << endl;
+}
+
+MacBorder::~MacBorder()
+{
+	cout << "MacBorder::~MacBorder" << endl;
+}
+
+///////////////////WinBorder/////////////////////////
+WinBorder::WinBorder()
+{
+	cout << "WinBorder::WinBorder" << endl;
+}
+
+WinBorder::~WinBorder()
+{
+	cout << "WinBorder::~WinBorder" << endl;
+}
+```
+```
+
+// Factory.h
+
+#ifndef _FACTORY_H_
+#define _FACTORY_H_
+
+class Button;
+class Border;
+
+class AbstractFactory
+{
+public:
+	virtual Button* CreateButton() = 0;
+	virtual Border* CreateBorder() = 0;
+	virtual ~AbstractFactory();
+
+protected:
+	AbstractFactory();
+};
+
+class MacFactory : public AbstractFactory
+{
+public:
+	MacFactory();
+	~MacFactory();
+
+	Button* CreateButton();
+	Border* CreateBorder();
+};
+
+class WinFactory : public AbstractFactory
+{
+public:
+	WinFactory();
+	~WinFactory();
+
+	Button* CreateButton();
+	Border* CreateBorder();
+};
+
+#endif // _FACTORY_H_
+```
+```
+
+// Factory.cpp
+
+#include <iostream>
+using namespace std;
+
+#include "Factory.h"
+#include "Product.h"
+
+AbstractFactory::AbstractFactory()
+{
+}
+
+AbstractFactory::~AbstractFactory()
+{
+}
+/////////////////////////////////////////
+
+MacFactory::MacFactory()
+{
+	cout << "MacFactory::MacFactory" << endl;
+}
+
+MacFactory::~MacFactory()
+{
+	cout << "MacFactory::~MacFactory" << endl;
+}
+
+Button* MacFactory::CreateButton()
+{
+	return new MacButton();
+}
+
+Border* MacFactory::CreateBorder()
+{
+	return new MacBorder();
+}
+///////////////////////////////////////////
+
+WinFactory::WinFactory()
+{
+	cout << "WinFactory::WinFactory" << endl;
+}
+
+WinFactory::~WinFactory()
+{
+	cout << "WinFactory::~WinFactory" << endl;
+}
+
+Button* WinFactory::CreateButton()
+{
+	return new WinButton();
+}
+
+Border* WinFactory::CreateBorder()
+{
+	return new WinBorder();
+}
+```
+```
+
+// main.cpp
+
+#include <iostream>
+#include "Product.h"
+#include "Factory.h"
+using namespace std;
+
+#define MAC 1
+#define WIN 2
+
+int main(int argc, char *argv[])
+{
+	AbstractFactory *fac = NULL;
+	int style = 0;
+	cout << "input factory style(MAC:1, WIN:2)" << endl;
+	cin >> style;
+	switch (style)
+	{
+	case MAC:
+		fac = new MacFactory();
+		break;
+
+	case WIN:
+		fac = new WinFactory();
+		break;
+
+	default:
+		cout << "no this style" << endl;
+		goto END;
+	}
+	
+	Button* button = fac->CreateButton();
+	Border* border = fac->CreateBorder();
+
+END:
+	system("pause");
+	return 0;
+}
+```
+
+> 2011-07-19

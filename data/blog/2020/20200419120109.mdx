@@ -1,0 +1,39 @@
+---
+title: '用脚本启停我的go程序'
+date: '2020-04-19'
+tags: ['Go']
+draft: false
+summary: 介绍用脚本启停 go 程序，程序用 go 语言编写并使用 go-daemon 库让进程后台运行，脚本取名为 bootstrap，可实现 build、start、stop、restart 等功能，通过 cat 获取 pid 进行相应操作。 
+---
+
+用一个脚本来方便编译、启停我的blog程序（go语言编写的），我在程序中使用了github.com/sevlyar/go-daemon这个库来让博客进程在后台运行。具体用法可以看github上的README，它会生成一个文件存放当前运行进程的pid，我这里取名叫：ningtogo.pid。下面就是服务端脚本的编写了。
+
+这个脚本我取名叫：bootstrap
+```
+#!/bin/sh
+
+pid=`cat ./ningtogo.pid`
+
+case "$1" in
+        build)
+                go build -o ningtogo
+                ;;
+        start)
+                chmod +x ./ningtogo
+                ./ningtogo -deamon
+                ;;
+        stop)
+                kill -9 $pid
+                ;;
+        restart)
+                kill -9 $pid
+                sleep 1s
+                ./ningtogo -deamon
+                ;;
+        *)
+                echo $"Usage: $0 {build|start|stop|restart}"
+                ;;
+esac
+
+exit 0
+```

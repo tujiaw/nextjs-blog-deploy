@@ -1,0 +1,658 @@
+---
+title: 'C、C++常用函数备份（持续更新）'
+date: '2017-10-24'
+tags: ['C/C++']
+draft: false
+summary: 本文为 C、C++常用函数备份，包含获取当前毫秒数、获取格式化时间等多种函数，如`GetCurrentMilliseconds()`、`GetTimeString()`等，还有字节大小格式化、产生随机字符串等功能函数，满足多种编程需求。  
+---
+
+有些函数在程序中用的比较多， 就记下来。当然个人写的，虽然经过了简单的测试，但难免有问题，慢慢完善！！！
+
+
+```
+// C++11 获取当前毫秒数
+long long GetCurrentMilliseconds()
+{
+    std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+}
+
+
+// 获取格式化时间，年-月-日 时:分:秒
+std::string GetTimeString(time_t t) {
+	if (t == -1) {
+		return "";
+	}
+	struct tm *local = localtime(&t);
+	char timeChars[50];
+	strftime(timeChars, 50, "%Y-%m-%d %H:%M:%S", local);
+	return std::string(timeChars);
+}
+```
+
+```
+// boost获取格式化时间，包括毫秒
+std::string GetDateTimeForMillisecond()
+{
+    boost::posix_time::time_facet* facet = new boost::posix_time::time_facet("%Y-%m-%d %H:%M:%S.%f"); // 不需要释放
+    std::stringstream date_stream;
+    date_stream.imbue(std::locale(date_stream.getloc(), facet));
+    //date_stream << boost::posix_time::microsec_clock::universal_time(); // 差8小时
+    date_stream << boost::posix_time::microsec_clock::local_time();
+    std::string milli_str = date_stream.str();
+    milli_str = milli_str.substr(0, milli_str.find_last_of('.') + 4); // 微秒改为毫秒
+    return milli_str;
+}
+```
+
+```
+// 字节大小格式化，包含头文件#include <iomanip>
+std::string bytesFormat(int size)
+{
+    std::stringstream ss;
+    if (size < 1024) {
+        ss << size << "B";
+    } else if (size < 1024 * 1024) {
+        ss << std::setiosflags(std::ios::fixed) << std::setprecision(2) << (size * 1.0 / 1024) << "KB";
+    } else if (size < 1024 * 1024 * 1024) {
+        ss << std::setiosflags(std::ios::fixed) << std::setprecision(2) << (size * 1.0 / 1024 / 1024) << "MB";
+    } else {
+        ss << std::setiosflags(std::ios::fixed) << std::setprecision(2) << (size * 1.0 / 1024 / 1024 / 1024) << "GB";
+    }
+    return ss.str();
+}
+```
+
+```
+// 产生随机字符串
+std::string BuildRandString(int num)
+{
+	static unsigned int s_add = 0;
+	std::string ret;
+	srand((unsigned int)time(NULL) + (s_add++));
+	for (int i=0; i<num; )
+	{
+		char buf[17] = {0};
+		_itoa_s(rand(), buf, 0x10);
+		ret += buf;
+		i += strlen(buf);
+	}
+	return ret.substr(0, num);
+}
+```
+
+```
+
+/*!
+  \fn void trim_left(char *&str)
+  \brief 去掉字符串左边的空格字符
+  \param in,out str 源字符串
+  \return
+*/
+void trim_left(char *&str)
+{
+	if (str == NULL)
+	{
+		return;
+	}
+
+	while (*str)
+	{
+		if (*str == ' ')
+		{
+			str++;
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+```
+
+```
+
+/*!
+  \fn void trim_right(char *&str_src)
+  \brief 去掉字符串右边的空格字符
+  \param in,out str_src 源字符串
+  \return
+*/
+void trim_right(char *&str_src)
+{
+	if (str_src == NULL)
+	{
+		return;
+	}
+
+	char *str = str_src;
+	while (*str)
+	{
+		str++;
+	}
+	--str;
+	while (*str)
+	{
+		if (*str == ' ')
+		{
+			--str;
+		}
+		else
+		{
+			++str;
+			*str = '\0';
+			break;
+		}
+	}
+}
+```
+```
+
+/*!
+  \fn string find_row_str(const string str_src, int nrow)
+  \brief 返回源串（列用一个或多个空格分隔）中的指定列子串
+  \param in str_src 源字符串 
+  \param in nrow 指定第几列
+  \return 结果子串
+*/
+string find_row_str(const string str_src, int nrow)
+{
+	string str_dest;
+	if (str_src.empty() || nrow < 1)
+	{
+		return str_dest;
+	}
+
+	string str = str_src;
+	str.insert(str.end(), 1, ' ');
+	int num = 0;
+	while (1)
+	{
+		int pos1, pos2;
+		pos1 = str.find(" ");
+		if (-1 != pos1)
+		{
+			++num;
+			if (num == nrow)
+			{
+				str_dest = str.substr(0, pos1);
+				break;
+			}
+			string temp = str.substr(pos1);
+			pos2 = temp.find_first_not_of(" ");
+			if (-1 != pos2)
+			{
+				str = temp.substr(pos2);
+			}
+			else
+			{
+				break;
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return str_dest;
+}
+```
+```
+
+// 去掉string左右两边的空格
+void trim_left_right(string &str)
+{
+    if (!str.empty())
+    {
+        int i;
+        int len = str.size();
+        for (i=0; i<len; i++)
+        {
+            if (str[i] != ' ')
+            {
+                break;
+            }
+        }
+        str.erase(0, i);
+        len = str.size();
+        for (i=len-1; i>0; i--)
+        {
+            if (str[i] != ' ')
+            {
+                break;
+            }
+        }
+        str.erase(i+1, len);
+    }
+}
+```
+```
+
+#include<stdio.h>
+#include<stdlib.h>
+
+typedef unsigned int u32;
+
+//迭代法 按位交换32位整形的高位与低位（如：0和31、1和30...交换）
+u32 reverse_val(u32 val)
+{
+    u32 low,  hig;
+    
+	// 1<<((sizeof(val)<<3)-1)相当于2的31次方
+    for (low=1, hig=1<<((sizeof(val)<<3)-1); low<hig; low<<=1, hig>>=1)
+    {
+		// 判断低位与高位是否相等
+        if (((val&low) && !(val&hig)) || (!(val&low) && (val&hig)))
+        {
+			// 交换高位与低位
+            val ^= low;
+            val ^= hig;
+        }
+    }
+    
+    return val;
+}
+
+int main(void)
+{
+    u32 val = 0x0000008;
+    
+    printf("src=0x%.8x, dest=0x%.8x\n", val, reverse_val(val));
+
+    return 0;
+}
+```
+```
+
+// C语言实现栈
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#define S_OK 1
+#define S_ERROR 0
+
+#define STACK_SIZE 124
+#define STACK_INCREMENT 16
+
+typedef char elem;
+typedef int Status;
+
+typedef struct
+{
+	elem *base;
+	elem *top;
+	int size;
+}STACK;
+
+Status CreateStack(STACK &s)
+{
+	s.base = (elem*)malloc(sizeof(elem)*STACK_SIZE);
+	if (!s.base)
+	{
+		return S_ERROR;
+	}
+	s.top = s.base;
+	s.size = STACK_SIZE;
+
+	return S_OK;
+}
+
+Status DestroyStack(STACK &s)
+{
+	if (s.size > 0)
+	{
+		free(s.base);
+		s.size = 0;
+		return S_OK;
+	}
+	else
+	{
+		return S_ERROR;
+	}
+}
+
+Status ClearStack(STACK &s)
+{
+	if (s.size == 0)
+	{
+		return S_ERROR;
+	}
+
+	s.top = s.base;
+	return S_OK;
+}
+
+Status StackEmpty(STACK s)
+{
+	if (s.size>0 && s.base==s.top)
+	{
+		return S_OK;
+	}
+	else
+	{
+		return S_ERROR;
+	}
+}
+
+Status Push(STACK &s, elem e)
+{
+	if (s.size == 0)
+	{
+		return S_ERROR;
+	}
+
+	if (s.top-s.base >= s.size)
+	{
+		s.base = (elem*)realloc(s.base, (s.size+STACK_INCREMENT)*sizeof(elem));
+		if (!s.base)
+		{
+			return S_ERROR;
+		}
+		s.top = s.base+s.size;
+		s.size += STACK_INCREMENT;
+	}
+
+	*s.top++ = e;
+	return S_OK;
+}
+
+Status Pop(STACK &s, elem &e)
+{
+	if (s.size>0 && s.base!=s.top)
+	{
+		e = *(--s.top);
+		return S_OK;
+	}
+	else
+	{
+		return S_ERROR;
+	}
+}
+
+Status GetTop(STACK s, elem &e)
+{
+	if (s.size==0 || s.base==s.top)
+	{
+		return S_ERROR;
+	}
+		
+	e = *(s.top-1);
+	return S_OK;
+}
+
+int StackLength(STACK s)
+{
+	int len = 0;
+	if (s.size > 0)
+	{
+		len = int(s.top - s.base);
+	}
+	
+	return len;
+}
+
+int main(void)
+{
+	STACK s;
+	CreateStack(s);
+	// ...
+	DestroyStack(s);
+
+	return 0;
+}
+```
+```
+
+bool IPStringToUlong(const char* strSrc, unsigned long &ulDst)
+{
+    bool bret = false;
+    struct in_addr addr;
+
+    if (0 != inet_aton(strSrc, &addr))
+    {
+        ulDst = addr.s_addr;
+        bret = true;
+    }
+
+    return bret;
+}
+
+bool IPUlongToString(unsigned long ulSrc, char* strDst)
+{
+    bool bret = false;
+    struct in_addr addr;
+    char* str = NULL;
+
+    addr.s_addr = ulSrc;
+    str = inet_ntoa(addr);
+    if (NULL != str)
+    {
+        strcpy(strDst, str);
+        bret = true;
+    }
+
+    return bret;
+}
+```
+```
+
+bool BinarySearch(const unsigned long* ipPtr, int size, unsigned long ulDst, int &iPos)
+{
+    int low = 0;
+    int high = size-1;
+    int mid;
+
+    while (low <= high)
+    {
+        mid = low + ((high-low) / 2);
+        if (ipPtr[mid] == ulDst)
+        {
+            iPos = mid;
+            return true;
+        }
+
+        if (ipPtr[mid] > ulDst)
+        {
+            high = mid - 1;
+        }
+        else
+        {
+            low = mid + 1;
+        }
+    }
+
+    iPos = mid;
+    return false;
+}
+```
+```
+
+// 查找父串中的子串，存在返回子串在父串中的地址，否则返回NULL
+char* my_strstr(char *parStr,char *subStr)
+{
+    for (;;++parStr)
+    {
+        char *s1 = parStr;
+        for (char *s2 = subStr; ; ++s1, ++s2)
+        {
+            if (!*s2)
+            {
+                return parStr;
+            }
+
+            if (*s1 != *s2)
+            {
+                break;
+            }
+        }
+
+        if (!*s1)
+        {
+            return NULL;
+        }
+    }
+}
+```
+```
+
+static const char hex_chars[] = "0123456789abcdef";
+
+int light_isdigit(int c) {
+	return (c >= '0' && c <= '9');
+}
+
+int light_isxdigit(int c) {
+	if (light_isdigit(c)) return 1;
+
+	c |= 32;
+	return (c >= 'a' && c <= 'f');
+}
+
+int light_isalpha(int c) {
+	c |= 32;
+	return (c >= 'a' && c <= 'z');
+}
+
+int light_isalnum(int c) {
+	return light_isdigit(c) || light_isalpha(c);
+}
+
+int buffer_to_lower(char *b) {
+	char *c;
+
+	if (b == 0) return 0;
+
+	for (c = b; *c; c++) {
+		if (*c >= 'A' && *c <= 'Z') {
+			*c |= 32;
+		}
+	}
+
+	return 0;
+}
+
+
+int buffer_to_upper(char *b) {
+	char *c;
+
+	if (b == 0) return 0;
+
+	for (c = b; *c; c++) {
+		if (*c >= 'a' && *c <= 'z') {
+			*c &= ~32;
+		}
+	}
+
+	return 0;
+}
+
+char int2hex(char c) {
+	return hex_chars[(c & 0x0F)];
+}
+
+char hex2int(unsigned char hex) {
+	hex = hex - '0';
+	if (hex > 9) {
+		hex = (hex + '0' - 1) | 0x20;
+		hex = hex - 'a' + 11;
+	}
+	if (hex > 15)
+		hex = 0xFF;
+
+	return hex;
+}
+```
+```
+
+// 上面函数0返回真，非0为假
+int main(void)
+{
+    int iret;
+
+    iret = light_isxdigit('a');
+    printf("light_isdigit = %d\n", iret);
+
+    iret = light_isalnum(3);
+    printf("light_isalpha = %d\n", iret);
+
+    char s[12] = {0};
+    strncpy(s, "CDAdfDdff", 9);
+    buffer_to_lower(s);
+    printf("lower s = %s\n", s);
+
+    printf("int2hex = %c\n", int2hex(14));
+    printf("hex2int = %d\n", hex2int('F'));
+
+    char str1[] = "abcdefgdfs";
+    char str2[] = "efg";
+    printf("str = %s\n", my_strstr(str1, str2));
+
+    return 0;
+}
+```
+```
+// 字节流转换为十六进制
+
+std::string toHex(unsigned char arr[], size_t len)
+{
+	std::string retVal;
+	char buf[4];
+	for (size_t i=0; i<len; i++) {
+		sprintf_s(buf, "%02X ", arr[i]);
+		retVal.append(buf);
+	}
+	retVal[retVal.size() - 1] = '\0';
+	return retVal;
+}
+```
+```
+#include <cctype>
+std::string trim(std::string&& s)
+{
+    s.erase(std::find_if_not(s.rbegin(), s.rend(), std::isspace).base(), s.end());
+    s.erase(s.begin(), std::find_if_not(s.begin(), s.end(), std::isspace));
+    return std::move(s);
+}
+
+std::vector<std::string> split(const std::string& s, const std::string& delimiter)
+{
+    std::vector<std::string> output;
+
+    if (delimiter.empty())
+    {
+        output.push_back(s);
+        return output;
+    }
+
+    const size_t delimiter_length = delimiter.length();
+    size_t i = 0;
+    for (size_t pos = s.find(delimiter); pos != std::string::npos; pos = s.find(delimiter, pos))
+    {
+        output.push_back(s.substr(i, pos - i));
+        pos += delimiter_length;
+        i = pos;
+    }
+
+    // Add the rest of the string after the last delimiter, unless there is nothing after it
+    if (i != s.length())
+    {
+        output.push_back(s.substr(i, s.length()));
+    }
+
+    return output;
+}
+
+std::string replace_all(std::string&& s, const std::string& search, const std::string& rep)
+    {
+        size_t pos = 0;
+        while ((pos = s.find(search, pos)) != std::string::npos)
+        {
+            s.replace(pos, search.size(), rep);
+            pos += rep.size();
+        }
+        return std::move(s);
+    }
+```

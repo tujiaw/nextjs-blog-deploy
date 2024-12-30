@@ -1,0 +1,296 @@
+---
+title: '类模板之单链表'
+date: '2017-04-17'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 介绍了类模板之单链表，包含 Chain.h 中定义的模板类 ChainNode 和 Chain，以及 Chain.cpp 中实现的各种函数，如构造、析构、插入、删除等操作，最后在 main.cpp 中进行了测试。 
+---
+
+```
+// Chain.h
+
+#ifndef _CHAIN_H_
+#define _CHAIN_H_
+
+template<class T>
+class ChainNode
+{
+public:
+	T data;
+	ChainNode<T> *link;
+};
+
+template<class T>
+class Chain
+{
+public:
+	Chain();
+	~Chain();
+
+	bool IsEmpty() const;
+
+	int Length() const;
+
+	bool Find(int index, T &value) const;
+
+	int Search(T value) const;
+
+	Chain<T>& Insert(int index, const T &value);
+
+	Chain<T>& Delete(int index, T &value);
+
+	Chain<T>& Reverse(void);
+
+	void Output() const;
+
+private:
+	ChainNode<T> *first;
+	int len;
+};
+
+#endif // _CHAIN_H_
+```
+
+```
+// Chain.cpp
+#include "stdafx.h"
+#include "Chain.h"
+#include <iostream>
+using namespace std;
+
+template<class T>
+Chain<T>::Chain()
+{
+	first = NULL;
+	len = 0;
+}
+
+template<class T>
+Chain<T>::~Chain()
+{
+	ChainNode<T> *next;
+
+	while (first)
+	{
+		next = first->link;
+		delete first;
+		first = next;
+	}
+}
+
+template<class T>
+bool Chain<T>::IsEmpty() const
+{
+	return (first == NULL);
+}
+
+template<class T>
+int Chain<T>::Length() const
+{
+	return len;
+}
+
+template<class T>
+bool Chain<T>::Find(int index, T &value) const
+{
+	ChainNode<T> *cur = first;
+
+	if (index < 1 || index > len + 1)
+	{
+		return false;
+	}
+
+	for (int i = 1; i < index && cur; i++)
+	{
+		cur = cur->link;
+	}
+
+	if (cur)
+	{
+		value = cur->data;
+		return true;
+	}
+
+	return false;
+}
+
+template<class T>
+int Chain<T>::Search(T value) const
+{
+	ChainNode<T> *cur = first;
+	int pos = 1;
+
+	while (cur && cur->data != value)
+	{
+		cur = cur->link;
+		pos++;
+	}
+
+	if (cur)
+	{
+		return pos;
+	}
+	
+	return 0;
+}
+
+template<class T>
+Chain<T>& Chain<T>::Insert(int index, const T &value)
+{
+	ChainNode<T> *cur = first;
+
+	if (index < 0 || index > len + 1)
+	{
+		cout << "Insert error" << endl;
+	}
+	
+	for (int i = 1; i < index && cur; i++)
+	{
+		cur = cur->link;
+	}
+
+	if (index > 0 && !cur)
+	{
+		cout << "Insert Out bounds" << endl;
+	}
+
+	ChainNode<T> *newNode = new ChainNode<T>;
+	newNode->data = value;
+
+	if (index)
+	{
+		newNode->link = cur->link;
+		cur->link = newNode;
+	}
+	else
+	{
+		newNode->link = first;
+		first = newNode;
+	}
+
+	len++;
+	return *this;
+}
+
+template<class T>
+Chain<T>& Chain<T>::Delete(int index, T &value)
+{
+	ChainNode<T> *cur = first;
+
+	if (index < 1 || index > len)
+	{
+		cout << "Delete Out bounds" << endl;
+	}
+
+	if (index == 1)
+	{
+		first = cur->link;
+	}
+	else
+	{
+		ChainNode<T> *prev = first;
+		for (int i = 1; i < index - 1 && prev; i++)
+		{
+			prev = prev->link;
+		}
+		cur = prev->link;
+		prev->link = cur->link;
+	}
+	value = cur->data;
+	delete cur;
+
+	len--;
+
+	return *this;
+}
+
+template<class T>
+void Chain<T>::Output() const
+{
+	ChainNode<T> *cur = first;
+
+	while (cur)
+	{
+		cout << cur->data << ' ';
+		cur = cur->link;
+	}
+}
+
+template<class T>
+Chain<T>& Chain<T>::Reverse(void)
+{
+	ChainNode<T> *p1 = first;
+	ChainNode<T> *p2 = p1->link;
+	ChainNode<T> *p3 = p2->link;
+
+	p1->link = NULL;
+	while (p3 != NULL)
+	{
+		p2->link = p1;
+		p1 = p2;
+		p2 = p3;
+		p3 = p3->link;
+	}
+	p2->link = p1;
+	first = p2;
+
+	return *this;
+}
+```
+
+```
+// main.cpp
+#include "stdafx.h"
+#include "Chain.h"
+#include "Chain.cpp"
+#include <iostream>
+using namespace std;
+
+int main(int argc, char *argv[])
+{
+	Chain<int> chain;
+	int value;
+
+	/*************Insert**********/
+	for (int i = 0; i < 10; i++)
+	{
+		chain.Insert(i, i + 1);
+	}
+
+	/*************Output**********/
+	chain.Output();
+	cout << endl;
+
+	/************IsEmpty***********/
+	cout << "IsEmpty = " << chain.IsEmpty() << endl;
+
+	/*************Length**********/
+	cout << "Length = " << chain.Length() << endl;
+
+	/*************Find************/
+	chain.Find(4, value);
+	cout << "value = " << value << endl;
+
+	/*************Search**********/
+	cout << "search = " << chain.Search(3) << endl;
+
+	/*************Delete**********/
+	chain.Delete(8, value);
+	cout << "delete value = " << value << endl;
+
+	/*************Output**********/
+	chain.Output();
+	cout << endl;
+
+	/*************Reverse************/
+	chain.Reverse();
+	cout << "Reverse: ";
+	chain.Output();
+	cout << endl;
+
+	cin.get();
+	return 0;
+}
+```
+
+> 2011-08-12

@@ -1,0 +1,66 @@
+---
+title: '删除数据库中没有使用到的图片'
+date: '2020-09-03'
+tags: ['Go']
+draft: false
+summary: 文章介绍了删除数据库中未使用图片的程序。先连接数据库，读取 web/upload 目录下图片，根据图片名在数据库查找，未找到则删除。通过 Go 代码实现，遍历目录，根据图片名在数据库中筛选，找到无对应文章的图片并删除。 
+---
+
+有个web/upload目录下有许多图片，但是很多图片是测试时产生的在博客文章中并没有使用，所以写个小程序判断哪些图片没有用到然后删除。
+
+# 步骤
+1. 连接数据库  
+2. 读取目录下的所有图片  
+3. 根据图片名字在数据库中查找  
+4. 如果没有找到文章就删除图片  
+
+# 源码
+```
+package main
+
+import (
+        "fmt"
+        "github.com/jinzhu/gorm"
+        _ "github.com/jinzhu/gorm/dialects/mysql"
+        "io/ioutil"
+        "log"
+        "os"
+        "path"
+)
+
+var PostBaseFields = "id, _id, author, title, profile, pv, tags, type, created_at, updated_at"
+type Post struct {
+        gorm.Model
+        Id      string `gorm:"column:_id"`
+        Author  string `gorm:"column:author"`
+        Title   string `gorm:"column:title"`
+        Profile string `gorm:"column:profile"`
+        Content string `gorm:"column:content"`
+        Pv      int    `gorm:"column:pv"`
+        Tags    string `gorm:"column:tags"`
+        Type    int    `gorm:"column:type"`
+}
+
+func main() {
+        db, err := gorm.Open("mysql", "root:password@tcp(118.xxx.xxx.xxx:3306)/blog?charset=utf8&parseTime=true")
+        if err != nil {
+                log.Fatal(err)
+        }
+
+        const webDir = "/root/web/upload"
+        files, err := ioutil.ReadDir(webDir)
+        if err != nil {
+                log.Fatal(err)
+        }
+
+        for _, file := range files {
+                key := file.Name()
+                var posts []Post
+                err = db.Select(PostBaseFields).Where("content like ?", "%"+key+"%").Find(&posts).Error
+                if err == nil && len(posts) == 0 {
+                        fmt.Println(key)
+                        os.Remove(path.Join(webDir, file.Name()))
+                }
+        }
+}
+```

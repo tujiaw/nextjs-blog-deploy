@@ -1,0 +1,64 @@
+---
+title: 'VirtualBox Centos6 安装增强功能设置共享文件夹'
+date: '2019-05-21'
+tags: ['Linux']
+draft: false
+summary: 介绍 VirtualBox Centos6 安装增强功能及设置共享文件夹步骤：先安装必要工具、重启虚拟机，选 VBoxGuestAdditions.iso 挂载光驱，运行安装脚本，设置共享文件夹并挂载，若遇错误可执行特定命令，最后查看共享目录。 
+---
+
+VirtualBox Centos6 安装增强功能设置共享文件夹
+
+## 安装必要的工具
+```
+yum -y update
+yum -y install g++ gcc gcc-c++ make kernel-*
+yum -y install bzip2* 
+yum -y install perl
+```
+
+## 重启虚拟机
+``` 
+reboot 
+```
+
+## 选择VBoxGuestAdditions.iso文件
+VirtualBox菜单栏中选择设备->分配光驱->选择虚拟盘->选择VirtualBox安装目录下的VBoxGuestAdditions.iso文件
+
+## 挂载光驱
+```
+mkdir /home/website
+mount -t auto /dev/cdrom /home/website
+cd /home/website
+ls
+```
+此时可以看到VBoxLinuxAdditions.run说明挂载成功
+
+
+```
+sh ./VBoxLinuxAdditions.run
+```
+等待安装完成，如果上面的工具都安装了，网络是通的应该没什么问题
+
+## 设置共享文件夹
+打开设置界面选择共享文件夹，如下：
+![](https://www.ningto.com/upload/DC8092F35A0EB8FAC869EB003DDB9460.png)
+
+## 挂载
+```
+mkdir /home/vmshare
+mount -t vboxsf vmshare /home/vmshare # 第一个vmshare界面设置时文件夹名字，第二个vmshare是本机挂载的路径
+```
+
+
+/home/vmshare就是共享文件夹了，如果有如下错误：  
+/sbin/mount.vboxsf: mounting failed with the error: No such device
+```
+cd /opt/VBoxGuestAdditions-***/init/
+./vboxadd setup
+```
+然后再次执行上面的挂载
+
+## 查看linux上的共享目录
+```df -h```
+
+![](https://www.ningto.com/upload/2CC267D252E1B79B34D30F88129F8B38.png)

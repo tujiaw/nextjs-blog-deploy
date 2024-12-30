@@ -1,0 +1,38 @@
+---
+title: 'linux expect scp自动输入密码'
+date: '2019-06-27'
+tags: ['Linux', 'Shell']
+draft: false
+summary: 
+---
+
+Expect是一个根据脚本与其他交互程序进行“对话”的程序，通过脚本，Expect根据程序的输出信息来判断需要什么输入，然后将输入信息发送给程序。[详细文档](https://linux.die.net/man/1/expect)
+
+现在通过一个简单的例子来使用它，使用scp在不同机器间传输文件每次都要输入密码，expect可以去掉输入密码这个步骤。  
+
+脚本如下，假如名字是sync.sh，远程主机的密码是123456
+```
+#!/usr/bin/expect -f
+set timeout -1
+set password "123456"
+
+set src [lindex $argv 0]
+set dst [lindex $argv 1]
+
+spawn scp $src $dst
+
+expect {
+        "yes/no" { send "yes\r"; exp_continue }
+        "password:" { send "$password\r"; }
+}
+
+expect eof
+exit
+```
+
+用法：
+执行下面的命令，传输aaa文件到另一台机器的home目录就不用输入密码了
+```
+./sync.sh aaa 172.16.77.100:/home
+```
+如果你要传输多个不同的文件可以在另外的脚本里面多次调用sync.sh这个脚本

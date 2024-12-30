@@ -1,0 +1,32 @@
+---
+title: 'swift UITableView cell自适应高度'
+date: '2017-06-10'
+tags: ['Mobile']
+draft: false
+summary: 2017 年 6 月 10 日的文章介绍 swift UITableView cell 自适应高度。ios8 支持，需在 viewDidLoad 中设置 estimatedRowHeight 和 rowHeight，在 cellForRowAtIndexPath 中设置 textLabel 的行数和宽度，heightForRowAtIndexPath 设为 UITableViewAutomaticDimension。 
+---
+
+ios8支持：
+
+```
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        self.tableView.estimatedRowHeight = 100
+        self.tableView.rowHeight = UITableViewAutomaticDimension
+    }
+````
+
+```
+func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+......
+            cell.textLabel?.numberOfLines = 0
+            cell.textLabel?.preferredMaxLayoutWidth = CGRectGetWidth(tableView.bounds)
+}
+```
+
+```
+    func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+        return UITableViewAutomaticDimension
+    }
+```

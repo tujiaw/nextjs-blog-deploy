@@ -1,0 +1,99 @@
+---
+title: '字符串 单词 翻转'
+date: '2018-06-11'
+tags: ['C/C++']
+draft: false
+summary: '这篇文章介绍了如何翻转字符串和单词。首先，作者介绍了如何翻转字符串，包括将字符串分为左右两部分，分别进行反序，然后将整个字符串反序。接着，作者提供了C++和C#两种语言的实现代码。然后，作者介绍了如何翻转单词，包括将每个单词进行反序，然后将整个字符串反序。最后，作者提供了C++语言的实现代码。'
+---
+
+如将字符串"abcdef"的前两个字符翻转到后面变成"cdefab"。  
+
+整个字符串可以分为左边和右边两部分，翻转思路是：
+* 将左边字符串反序（"ab"变成"ba"）
+* 将右边字符串反序("cdef"变成"fedc")
+* 左右部分反序后的组合是"bafedc"
+* 最后将整个字符串反序（"bafedc"变成"cdefab"）得到我们要的结果
+
+完整代码如下：
+```
+void invertStr(char str[], int start, int end)
+{
+	while (end > start) {
+		char temp = str[start];
+		str[start] = str[end];
+		str[end] = temp;
+		++start;
+		--end;
+	}
+}
+
+void rotateStr(char str[], int len, int leftLen)
+{
+	leftLen %= len;
+	invertStr(str, 0, leftLen - 1);
+	invertStr(str, leftLen, len - 1);
+	invertStr(str, 0, len - 1);
+}
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+	char str[] = "abcdef"; // defabc
+	std::cout << "before:" << str << std::endl;
+	rotateStr(str, strlen(str), 2);
+	std::cout << "after:" << str << std::endl;
+
+	system("pause");
+	return 0;
+}
+
+```
+
+std::string版
+```
+class Solution {
+public:
+	string LeftRotateString(string str, int n) {
+		if (str.empty()) {
+			return "";
+		}
+
+		n %= str.size();
+		Invert(str, 0, n - 1);
+		Invert(str, n, str.size() - 1);
+		Invert(str, 0, str.size() - 1);
+		return str;
+	}
+
+	void Invert(string &str, int from, int to) {
+		while (from < to) {
+			std::swap(str[from++], str[to--]);
+		}
+	}
+};
+```
+
+单词翻转
+```
+class Solution {
+public:
+	string ReverseSentence(string str) {
+		int index = 0;
+		for (int i = 0, count = str.size(); i < count; i++) {
+			if (str[i] == ' ') {
+				Invert(str, index, i - 1);
+				index = i + 1;
+			}
+		}
+		Invert(str, index, str.size() - 1);
+		Invert(str, 0, str.size() - 1);
+		return str;
+	}
+
+	void Invert(string &str, int from, int to) {
+		while (from < to) {
+			std::swap(str[from++], str[to--]);
+		}
+	}
+};
+```
+如：I am a student翻转为student a am I

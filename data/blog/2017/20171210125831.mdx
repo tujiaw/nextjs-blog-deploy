@@ -1,0 +1,27 @@
+---
+title: 'QLayout  Attempting to add QLayout'
+date: '2017-06-17'
+tags: ['Qt']
+draft: false
+summary:
+---
+
+QLayout: Attempting to add QLayout , which already has a layout
+
+出现这个警告的原因是一个QWidget作为了多个QLayout的parent，一个QWidget应该只有一个main layout，将其它子widget或者layout增加到main layout中，如下代码：
+```
+    QWidget *x = new QWidget(this);
+    QHBoxLayout *h1 = new QHBoxLayout(x);
+    QHBoxLayout *h2 = new QHBoxLayout(x);
+```
+会出现警告：
+> QLayout: Attempting to add QLayout "" to QWidget "", which already has a layout
+
+## 解决方法：
+```
+    QWidget *x = new QWidget(this);
+    QHBoxLayout *h1 = new QHBoxLayout(x);
+    QHBoxLayout *h2 = new QHBoxLayout();
+    h1->addLayout(h2);
+```
+或者给h2指定其它的widget作为parent。

@@ -1,0 +1,21 @@
+---
+title: 'Navicat for PostgreSQL ubuntu 无限续期'
+date: '2024-02-23'
+tags: ['Database']
+draft: false
+summary: 本文介绍了在 Ubuntu 上延长 Navicat 16 for PostgreSQL 免费试用期的方法，通过删除本地配置文件实现续期，并提供两种保存连接信息的方式：导出导入和使用 Navicat Cloud。
+---
+
+在ubuntu上安装的Navicat 16 for PostgreSQL 免费试用只有14天，通过以下方式可以重新计算试用时间。
+
+其实就是删除本地配置，可能这个漏洞后面会被改掉
+```
+rm -rf ~/.config/navicat
+rm -rf ~/.config/dconf/user
+```
+
+删除之后之前的连接信息就没了，又要重新建立连接，下面有提供两种方法：
+1. 先导出连接，再删除配置，续期成功后再导入就可以了；
+2. 更好的方法是，注册一个Navicat Cloud账号，从Navicat Cloud建立连接，这样将连接信息存储在云上就永远都丢不掉了。
+
+![tmp_fygo57j-20240224140756.png](https://images.ningto.com/tmp_fygo57j-20240224140756.png)

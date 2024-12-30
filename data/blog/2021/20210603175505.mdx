@@ -1,0 +1,94 @@
+---
+title: 'Python 列表、字典的几种遍历方式'
+date: '2021-06-03'
+tags: ['Python']
+draft: false
+summary: 
+---
+
+列表遍历使用高阶函数代码看起来更加简洁明了，普通for in遍历更加灵活。
+
+字典可以很容易的通过函数获取keys和values列表，for in也有几种不同的方式。
+
+```
+from functools import reduce
+
+
+def foo0():
+  print('高阶函数遍历')
+  # 将列表中的元素翻倍
+  ls = [1, 2, 3, 4, 5, 6]
+  ls2 = list(map(lambda x: x * 2, ls))
+  print(ls2)
+
+  # 过滤保留偶数
+  ls3 = list(filter(lambda x : x % 2 == 0, ls))
+  print(ls3)
+
+  # 列表元素和
+  sum = reduce(lambda x,y: x+y, ls)
+  print(sum)
+
+
+def foo1():
+  print('普通for in遍历')
+  ls = [1, 2, 3, 4, 5, 6]
+  ls2 = []
+  for v in ls:
+    ls2.append(v * 2)
+  print(ls2)
+
+  ls3 = []
+  for v in ls:
+    if v % 2 == 0:
+      ls3.append(v)
+  print(ls3)
+
+  sum = 0
+  for v in ls:
+    sum += v
+  print(sum)
+
+
+def foo2():
+  print('带下标的for循环')
+  ls = [1, 2, 3, 4, 5, 6]
+  for i, v in enumerate(ls):
+    ls[i] = v * 2
+  print(ls)
+
+  for i in range(len(ls)):
+    ls[i] *= 2
+  print(ls)
+
+
+def foo3():
+  print('字典的几种遍历方式')
+  d = {'color': 'red', 'fruit': 'apple', 'pet': 'dog'}
+
+  print('输出keys列表', d.keys())
+  print('输出所有values列表', d.values())
+  
+  print('输出所有key:')
+  for key in d:
+    print(key)
+
+  print('输出key和value:')
+  for key in d:
+    print(key, '->', d[key])
+
+  print('输出列表，元素是tuple:')
+  for item in d.items():
+    print(item[0], ',', item[1])
+
+  print('输出key和value:')
+  for k, v in d.items():
+    print(k, v)
+  
+
+if __name__ == "__main__":
+  foo0()
+  foo1()
+  foo2()
+  foo3()
+```

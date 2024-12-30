@@ -1,0 +1,152 @@
+---
+title: 'go反射'
+date: '2020-02-23'
+tags: ['Go']
+draft: false
+summary: 介绍了 Go 语言的反射相关内容。通过示例展示了打印结构体信息、修改结构体字段值等操作，如打印 User 结构体的字段和方法，修改 User 结构体中 Name 字段的值等，还展示了对基本变量的修改，体现了反射的强大功能。 
+---
+
+# 简单结构
+```
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type User struct {
+	Id   int
+	Name string
+	Age  int
+}
+
+func (u User) Say() {
+	fmt.Println("hello, world!")
+}
+
+func PrintInfo(o interface{}) {
+	t := reflect.TypeOf(o)
+	fmt.Println("Type:", t.Name())
+
+	if kind := t.Kind(); kind != reflect.Struct {
+		fmt.Println("Not reflect struct!!!")
+		return
+	}
+
+	v := reflect.ValueOf(o)
+	fmt.Println("Fields:")
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		val := v.Field(i).Interface()
+		fmt.Printf("%s\t: %v = %v\n", f.Name, f.Type, val)
+	}
+
+	fmt.Println("Method:")
+	for i := 0; i < t.NumMethod(); i++ {
+		m := t.Method(i)
+		fmt.Printf("%s\t: %v\n", m.Name, m.Type)
+		fmt.Printf("execute function: ")
+		v.Method(i).Call(nil)
+	}
+}
+
+func ModifyName(o interface{}, newName string) {
+	v := reflect.ValueOf(o)
+	if v.Kind() != reflect.Ptr {
+		fmt.Println("is not pointer")
+		return
+	}
+
+	if !v.Elem().CanSet() {
+		fmt.Println("cannot set")
+		return
+	}
+
+	v = v.Elem()
+	f := v.FieldByName("Name")
+	if !f.IsValid() {
+		fmt.Println("name not found")
+		return
+	}
+
+	if f.Kind() != reflect.String {
+		fmt.Println("name is not string")
+		return
+	}
+
+	f.SetString(newName)
+}
+
+func main() {
+	user := User{123, "god", 33}
+	PrintInfo(user)
+	ModifyName(&user, "kelly")
+	fmt.Println("new user info:", user)
+}
+```
+输出：
+```
+Type: User
+Fields:
+Id	: int = 123
+Name	: string = god
+Age	: int = 33
+Method:
+Say	: func(main.User)
+execute function: hello, world!
+new user info: {123 kelly 33}
+```
+# 复杂结构
+```
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type User struct {
+	Id   int
+	Name string
+	Age  int
+}
+
+func (u User) Say() {
+	fmt.Println("hello, world!")
+}
+
+type Student struct {
+	User
+	Score int
+}
+
+func main() {
+	user := User{123, "god", 15}
+	student := Student{User: user, Score: 100}
+	fmt.Println("student info:", student)
+
+	t := reflect.TypeOf(student)
+	fmt.Println("user name type:", t.FieldByIndex([]int{0, 1}))
+
+	v := reflect.ValueOf(student)
+	fmt.Println("user name value:", v.FieldByIndex([]int{0, 1}).Interface())
+}
+
+```
+输出：
+```
+student info: {{123 god 15} 100}
+user name type: {Name  string  8 [1] false}
+user name value: god
+```
+> []int{0, 1}表示Student第0个元素是user，user的第1个元素是Name
+
+# 修改变量
+```
+	i := 100
+	v := reflect.ValueOf(&i)
+	v.Elem().SetInt(99)
+	fmt.Println(i)
+```
+输出：99

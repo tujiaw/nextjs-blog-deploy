@@ -1,0 +1,145 @@
+---
+title: 'pytest中fixture用法'
+date: '2024-10-14'
+tags: ['Python']
+draft: false
+summary: pytest 中的 fixture 是一种强大的功能，允许在测试执行前设置状态或资源，并在结束后清理。支持不同作用域（function、class、module、session），并可通过 autouse 自动应用。
+---
+
+pytest 中的 fixture 是一种强大的功能，允许你在测试执行之前设置一些状态或资源，并在测试结束后进行清理。Fixture 可以用于提供测试所需的上下文，比如数据库连接、配置文件、测试数据等。
+
+# 基本用法
+* 创建 Fixture：使用 @pytest.fixture 装饰器来定义一个 fixture。
+* 使用 Fixture：在测试函数中通过参数传递来使用这个 fixture。
+
+# Fixture 的作用域
+你可以通过 scope 参数来定义 fixture 的作用域。可选的作用域包括：
+* function（默认）：每个测试函数都会调用一次 fixture。
+* class：每个测试类都会调用一次 fixture。
+* module：每个测试模块都会调用一次 fixture。
+* session：在整个测试会话中只调用一次 fixture。
+
+# scope function
+test_case1.py源码：
+```
+import pytest
+
+@pytest.fixture(scope='class')
+def login():
+    print('login')
+    return 10
+
+class TestClass1:
+
+    def test_method1(self, login):
+        print('1')
+        assert 10 == login
+
+    def test_method2(self, login):
+        print('2')
+        assert 10 ==login
+
+class TestClass2:
+
+    def test_method1(self, login):
+        print('1')
+
+```
+
+只要是函数里面加了login，在每次执行函数之前都会执行一遍login，TestClass2中没有使用所以不执行。
+```
+test_case1.py::TestClass1::test_method1 login
+1
+PASSED
+test_case1.py::TestClass1::test_method2 login
+2
+PASSED
+test_case1.py::TestCalss2::test_method1 1
+PASSED
+```
+
+# scope class
+test_case1.py源码：
+```
+import pytest
+
+@pytest.fixture(scope='class')
+def login():
+    print('login')
+    return 10
+
+class TestClass1:
+
+    def test_method1(self, login):
+        print('1')
+        assert 10 == login
+
+    def test_method2(self, login):
+        print('2')
+        assert 10 ==login
+
+class TestClass2:
+
+    def test_method1(self, login):
+        print('1')
+
+```
+
+可以看到同一个类中，多个使用了login的方法只会执行一次。
+不同类之间是独立的。
+```
+test_case1.py::TestClass1::test_method1 login
+1
+PASSED
+test_case1.py::TestClass1::test_method2 2
+PASSED
+test_case1.py::TestClass2::test_method1 login
+1
+PASSED
+```
+
+# scope module
+同上面测试源码，将scope改为module后，整个模块只会执行一次login，结果如下：
+```
+test_case1.py::TestClass1::test_method1 login
+1
+PASSED
+test_case1.py::TestClass1::test_method2 2
+PASSED
+test_case1.py::TestClass2::test_method1 1
+PASSED
+```
+
+# scope session
+同理，在整个测试会话中只调用一次
+
+# autouse=True
+自动应用到所有可见的用例中，不用在每个函数里写login，但是没办法拿到login的返回值（所以代码里注释掉了assert）。
+如果你要精细化控制就把autouse改为False(默认为False)。
+
+源码：
+```
+import pytest
+
+@pytest.fixture(scope='class', autouse=True)
+def login():
+    print('login')
+    return 10
+
+class TestClass1:
+
+    def test_method1(self):
+        print('1')
+        # assert 10 == login
+
+    def test_method2(self):
+        print('2')
+        # assert 10 == login
+
+class TestClass2:
+
+    def test_method1(self):
+        print('1')
+```
+
+上面知识简单介绍了fixture的用法，更为详细的请参考[pytest fixture](https://docs.pytest.org/en/6.2.x/fixture.html)

@@ -1,0 +1,231 @@
+---
+title: 'ES6 class介绍'
+date: '2018-01-06'
+tags: ['Javascript']
+draft: false
+summary: ES6 类主要提供方便语法创建老式构造函数，有类申明、类表达式等定义方式。类主体可定义成员，含严格模式、构造函数、原型方法、静态方法、getter 和 setter 方法等。还可继承，子类构造函数需调用 super，继承原型链有特定图表展示。  
+---
+
+# 定义类
+ES6类并不是一个全新的东西：它们主要提供更方便的语法来创建老式的构造函数，javascript的类并不像其他面向对象语言C++，java中的类，这里的类只是语法糖，实际上还是基于原型链的方式。
+
+## 类申明
+定义类的一种方式是使用类的申明，为了申明一个类，你可以使用class关键字空格后接一个名字。
+```
+class Rectangle {
+    constructor(width, height) {
+        this.width = width;
+        this.height = height;
+    }
+}
+```
+
+函数声明和类申明一个最大的不同是，你必须先申明类才能使用，否则会抛出一个ReferenceError错误，而函数则没有这个限制。也就是说函数申明会提升而类不会，下面代码就会报错：
+```
+const p = new Rectangle(100, 30);
+class Rectangle {
+    constructor(width, height) {
+        this.width = width;
+        this.height = height;
+    }
+}
+```
+
+## 类表达式
+类表达式是另外一种定义类的方法，类表达式可以是命名也可以是匿名的。如果是命名类表达式，这个名字只能在类体内部才能访问到。JavaScript的类也是基于原型继承的。
+```
+const Rt1 = class Rectangle {
+    constructor(width, height) {
+        this.width = width;
+        this.height = height;
+    }
+
+    sayName() {
+        console.log(Rectangle.name);
+    }
+}
+
+const r1 = new Rt1(100, 20);
+r1.sayName();
+
+const Rt2 = class {
+    constructor(width, height) {
+        this.width = width;
+        this.height = height;
+    }
+}
+```
+
+# 类的主体和方法定义
+大括号里面就是类的主体部分，在这里可以定义类的成员，如：方法或者构造函数。
+
+## 严格模式
+类声明和类表达式的主体在严格模式下执行，即构造函数，静态和原型方法，getter和setter函数以严格模式执行。
+
+## 构造函数
+构造函数是一个特殊的函数，一个类中有且仅有一个这样的方法，当创建一个类的对象的时候被调用。你也可以不写构造函数，但是系统会默认加上。  
+基类默认加上如下构造：
+```
+constructor() {}
+```
+派生类默认加上如下构造：
+```
+constructor(...args) {
+    super(...args);
+}
+```
+
+## 原型方法
+```
+class Rectangle {
+    constructor(width, height) {
+        this.width = width;
+        this.height = height;
+    }
+
+  // Getter
+  get area() {
+    return this.calcArea();
+  }
+  // Method
+  calcArea() {
+    return this.height * this.width;
+  }
+}
+
+const p = new Rectangle(100, 30)
+console.log(p.area);
+
+```
+
+## 静态方法
+使用static关键字定义一个静态方法，不能用类的对象调用静态方法，应该通过类名来调用。静态方法是这个类的共有方法。
+```
+class Point {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+    }
+  
+    static distance(a, b) {
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+  
+      return Math.hypot(dx, dy);
+    }
+  }
+  
+  const p1 = new Point(5, 5);
+  const p2 = new Point(10, 10);
+  
+  console.log(Point.distance(p1, p2)); // 7.0710678118654755
+```
+
+## getter and setter方法
+这里有不少坑，用之前要了解清楚，能不用就尽量不用。
+```
+class Widget {
+  get prop() {
+    return 'getter'
+  }
+
+  set prop(value) {
+    console.log('setter, ' + value)
+  }
+}
+
+const p = new Widget();
+p.prop = 123;
+console.log(p.prop)
+```
+
+## 构造函数，静态方法，原型方法
+下面是一个比较普遍的用法
+```
+class Foo {
+    constructor(prop) {
+        this.prop = prop;
+    }
+    static staticMethod() {
+        return 'classy';
+    }
+    prototypeMethod() {
+        return 'prototypical';
+    }
+}
+const foo = new Foo(123);
+```
+通过对象图来看一下它们之间的关系：  
+![对象图](/upload/o_1c350ace2icd1c2i6ev8964mua.png)
+
+# 继承
+```
+class Point {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  toString() {
+    return `(${this.x}, ${this.y})`;
+  }
+}
+
+class ColorPoint extends Point {
+  constructor(x, y, color) {
+    super(x, y);
+    this.color = color;
+  }
+  toString() {
+    return super.toString() + ' in ' + this.color;
+  }
+}
+
+const p1 = new Point(3, 4);
+const p2 = new ColorPoint(5, 6, 'red');
+console.log(p1.toString());
+console.log(p2.toString());
+```
+es6中的类并不是一个新的东西，它只是提供了更方便的语法去创建老式的构造函数，使用typeof Point可以看到它其实还是个函数。  
+
+在子类的构造函数中必须调用super()，同时super的调用必须在使用this之前，将上面的构造函数改为：
+```
+  constructor(x, y, color) {
+    this.color = color;
+    super(x, y);
+  }
+```
+运行代码会报错：  
+ReferenceError: Must call super constructor in derived class before accessing 'this' or returning from derived constructor
+
+
+再通过下面代码看一下继承的原型链图表
+```
+class Person {
+    constructor(name) {
+        this.name = name;
+    }
+    toString() {
+        return `Person named ${this.name}`;
+    }
+    static logNames(persons) {
+        for (const person of persons) {
+            console.log(person.name);
+        }
+    }
+}
+
+class Employee extends Person {
+    constructor(name, title) {
+        super(name);
+        this.title = title;
+    }
+    toString() {
+        return `${super.toString()} (${this.title})`;
+    }
+}
+
+const jane = new Employee('Jane', 'CTO');
+console.log(jane.toString()); // Person named Jane (CTO)
+```
+![继承原型链图表](/upload/o_1c35m76cjdjmnfi51ul2pv9a.png)

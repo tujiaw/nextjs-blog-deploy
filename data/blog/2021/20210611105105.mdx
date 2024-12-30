@@ -1,0 +1,94 @@
+---
+title: 'boost类型转换异常捕获'
+date: '2021-06-11'
+tags: ['Boost']
+draft: false
+summary: 
+---
+
+使用boost做类型转换出错会抛出异常，这里针对这种情况做了简单封装，内部捕获异常，支持默认值、浮点数转换。
+
+```
+#pragma once
+#include <string>
+#include <iomanip>
+#include <boost/lexical_cast.hpp>
+#include "logger.h"
+
+template <typename Target, typename Source>
+inline Target typecast(const Source &arg)
+{
+    try {
+        return boost::lexical_cast<Target>(arg);
+    } catch (boost::bad_lexical_cast &e) {
+        LOGGER_ERROR("bad_lexical_cast error:" << e.what() << ", source:" << arg);
+    } catch (...) {
+        LOGGER_ERROR("bad_lexical_cast unkown error, source:" << arg);
+    }
+    return Target();
+}
+
+template <typename Target, typename Source>
+inline Target typecast(const Source &arg, const Target &defaultValue)
+{
+    try {
+        return boost::lexical_cast<Target>(arg);
+    } catch (boost::bad_lexical_cast &e) {
+        LOGGER_ERROR("bad_lexical_cast error:" << e.what() << ", source:" << arg);
+    } catch (...) {
+        LOGGER_ERROR("bad_lexical_cast unkown error, source:" << arg);
+    }
+    return defaultValue;
+}
+
+template <typename Target, typename Source>
+inline bool try_typecast(const Source &arg, Target &target)
+{
+    try {
+        target = boost::lexical_cast<Target>(arg);
+        return true;
+    } catch (boost::bad_lexical_cast &e) {
+        LOGGER_ERROR("bad_lexical_cast error:" << e.what() << ", source:" << arg);
+    } catch (...) {
+        LOGGER_ERROR("bad_lexical_cast unkown error, source:" << arg);
+    }
+    return false;
+}
+
+template <typename Target, typename Source>
+inline Target numcast(Source arg)
+{
+    try {
+        return boost::numeric_cast<Target>(arg);
+    } catch (boost::bad_numeric_cast &e) {
+        LOGGER_ERROR("bad_numeric_cast error:" << e.what() << ", source:" << arg);
+    } catch (...) {
+        LOGGER_ERROR("bad_numeric_cast unkown error, source:" << arg);
+    }
+    return Target();
+}
+
+// 浮点数转换为字符串，精确到指定位数
+template<typename Source>
+inline std::string typecast_precision(const Source &arg, int precision)
+{
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(precision) << arg;
+    return oss.str();
+}
+
+// 浮点数转换为字符串，精确到指定位数，去掉尾部0
+template<typename Source>
+inline std::string typecast_precision_trimzero(const Source &arg, int precision)
+{
+    std::string str = typecast_precision(arg, precision);
+    std::size_t pos = str.find('.');
+    if (pos == std::string::npos) {
+        return str;
+    }
+
+    std::size_t pos2 = str.find_last_not_of('0');
+    return str.erase(pos2 + ((pos == pos2) ? 0 : 1), std::string::npos);
+}
+
+```

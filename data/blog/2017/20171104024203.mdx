@@ -1,0 +1,46 @@
+---
+title: 'mongodb模糊匹配正则转义'
+date: '2017-11-04'
+tags: ['Javascript', 'MongoDB']
+draft: false
+summary: 介绍 mongodb 模糊匹配正则转义，先通过特定代码搜索关键字，遇特殊字符如++搜索失败，需对关键字转义，mongdb 正则表达式中 keyword 特殊字符转义加单斜杠，给出完整代码示例。 
+---
+
+如果我要根据标题和内容搜索关键字，可以如下写法：
+```
+  return this.find({
+    '$or': [
+      {title: new RegExp(keyword, 'i')},
+      {content: new RegExp(keyword, 'i')}
+    ]
+  })
+  .sort({ 'pv': -1 })
+  .exec();
+```
+
+但是，keyword关键字有特殊字符如++，假如我要搜索c++关键字就失败了。
+
+这时要对关键字中的特殊字符进行转义，通过正则表达式统一转义，RegExp写法加双斜杠：
+```
+const keyword = name.replace(/([\^\$\(\)\*\+\?\.\\\|\[\]\{\}])/g, "\\$1");
+```
+
+mongodb正则表达式下面写法，keyword特殊字符转义需要加单斜杠
+```
+{title: /keyword/i}
+```
+
+完整代码：
+```
+PostSchema.statics.searchPost = function(name) {
+  const keyword = name.replace(/([\^\$\(\)\*\+\?\.\\\|\[\]\{\}])/g, "\\$1");
+  return this.find({
+    '$or': [
+      {title: new RegExp(keyword, 'i')},
+      {content: new RegExp(keyword, 'i')}
+    ]
+  })
+  .sort({ 'pv': -1 })
+  .exec();
+};
+```

@@ -1,0 +1,358 @@
+---
+title: '封包和拆包'
+date: '2017-10-24'
+tags: ['C/C++']
+draft: false
+summary: 文章主要讨论基于 TCP 开发通讯程序的封包和拆包问题。TCP 是“流”协议易出现“粘包”，需在发送端封包、接收端拆包。介绍了多种封包拆包方式，如动态缓冲区暂存、利用底层缓冲区等，并给出相关代码示例。UDP 不存在拆包问题。 
+---
+
+对于基于TCP开发的通讯程序,有个很重要的问题需要解决,就是封包和拆包.自从我从事网络通讯编程工作以来(大概有三年的时间了),我一直在思索和改进封包和拆包的方法.下面就针对这个问题谈谈我的想法,抛砖引玉.若有不对,不妥之处,恳求大家指正.在此先谢过大家了.
+
+# 为什么基于TCP的通讯程序需要进行封包和拆包.
+TCP是个"流"协议,所谓流,就是没有界限的一串数据.大家可以想想河里的流水,是连成一片的,其间是没有分界线的.但一般通讯程序开发是需要定义一个个相互独立的数据包的,比如用于登陆的数据包,用于注销的数据包.由于TCP"流"的特性以及网络状况,在进行数据传输时会出现以下几种情况.
+
+假设我们连续调用两次send分别发送两段数据data1和data2,在接收端有以下几种接收情况(当然不止这几种情况,这里只列出了有代表性的情况).
+
+A.先接收到data1,然后接收到data2.  
+B.先接收到data1的部分数据,然后接收到data1余下的部分以及data2的全部.  
+C.先接收到了data1的全部数据和data2的部分数据,然后接收到了data2的余下的数据.  
+D.一次性接收到了data1和data2的全部数据.  
+
+
+对于A这种情况正是我们需要的,不再做讨论.对于B,C,D的情况就是大家经常说的"粘包",就需要我们把接收到的数据进行拆包,拆成一个个独立的数据包.为了拆包就必须在发送端进行封包.
+
+
+另:对于UDP来说就不存在拆包的问题,因为UDP是个"数据包"协议,也就是两段数据间是有界限的,在接收端要么接收不到数据要么就是接收一个完整的一段数据,不会少接收也不会多接收.
+
+
+# 为什么会出现B.C.D的情况.
+"粘包"可发生在发送端也可发生在接收端.
+
+1. 由Nagle算法造成的发送端的粘包:Nagle算法是一种改善网络传输效率的算法.简单的说,当我们提交一段数据给TCP发送时,TCP并不立刻发送此段数据,而是等待一小段时间,看看在等待期间是否还有要发送的数据,若有则会一次把这两段数据发送出去.这是对Nagle算法一个简单的解释,详细的请看相关书籍.象C和D的情况就有可能是Nagle算法造成的.
+
+2. 接收端接收不及时造成的接收端粘包:TCP会把接收到的数据存在自己的缓冲区中,然后通知应用层取数据.当应用层由于某些原因不能及时的把TCP的数据取出来,就会造成TCP缓冲区中存放了几段数据.
+
+
+# 怎样封包和拆包.
+最初遇到"粘包"的问题时,我是通过在两次send之间调用sleep来休眠一小段时间来解决.这个解决方法的缺点是显而易见的,使传输效率大大降低,而且也并不可靠.后来就是通过应答的方式来解决,尽管在大多数时候是可行的,但是不能解决象B的那种情况,而且采用应答方式增加了通讯量,加重了网络负荷.再后来就是对数据包进行封包和拆包的操作.
+
+## 封包
+封包就是给一段数据加上包头,这样一来数据包就分为包头和包体两部分内容了(以后讲过滤非法包时封包会加入"包尾"内容).包头其实上是个大小固定的结构体,其中有个结构体成员变量表示包体的长度,这是个很重要的变量,其他的结构体成员可根据需要自己定义.根据包头长度固定以及包头中含有包体长度的变量就能正确的拆分出一个完整的数据包.
+
+## 拆包
+对于拆包目前我最常用的是以下两种方式.
+
+1. 动态缓冲区暂存方式.之所以说缓冲区是动态的是因为当需要缓冲的数据长度超出缓冲区的长度时会增大缓冲区长度.
+
+大概过程描述如下:
+
+A,为每一个连接动态分配一个缓冲区,同时把此缓冲区和SOCKET关联,常用的是通过结构体关联.
+
+B,当接收到数据时首先把此段数据存放在缓冲区中.
+
+C,判断缓存区中的数据长度是否够一个包头的长度,如不够,则不进行拆包操作.
+
+D,根据包头数据解析出里面代表包体长度的变量.
+
+E,判断缓存区中除包头外的数据长度是否够一个包体的长度,如不够,则不进行拆包操作.
+
+F,取出整个数据包.这里的"取"的意思是不光从缓冲区中拷贝出数据包,而且要把此数据包从缓存区中删除掉.删除的办法就是把此包后面的数据移动到缓冲区的起始地址.
+
+这种方法有两个缺点.
+1. 为每个连接动态分配一个缓冲区增大了内存的使用.
+2. 有三个地方需要拷贝数据,一个地方是把数据存放在缓冲区,一个地方是把完整的数据包从缓冲区取出来,一个地方是把数据包从缓冲区中删除.第二种拆包的方法会解决和完善这些缺点.
+
+下面给出相关代码.
+
+前面提到过这种方法的缺点.下面给出一个改进办法, 即采用环形缓冲.但是这种改进方法还是不能解决第一个缺点以及第一个数据拷贝,只能解决第三个地方的数据拷贝(这个地方是拷贝数据最多的地方).第2种拆包方式会解决这两个问题.
+
+环形缓冲实现方案是定义两个指针,分别指向有效数据的头和尾.在存放数据和删除数据时只是进行头尾指针的移动.
+
+用代码来说明.注:下面的代码是采用一个开源的游戏服务器的代码,我对此代码有所修改.
+
+## 利用底层的缓冲区来进行拆包
+由于TCP也维护了一个缓冲区,所以我们完全可以利用TCP的缓冲区来缓存我们的数据,这样一来就不需要为每一个连接分配一个缓冲区了.另一方面我们知道recv或者wsarecv都有一个参数,用来表示我们要接收多长长度的数据.利用这两个条件我们就可以对第一种方法进行优化.
+
+对于阻塞SOCKET来说,我们可以利用一个循环来接收包头长度的数据,然后解析出代表包体长度的那个变量,再用一个循环来接收包体长度的数据.
+相关代码如下:
+```
+
+char PackageHead[1024];
+char PackageContext[1024*20];
+
+int len;
+PACKAGE_HEAD *pPackageHead;
+while( m_bClose == false )
+{
+	memset(PackageHead,0,sizeof(PACKAGE_HEAD));
+	len = m_TcpSock.ReceiveSize((char*)PackageHead,sizeof(PACKAGE_HEAD));
+	if( len == SOCKET_ERROR )
+	{
+		break;
+	}
+	if(len == 0)
+	{
+		break;
+	}
+	pPackageHead = (PACKAGE_HEAD *)PackageHead;
+	memset(PackageContext,0,sizeof(PackageContext));
+	if(pPackageHead->nDataLen>0)
+	{
+		len = m_TcpSock.ReceiveSize((char*)PackageContext,pPackageHead->nDataLen);
+	}
+}
+```
+m_TcpSock是一个封装了SOCKET的类的变量,其中的ReceiveSize用于接收一定长度的数据,直到接收了一定长度的数据或者网络出错才
+返回.
+```
+
+int winSocket::ReceiveSize( char* strData, int iLen )
+{
+	if( strData == NULL )
+		return ERR_BADPARAM;
+	char *p = strData;
+	int len = iLen;
+	int ret = 0;
+	int returnlen = 0;
+	while( len > 0)
+	{
+		ret = recv( m_hSocket, p+(iLen-len), iLen-returnlen, 0 );
+		if ( ret == SOCKET_ERROR || ret == 0 )
+		{
+			
+			return ret;
+		}
+		
+		len -= ret;
+		returnlen += ret;
+	}
+	
+	return returnlen;
+}
+```
+对于非阻塞的SOCKET,比如完成端口,我们可以提交接收包头长度的数据的请求,当GetQueuedCompletionStatus返回时,我们判断接收的数据长度是否等于包头长度,若等于,则提交接收包体长度的数据的请求,若不等于则提交接收剩余数据的请求.当接收包体时,采用类似的方法.
+
+下面给出相关代码
+```
+
+enum IOType 
+{
+	IOInitialize,
+		IORead,
+		IOWrite,
+		IOIdle
+};
+
+class OVERLAPPEDPLUS 
+{
+public:
+	OVERLAPPEDm_ol;
+	IOTypem_ioType;
+	bool         m_bIsPackageHead;//当前接收的数据是否是包头数据。
+	
+	int          m_count;
+	WSABUF       m_wsaBuffer;
+	int          m_RecvPos;
+	char         m_Buffer[1024*8];//此缓冲要尽可能大
+	
+	OVERLAPPEDPLUS(IOType ioType) {
+		ZeroMemory(this, sizeof(OVERLAPPEDPLUS));
+		m_ioType = ioType;
+	}
+};
+```
+
+接收连接后发出的第一个请求,请求接收包头大小的数据.
+```
+
+OVERLAPPEDPLUS*pOverlappedPlus =  new OVERLAPPEDPLUS;
+pOverlappedPlus->m_wsaBuffer.buf =  pOverlappedPlus->m_Buffer;
+pOverlappedPlus->m_wsaBuffer.len =  PACKAGE_HEAD_LEN;///包头的长度
+pOverlappedPlus->m_bIsPackageHead = true;
+pOverlappedPlus->m_RecvPos = 0;
+pOverlappedPlus->m_ioType = IORead;
+
+
+DWORD RecvBytes;
+DWORD Flags;
+Flags = 0;
+if (WSARecv(clientSocket, &(pOverlappedPlus->m_wsaBuffer), 1, &RecvBytes, &Flags,
+	&pOverlappedPlus->m_ol, NULL) == SOCKET_ERROR)
+{
+	if (WSAGetLastError() != ERROR_IO_PENDING)
+	{
+		delete pOverlappedPlus;
+	}
+	else
+	{
+		///相关的错误处理
+		
+	}
+}
+else
+{
+	///相关的错误处理
+	
+}
+```
+在GetQueuedCompletionStatus所在的函数中.
+```
+
+if( pOverlapPlus->m_ioType== IORead)
+{
+	if( pOverlapPlus->m_wsaBuffer.len == dwIoSize )
+	{
+		if( pOverlapPlus->m_bIsPackageHead == true )///接收到的是包头。
+		{
+			PACKAGE_HEAD *pPackageHead = (PACKAGE_HEAD *)(pOverlapPlus->m_Buffer);
+			
+			if(pThis->IsLegalityPackageHead(pPackageHead)==false)///判断是否是合法的包
+			{
+				closesocket(lpClientContext->m_Socket);
+				continue;
+			}
+			
+			pOverlapPlus->m_bIsPackageHead = false;
+			pOverlapPlus->m_wsaBuffer.len = pPackageHead->nDataLen;
+			pOverlapPlus->m_RecvPos += dwIoSize;
+			pOverlapPlus->m_wsaBuffer.buf = pOverlapPlus->m_Buffer+pOverlapPlus->m_RecvPos;
+			
+		}
+		else///接收到的是包体
+		{
+			
+			pOverlapPlus->m_RecvPos += dwIoSize;
+			///这时pOverlapPlus->m_Buffer里就存放了一个完整的数据包,长度为pOverlapPlus->m_RecvPos
+			
+			
+			///继续请求 请求下一个数据包的包头
+			pOverlapPlus->m_wsaBuffer.buf =  pOverlapPlus->m_Buffer;
+			memset(pOverlapPlus->m_Buffer,0,sizeof(pOverlapPlus->m_Buffer));
+			pOverlapPlus->m_wsaBuffer.len =  PACKAGE_HEAD_LEN;
+			pOverlapPlus->m_bIsPackageHead = true;
+			pOverlapPlus->m_RecvPos = 0;
+			
+		}
+	}
+	else///接收的数据还不完整
+	{
+		pOverlapPlus->m_wsaBuffer.len -= dwIoSize;
+		pOverlapPlus->m_RecvPos += dwIoSize;
+		pOverlapPlus->m_wsaBuffer.buf = pOverlapPlus->m_Buffer+pOverlapPlus->m_RecvPos;
+	}
+	pOverlapPlus->m_ioType = IORead;
+	state = WSARecv(lpClientContext->m_Socket, &(pOverlapPlus->m_wsaBuffer), 1, &RecvBytes, &Flags,
+		&pOverlapPlus->m_ol, NULL);
+	if ( state == SOCKET_ERROR)
+	{
+		if(WSAGetLastError() != ERROR_IO_PENDING)
+		{
+			
+			//关闭套接字 释放相应资源
+			continue;
+		}
+	}
+	
+}
+```
+例子：
+```
+
+#include <iostream>
+using namespace std;
+
+typedef unsigned char BYTE;
+typedef unsigned long ULONG;
+
+const int STUDENT_LEN = 68;
+const int NAME_LEN = 24;
+const int ADDRESS_LEN = 32;
+
+typedef struct Student
+{
+	int		nSize;
+	ULONG	ulNumber;
+	char	szName[NAME_LEN];
+	int		nAge;
+	char	szAddress[ADDRESS_LEN];
+}STUDENT, *PSTUDENT;
+
+int SetStudentInfo(BYTE *&info,
+					ULONG ulNum,
+					const char *szName,
+					const int nAge,
+					const char *szAddress)
+{
+	int nPos = 0;
+
+	info = new BYTE[STUDENT_LEN];
+	memset(info, 0, STUDENT_LEN);
+
+	*(int*)(info + nPos) = STUDENT_LEN;
+	nPos += sizeof(int);
+
+	*(ULONG*)(info + nPos) = ulNum;
+	nPos += sizeof(ULONG);
+
+	memcpy(info + nPos, szName, strlen(szName));
+	nPos += NAME_LEN;
+
+	*(int*)(info + nPos) = nAge;
+	nPos += sizeof(int);
+
+	memcpy(info + nPos, szAddress, strlen(szAddress));
+	nPos += ADDRESS_LEN;
+
+	return nPos;
+}
+
+void ReleaseInfo(BYTE *info)
+{
+	if (info)
+	{
+		delete [] info;
+		info = NULL;
+	}
+}
+
+void GetStudentInfo(STUDENT &student, const BYTE *info)
+{
+	int nPos = 0;
+	
+	student.nSize = *(int*)(info + nPos);
+	nPos += sizeof(int);
+
+	student.ulNumber = *(ULONG*)(info + nPos);
+	nPos += sizeof(ULONG);
+
+	memcpy(student.szName, info + nPos, NAME_LEN);
+	nPos += NAME_LEN;
+
+	student.nAge = *(int*)(info + nPos);
+	nPos += sizeof(int);
+
+	memcpy(student.szAddress, info + nPos, ADDRESS_LEN);
+	nPos += ADDRESS_LEN;
+}
+
+int main(int argc, char *argv[])
+{
+	BYTE *info;
+	STUDENT student;
+
+	SetStudentInfo(info, 20064122, "tjw", 25, "shanghaipudong");
+
+	GetStudentInfo(student, info);
+
+	cout << "size = " << student.nSize << endl;
+	cout << "number = " << student.ulNumber << endl;
+	cout << "name = " << student.szName << endl;
+	cout << "age = " << student.nAge << endl;
+	cout << "address = " << student.szAddress << endl;
+
+	ReleaseInfo(info);
+
+	return 0;
+}
+```
+from:[http://www.newsmth.net/pc/pccon.php?id=8256&nid=247239](http://www.newsmth.net/pc/pccon.php?id=8256&nid=247239)

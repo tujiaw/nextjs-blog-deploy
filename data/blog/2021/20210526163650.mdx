@@ -1,0 +1,65 @@
+---
+title: 'ZMQ DEMO push pull 模式'
+date: '2021-05-26'
+tags: ['MQ']
+draft: false
+summary: 
+---
+
+类似如生产者消费者模式，多个消费者可以均衡的消费所有生产出来的东西，比如有100个任务，只有一个消费者它需要消费100次，如果有10个消费者那么每个消费者只需要消费10次，大大提高了效率。
+
+注意：当没有消费者时，生产者是不会生产的（send被阻塞）
+
+生产者代码：
+```
+#include "zmq.hpp"
+#include <string>
+#include <iostream>
+#include <algorithm>
+
+int main()
+{
+    zmq::context_t context(1);
+    zmq::socket_t socket(context, zmq::socket_type::push);
+    socket.bind("tcp://127.0.0.1:7733");
+    
+    int number = 0;
+    while (1) {
+        try {
+            std::string str = std::to_string(++number);
+            socket.send(zmq::const_buffer(str.c_str(), str.size()));
+            std::cout << "push:" << str << std::endl;
+            zmq_sleep(1);
+        } catch (zmq::error_t &e) {
+            std::cerr << "error:" << e.what() << std::endl;
+            break;
+        }
+    }
+
+}
+```
+消费者代码：
+```
+#include <iostream>
+#include <zmq.hpp>
+
+int main()
+{
+    zmq::context_t context(1);
+    zmq::socket_t socket(context, zmq::socket_type::pull);
+    
+    try {
+        socket.connect("tcp://127.0.0.1:7733");
+        while (1) {
+            zmq::message_t recv_msg;
+            socket.recv(recv_msg);
+            std::cout << "pull:" << recv_msg.to_string() << std::endl;
+        }
+    } catch (zmq::error_t e) {
+        std::cout << e.what() << std::endl;
+    }
+
+    system("pause");
+    return 0;
+}
+```

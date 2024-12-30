@@ -1,0 +1,37 @@
+---
+title: 'WTL多页面显示实现方法'
+date: '2017-02-02'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 文章介绍 WTL 多页面显示实现方法，主对话框有三页面，设属性、成员变量，设置显示区域并创建页面，移动到指定区域，最后根据条件显示指定窗口，隐藏其他窗口，如显示第一页隐藏第二、三页。 
+---
+
+这里假设一个主对话框CMainDlg有三个页面CPageFirstDlg、CPageSecondDlg、CPageThirdDlg;
+1. 三个页面属性Style:Child， Border：None；
+2. 成员变量：
+```
+CPageFirstDlg m_pageFirstDlg;
+CPageSecondDlg m_pageSecondDlg;
+CPageThirdDlg m_pageThirdDlg;
+```
+3. 设置它们的显示区域：m_rcChildRect;
+4. 创建页面：
+```
+HWND m_hPageFirst = m_pageFirstDlg.Create(m_hWnd, IDD_PAGE_FIRST);
+HWND m_hPageSecond = m_pageSecondDlg.Create(m_hWnd, IDD_PAGE_SECOND);
+HWND m_hPageThird = m_pageThirdDlg.Create(m_hWnd, IDD_PAGE_THIRD);
+```
+5. 移动页面到指定区域（包括页面的显示大小及位置）：
+```
+m_pageFirstDlg.MoveWindow(&m_rcChildRect);
+m_pageSecondDlg.MoveWindow(&m_rcChildRect);
+m_pageThirdDlg.MoveWindow(&m_rcChildRect);
+```
+6. 最后是显示：  
+可以根据不同的条件显示指定的窗口，只需显示一个当前的窗口， 隐藏其它的窗口，如：
+```
+::ShowWindow(m_pageFirstDlg, SW_SHOW);
+::ShowWindow(m_pageSecondDlg, SW_HIDE);
+::ShowWindow(m_pageThirdDlg, SW_HIDE);
+```
+> （迁移2011-05-08）

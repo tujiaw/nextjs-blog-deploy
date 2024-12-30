@@ -1,0 +1,210 @@
+---
+title: 'WSAAsyncSelect模型'
+date: '2017-10-24'
+tags: ['Windows']
+draft: false
+summary: WSAAsyncSelect 模型与窗口相关，用消息通知。文中为对话框客户端关键代码，连接 echo 服务端，测试文件传输，包含自定义消息、消息映射等，还有连接、发送、接收等相关函数。 
+---
+
+这个模型跟窗口有关，它使用消息来进行通知的。如下是对话框客户端关键代码，连接的是一个echo服务端。
+
+测试文件的传输，将文件发送出去，然后将读取的数据写入文件。
+
+读写文件类WinFile参考：
+http://blog.csdn.net/tujiaw/article/details/17840823
+
+Buffer类参考：http://blog.csdn.net/tujiaw/article/details/8872865
+
+1. 自定义消息：
+#define WM_ASYNC_SELECT (WM_USER + 103)
+
+2. 消息映射：
+ON_MESSAGE(WM_ASYNC_SELECT, &CSmallFileDlg::OnAsyncSelect)
+
+```
+afx_msg LRESULT CSmallFileDlg::OnAsyncSelect(WPARAM wParam, LPARAM lParam)
+{
+	switch (WSAGETSELECTEVENT(lParam))
+	{
+	case FD_CONNECT:
+		if (WSAGETSELECTERROR(lParam))
+		{
+			MessageBox(GetErrorString(WSAGETSELECTERROR(lParam), L"FD_CONNECT"));
+		}
+		else
+		{
+			MessageBox(L"连接成功");
+		}
+		break;
+
+
+	case FD_READ:
+		{
+			recvBuffer();
+			static WinFile fr(L"C:\\Users\\jiaw\\Desktop\\2.flv", false);
+			static size_t totalWritten = 0;
+			size_t currentWritten;
+			int ret = fr.write(m_input.peek(), m_input.readableBytes(), ¤tWritten);
+			if (0 != ret) {
+				MessageBox(GetErrorString(ret, L"FD_READ"));
+				::shutdown(m_socket, SD_BOTH);
+				::closesocket(wParam);
+			} else {
+				totalWritten += currentWritten;
+				m_input.retrieve(currentWritten);
+				fr.seek(totalWritten);
+			}
+		}
+		break;
+
+
+	case FD_WRITE:
+		sendBuffer(); // send当网络缓冲区满的时候会产生WSAEWOULDBLOCK错误码，此时触发写事件继续写入
+		break;
+
+
+	case FD_CLOSE:
+		if (WSAGETSELECTERROR(lParam))
+		{
+			MessageBox(GetErrorString(WSAGetLastError(), L"FD_CLOSE"));
+		}
+		::shutdown(m_socket, SD_BOTH);
+		::closesocket(wParam);
+		MessageBox(L"close");
+		break;
+	}
+
+
+	return 0;
+}
+
+
+void CSmallFileDlg::OnBnClickedConnect()
+{
+	const char *ip = "192.168.239.150";
+	unsigned short port = 5000;
+	struct sockaddr_in sin;
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family = AF_INET;
+	sin.sin_addr.S_un.S_addr = inet_addr(ip);
+	sin.sin_port = htons(port);
+	m_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (INVALID_SOCKET == m_socket) {
+		MessageBox(GetErrorString(WSAGetLastError(), L"socket"));
+		return;
+	}
+
+	// 会自动将socket设为非阻塞
+	if (SOCKET_ERROR == WSAAsyncSelect(m_socket, m_hWnd, WM_ASYNC_SELECT, FD_READ | FD_WRITE | FD_CONNECT | FD_CLOSE)) {
+		MessageBox(GetErrorString(WSAGetLastError(), L"WSAAsyncSelect"));
+		::closesocket(m_socket);
+	}
+
+
+	if (SOCKET_ERROR == ::connect(m_socket, (sockaddr*)&sin, sizeof(sin))) {
+		int errCode = WSAGetLastError();
+		if (WSAEWOULDBLOCK != errCode) { // 非阻塞连接处理WSAEWOULDBLOCK
+			MessageBox(GetErrorString(WSAGetLastError(), L"connect"));
+			::closesocket(m_socket);
+			return;
+		}
+	}
+}
+
+void CSmallFileDlg::OnBnClickedDisconnect()
+{
+	::shutdown(m_socket, SD_BOTH);
+	::closesocket(m_socket);
+}
+
+void CSmallFileDlg::OnBnClickedSend()
+{
+	WinFile fr(L"C:\\Users\\jiaw\\Desktop\\1.flv", true);
+	char buf[65536];
+	size_t result;
+	DWORD total = fr.size();
+	DWORD nread = 0;
+	while (nread != total) {
+		int ret = fr.read(buf, sizeof(buf), &result);
+		if (0 != ret) {
+			MessageBox(GetErrorString(ret));
+			break;
+		}
+
+
+		nread += result;
+		fr.seek(nread); // 设置下次的读取位置，从0开始偏移
+
+
+		m_output.append(buf, result);
+		sendBuffer();
+	}
+}
+
+void CSmallFileDlg::sendBuffer()
+{
+	int ret = ::send(m_socket, m_output.peek(), m_output.readableBytes(), 0);
+	if (ret > 0)
+	{
+		m_output.retrieve(ret);
+		m_sendNum += ret; // 发送消息计数
+		UpdateData(FALSE);
+	}
+	else if (SOCKET_ERROR == ret)
+	{
+		int errCode = WSAGetLastError();
+		if (WSAEWOULDBLOCK != errCode)
+		{
+			MessageBox(GetErrorString(errCode), L"send");
+		}
+	}
+}
+
+void CSmallFileDlg::recvBuffer()
+{
+	char buf[65536] = {0};
+	int ret = ::recv(m_socket, buf, sizeof(buf) - 1, 0);
+	if (ret > 0)
+	{
+		m_recvNum += ret; // 接收消息计数
+		UpdateData(FALSE);
+		m_input.append(buf, ret);
+	}
+	else if (0 == ret)
+	{
+		MessageBox(L"连接优雅的关闭");
+	}
+	else
+	{
+		MessageBox(GetErrorString(WSAGetLastError(), L"recv"));
+	}
+}
+```
+```
+
+// 产生随机字符串
+std::string BuildRandString(int num)
+{
+	static unsigned int s_add = 0;
+	std::string ret;
+	srand((unsigned int)time(NULL) + (s_add++));
+	for (int i=0; i<num; )
+	{
+		char buf[17] = {0};
+		_itoa_s(rand(), buf, 0x10);
+		ret += buf;
+		i += strlen(buf);
+	}
+	return ret.substr(0, num);
+}
+
+void DebugLog(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	char buf[1024] = {0};
+	vsnprintf_s(buf, sizeof(buf), fmt, ap);
+	MessageBoxA(NULL, buf, "debug log", MB_OK);
+	va_end(ap);
+}
+```

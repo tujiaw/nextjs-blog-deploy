@@ -1,0 +1,129 @@
+---
+title: 'gin多模板、模板嵌套使用方法'
+date: '2020-11-14'
+tags: ['Go']
+draft: false
+summary: 介绍 gin 多模板及模板嵌套使用方法，多个页面共用主模板 frame.html，不同页面如 index.html、post.html 等在渲染时只需渲染具体页面。通过路由和模板定义及载入实现，清晰展示页面结构和内容组合。 
+---
+
+在做一个web应用的时候，通常多个页面会共用同一个模板，只是每个页面的内容不同。如网页的导航栏、菜单栏、footer是共用的。我们写代码的时候也只需要写一个主模板页面frame.html，内容空出来给具体的页面来实现，如：主页index.html，文章页面post.html，错误页面error.html等等，在渲染页面的时候只需要渲染对应的具体页面就可以了，隐藏了主模板。
+
+# 路由
+代码演示如下：
+```
+app.GET("/home", func(c *gin.Context) {
+    //....
+    c.HTML(http.StatusOK, "index.html", data)
+}
+
+app.GET("/post/:id", func(c *gin.Context) {
+    //....
+    c.HTML(http.StatusOK, "post.html", data)
+}
+
+app.GET("/error", func(c *gin.Context) {
+    //....
+    c.HTML(http.StatusOK, "error.html", data)
+}
+```
+这样每个页面对应具体的路由看起来就很清晰了。
+
+# 模板
+那么，模板这一块是怎么实现的呢？  
+如，web页面的目录结构如下：
+```
+web
+    css
+        frame.css
+    js
+        frame.js
+    template
+        htmls // 独立的页面不依赖任何模板
+            login.html
+        includes // 具体的页面
+            error.html
+            post.html
+            index.html
+        layouts // 页面子部件
+            archive_modal.html
+            upload_modal.html
+        frame.html // 主模板
+```
+下面只介绍几个主要的页面
+```
+frame.html主要是引入了main template， 如：
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Go Netdisk</title>
+</head>
+<body>
+  {{ template "main" . }}
+</body>
+</html>
+
+index.html定义了模板main，这样就可以将main的内容加入到主模板中，同时它又引入了子模板upload_modal，如：
+{{ define "main" }}
+<main role="main" class="container">
+......
+{{ template "upload_modal" . }}
+</main>
+{{ end }}
+
+upload_modal.html定义了上传文件模板可以供其他页面使用：
+{{ define "upload_modal" }}
+<div>
+......
+</div>
+{{ end }}
+```
+
+# 载入
+main函数中载入模板
+```
+app := gin.Default()
+app.HTMLRender = LoadTemplates(path.Join(runDir, "web/template"))
+
+func LoadTemplates(templatesDir string) multitemplate.Renderer {
+	r := multitemplate.NewRenderer()
+
+	// 非模板嵌套
+	htmls, err := filepath.Glob(templatesDir + "/htmls/*.html")
+	if err != nil {
+		panic(err.Error())
+	}
+	for _, html := range htmls {
+		r.AddFromGlob(filepath.Base(html), html)
+	}
+
+	// 布局模板
+	layouts, err := filepath.Glob(templatesDir + "/layouts/*.html")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// 嵌套的内容模板
+	includes, err := filepath.Glob(templatesDir + "/includes/*.html")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// template自定义函数
+	funcMap := template.FuncMap{
+		"StringToLower": func(str string) string {
+			return strings.ToLower(str)
+		},
+	}
+ 
+    // 将主模板，include页面，layout子模板组合成一个完整的html页面
+	for _, include := range includes {
+		files := []string{}
+		files = append(files, templatesDir+"/frame.html", include)
+		files = append(files, layouts...)
+		r.AddFromFilesFuncs(filepath.Base(include), funcMap, files...)
+	}
+
+	return r
+}
+
+```

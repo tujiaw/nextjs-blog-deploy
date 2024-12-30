@@ -1,0 +1,205 @@
+---
+title: 'Win32 API笔记（迁移2011-01-12）'
+date: '2017-01-22'
+tags: ['Windows']
+draft: false
+summary: 这是 Win32 API 笔记，包含创建非模式对话框、静态文本控件、显示图片等操作示例，还涉及系统托盘、获取屏幕尺寸等内容，以及诸多关于 Win32 API 的细节和用法。 
+---
+
+1. 创建一个非模式对话框：
+```
+HWND hDlg;
+hDlg = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), hwnd, AboutDlgProc);//IDD_DIALOG1为资源文件中的对话框ID
+ShowWindow(hDlg, SW_SHOW);
+```
+2. 创建一个静态文本控件：
+```
+HWND hStaticLabel;
+hStaticLabel = CreateWindow(TEXT("static"), TEXT("hello, world"), WS_CHILD | WS_VISIBLE | SS_CENTER, 0, 0, 100, 20, hDlg, (HMENU)IDC_STATICLABEL, hInstance, NULL);
+```
+3. 在对话框上显示一张图片：
+```
+HBITMAP hSrcBmp;
+BITMAP bm;
+hSrcBmp = LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_BITMAP1));//载入图片
+GetObject(hSrcBmp, sizeof(bm), &bm);//获取图片信息
+在WM_PAINT中实现绘图：
+PAINTSTRUCT ps;
+HDC hdc = BeginPaint(hDlg, &ps);
+HDC hdcBuffer = CreateCompatibleDC(hdc);
+SelectObject(hdcBuffer, (HGDIOBJ)hSrcBmp));//先将图片选入兼容DC，防止闪烁
+BitBlt(hdc, 0, 0, bm.bmWidth, bm.bmHeight, hdcBuffer, 0, 0, SRCCOPY);
+DeleteDC(hdcBuffer);
+EndPaint(hDlg, &ps);
+```
+4. 将TextOut输出的文字背景色设为透明：
+```
+SetBkMode(hdc, TRANSPARENT);
+wchar_t textStr[20];
+ZeroMemory(textStr, sizeof(textStr));
+wcscpy(textStr, L"hello, world");
+TextOut(hdc, 0, 0, textStr, wcslen(textStr));
+```
+5. 获取屏幕的宽度与高度：
+```
+int width;
+int height;
+width = GetSystemMetrics(SM_CXSCREEN);
+height = GetSystemMetrics(SM_CYSCREEN);
+```
+6. 创建一个简单的系统托盘：
+```
+NOTIFYICONDATA niTray;
+niTray.cbSize = sizeof(NOTIFYICONDATA);
+niTray.hIcon = LoadIcon(NULL, IDI_WARNING);
+niTray.hWnd = hwnd;
+wcscpy(niTray.szTip, TEXT("World Time"));
+niTray.uCallbackMessage = WM_TRAY;
+niTray.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+niTray.uID = ID_TRAY;
+Shell_NotifyIcon(NIM_ADD, &niTray);
+//注意在程序退出时一定要释放资源：Shell_NotifyIcon(NIM_DELETE, &niTray);
+```
+7. 创建一个mask图片(用于遮罩的， 第8条是它的用法)：
+```
+HBITMAP CreateBitmapMask(HBITMAP hbmColour, COLORREF crTransparent)
+{
+	HDC hdcMem, hdcMem2;
+	HBITMAP hbmMask;
+	BITMAP bm;
+	GetObject(hbmColour, sizeof(BITMAP), &bm);
+	hbmMask = CreateBitmap(bm.bmWidth, bm.bmHeight, 1, 1, NULL);
+	hdcMem = CreateCompatibleDC(0);
+	hdcMem2 = CreateCompatibleDC(0);
+	SelectObject(hdcMem, hbmColour);
+	SelectObject(hdcMem2, hbmMask);
+	SetBkColor(hdcMem, crTransparent);
+	BitBlt(hdcMem2, 0, 0, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCCOPY);
+	BitBlt(hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, hdcMem2, 0, 0, SRCINVERT);
+	DeleteDC(hdcMem);
+	DeleteDC(hdcMem2);
+	return hbmMask;
+}
+```
+8. 去掉图片的黑色边框：  
+ 没有遮罩的图片    
+![](http://hi.csdn.net/attachment/201101/12/0_1294803082Akr2.gif)  
+有遮罩的图片  
+![](http://hi.csdn.net/attachment/201101/12/0_1294803116XlGv.gif)  
+```
+HBITMAP g_hbmMask = NULL;
+HBITMAP g_hbmBall = NULL;
+g_hbmMask = CreateBitmapMask(g_hbmBall, RGB(0, 0, 0));
+在WM_PAINT中：
+//bm与g_hbmBall怎么来的请参看第3条
+	HDC hdcBuffer = CreateCompatibleDC(hdc);
+	HBITMAP hbmOld = (HBITMAP)SelectObject(hdcBuffer, (HGDIOBJ)g_hbmMask);
+	BitBlt(hdc, 0, 0, bm.bmWidth, bm.bmHeight, hdcBuffer, 0, 0, SRCAND);
+	SelectObject(hdcBuffer, (HGDIOBJ)g_hbmBall);
+	BitBlt(hdc, 0, 0, bm.bmWidth, bm.bmHeight, hdcBuffer, 0, 0, SRCPAINT);
+	SelectObject(hdcBuffer, hbmOld);
+	DeleteDC(hdcBuffer);
+```
+9. "SYS"代表系统，它表示该击键对Windows比对Windows应用程序更加重要。
+10. “死键”用于给字母加上音调，它们本身不产生字符。  
+11. 格式化一个宽字符串用wsprintf(...);  
+求宽字符串的长度用wcslen(...);   
+12. 0xC0000005: 写入位置 0xcccccccc 时发生访问冲突的疑问。很可能是某个变量没有设置为static
+13. volatile修饰符的作用是告诉优化器不能优化这个变量的读写操作，一定要为这个变量的读写
+  操作生成代码。例如：
+```
+  /* 延时操作 */
+  int foo(void) 
+  {
+      /* 100次减法后返回 */
+      volatile int i = 100; /*(a)*/
+      while (i > 0) i--; /*(b)*/
+      return 0;
+  }
+```
+> 在无volatile修饰的情况下，因为变量i的变化对上下文无影响，所以优化器很可能会省略掉对i操
+  作的代码，而只生成return 0的代码，加上volatile可以保证编译器一定为语句(a)和(b)生成代
+  码，达到延时的目的。
+14. PostMessage 是异步的，SendMessage 是同步的。
+　PostMessage 只把消息放入队列，不管消息是否被处理就返回，消息可能不被处理；而 SendMessage 等  待消息被处理完了之后才返回，如果消息不被处理，发送消息的线程将一直被阻塞。
+15. 兼容DC是为了实现双缓冲，先将资源拷贝到一个缓冲区，然后一个性拷贝到客户区。如果不用双缓冲的话  直接拷贝，会造成客户区抖动很厉害。
+16. "纯资源"指含数据不含代码。
+17. 线程局部存储（TLS）区别于全局变量、静态变量、局部动态变量，它是唯一于各个线程的持久性存储。
+18. 
+* GetMessage()只有在接收到消息后才将控制权转给你的程序，而PeekMessage()无论有没有消息都会将  控制权转给你的程序：如果有消息，返回真，没有消息返回假。 
+* GetMessage()的主要功能是从消息队列中“取出”消息，消息被取出后，消息队列中就不再由该消息了;  而PeekMessage()的主要功能是“窥视(peek)”消息,如果有消息，返回真，没有返回假。但      PeekMessage()  允许你从消息队列中“取出”消息，这就是PeekMessage()第四个函数的用途：如果选用PM_REMOVE,则消息    从队列中取出，如选用PM_NOREMOVE，则PeekMessage()则“文如其人”，只是“偷看”，而保留消息。 
+* GetMessage()每次都“等待处理消息”而PeekMessage()只是“察看有无消息”。
+19. 打开、关闭外部应用程序（注意：获取句柄时需要应用程序左上角的名字）
+```
+case WM_LBUTTONDOWN:
+	hTemp = FindWindow(NULL, L"QQ2009");
+	if(hTemp == NULL)
+	{
+		MessageBox(NULL, TEXT("没有获取句柄！"), TEXT("提示"), MB_ICONERROR);
+		return 0;
+	}
+	SendMessage(hTemp, WM_CLOSE, 0, 0);
+	return 0;
+case WM_RBUTTONDOWN:
+	ShellExecute(NULL, NULL, L"QQ.exe", NULL, L"C://Program Files//Tencent//QQ//Bin//", SW_SHOW);
+	return 0;
+```
+20. ShellExecute打开网页
+ShellExecute是我们常用的一个API，可以运行程序，打开网页。
+ShellExecute(NULL, "open", "http://www.slyar.com/", NULL,NULL,SW_SHOWMAXIMIZED);
+这样可以打开一个网页，但不是在新IE中打开，改成下面方式时就可以在一个新的IE中打开网页了
+ShellExecute(NULL, "open", "IEXPLORE", "http://www.slyar.com/", NULL,SW_SHOWMAXIMIZED);
+21. WTL支持中文
+* 在资源视图中将对话框属性中的Language改为中文；
+* 在属性对话框中将对话框的Font(Size)改为宋体；
+22. CListViewCtrl m_ctrl;  
+m_ctrl.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES);
+支持一行全选和check按钮  
+23. 解决error PRJ0002  
+VS2008：  
+工具(Tools)菜单 -- 导入导出设置(Import and Export Settings...) -- 重置所有选项(Reset all settings) -- 否，不保存设置(最后一个) -- 选择你的设置 比如Visual C# 开发设置(Visual C# Development Settings) -- 完成(Finish)
+24. 解决WTL中CString与ATL中CString的问题：  
+在```#include <atlapp.h>```的前面写下如下代码：
+```
+#define _WTL_NO_CSTRING
+#include <atlstr.h>
+```
+25. 文件对话框
+```
+// 第一个参数TRUE为打开， FALSE为保存	
+CFileDialog importFile(TRUE, "txt", NULL, OFN_HIDEREADONLY|OFN_OVERWRITEPROMPT,
+		"(*.txt)|*.txt|(所有文件)|*.*||", NULL);
+
+	if (importFile.DoModal() == IDOK)
+	{
+	}
+```
+26. 读写文件
+```
+CStdioFile sFile;
+		if (!sFile.Open(strFilePath, CFile::modeRead))
+		{
+			MessageBox("打开文件失败");
+			return;
+		}
+```
+27. CMapStringToString用法   
+```
+CMapStringToString m_mapDeviceItem;
+POSITION pos;
+CString strFirst, strSecond;
+for (pos=m_mapDeviceItem.GetStartPosition(); pos1!=NULL; )
+{
+	m_mapDeviceItem.GetNextAssoc (pos, strFirst, strSecond);
+}
+```
+28. CList用法
+头文件```#include <afxtempl.h>```
+```
+CList<CString, CString&> m_listDeviceItem;
+POSITION pos;
+for (pos=m_listDeviceItem.GetHeadPosition(); pos!=NULL; )
+{
+	CString strTemp = m_listDeviceItem.GetNext(pos);
+}
+```

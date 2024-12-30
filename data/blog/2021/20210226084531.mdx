@@ -1,0 +1,150 @@
+---
+title: 'C++ 多线程有序锁和无序锁'
+date: '2021-02-26'
+tags: ['C/C++']
+draft: false
+summary: 
+---
+
+正常情况下如果多个线程被阻塞，当使用notify_all或者notify_one来唤醒被阻塞的线程时是无序的，你不能知道被唤醒的是哪个线程。当然你可能说我不在意被唤醒的线程是哪一个，但是有些场景需要控制被唤醒的顺序，即：先加锁的线程让它先被唤醒。
+
+首先，这里讨论的不是简单的使用std::mutex加解锁，而是配合std::condition_variable来对某个资源进行管理，如：我们有很多的商品，但是同一个商品只允许一个线程访问，不同商品是可以并行访问的。
+
+从网络中过来的商品我们要求对同一种商品顺序处理，单线程是可以的但是性能达不到要求，这里必须使用多线程，多线程有两种方法：
+1. 将相同的商品hash到同一个线程处理；
+2. 加锁，当同一个商品被某个线程处理时，其他线程应该等待；
+
+方法1的需要解决的问题是同一个请求的批量处理的问题，我们这里不讨论这种方法。  
+
+方法2需要解决顺序问题，也就是我们说的顺序锁，先来的商品肯定是先被锁定，当收到解锁的通知后应该要先被唤醒，下面是顺序锁的代码实现：
+```
+class ordered_lock {
+    std::queue<std::condition_variable *> cvar;
+    std::mutex cvar_lock;
+    bool locked;
+public:
+    ordered_lock() : locked(false) {};
+    void lock() {
+        std::unique_lock<std::mutex> acquire(cvar_lock);
+        if (locked) {
+            std::condition_variable signal;
+            cvar.emplace(&signal);
+            signal.wait(acquire);
+        } else {
+            locked = true;
+        }
+    }
+    void unlock() {
+        std::unique_lock<std::mutex> acquire(cvar_lock);
+        if (cvar.empty()) {
+            locked = false;
+        } else {
+            cvar.front()->notify_one();
+            cvar.pop();
+        }
+    }
+};
+```
+
+为了测试与对比，我们再写一个无序锁的代码：
+```
+class unordered_lock {
+    std::condition_variable cvar;
+    std::mutex cvar_lock;
+    bool locked;
+public:
+    unordered_lock() : locked(false) {};
+    void lock() {
+        std::unique_lock<std::mutex> acquire(cvar_lock);
+        if (locked) {
+            cvar.wait(acquire);
+        } else {
+            locked = true;
+        }
+    }
+    void unlock() {
+        std::unique_lock<std::mutex> acquire(cvar_lock);
+        locked = false;
+        cvar.notify_all();
+    }
+};
+```
+
+代码看起来都不复杂，我们下面就写个程序来测试下：
+```
+#include <iostream>
+#include <mutex>
+#include <condition_variable>
+
+//ordered_lock glock;
+unordered_lock glock;
+int main()
+{
+    std::thread t1([]() {
+        std::cout << "thread1 lock start\n";
+        glock.lock();
+        std::cout << "thread1 lock end\n";
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+        std::cout << "thread1\n";
+        glock.unlock();
+    });
+    t1.detach();
+
+    std::thread t2([]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::cout << "thread2 lock start\n";
+        glock.lock();
+        std::cout << "thread2 lock end\n";
+
+        std::cout << "thread2\n";
+
+        glock.unlock();
+    });
+    t2.detach();
+
+    std::thread t3([]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::cout << "thread3 lock start\n";
+        glock.lock();
+        std::cout << "thread3 lock end\n";
+
+        std::cout << "thread3\n";
+        glock.unlock();
+    });
+    t3.detach();
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::cout << "\nexit!\n";
+}
+```
+我们人为控制线程1最先进入，线程2和3随机同时进入，这样线程1执行完后会唤醒线程2和3。
+
+无序锁的情况是先锁的线程可能后被执行，无序锁可能的输出结果：
+```
+thread1 lock start
+thread1 lock end
+thread2 lock start
+thread3 lock start
+thread1
+thread3 lock end
+thread3
+thread2 lock end
+thread2
+```
+thread2先被锁定反而比线程3后输出
+
+有序锁能保证顺序
+```
+thread1 lock start
+thread1 lock end
+thread3 lock start
+thread2 lock start
+thread1
+thread3 lock end
+thread3
+thread2 lock end
+thread2
+```
+多次运行就可以验证我们的结果。

@@ -1,0 +1,90 @@
+---
+title: 'golang读取excel文档转换成json'
+date: '2021-02-25'
+tags: ['Go']
+draft: false
+summary: 
+---
+
+我们是使用github.com/tealeg/xlsx库实现的，用法比较简单：
+1. 读取excel文件
+2. 遍历sheets
+3. 在每个sheet中再遍历每行
+
+当然这个库还可以写入excel文档这里就不介绍了，有兴趣的可以去github上查看。
+
+代码如下：
+```
+package main
+
+import (
+	"encoding/json"
+	"flag"
+	"fmt"
+
+	"github.com/tealeg/xlsx"
+)
+
+type ExcelSheet struct {
+	SheetName string     `json:"Name"`
+	Rows      [][]string `json:"Rows"`
+}
+
+type ExcelData struct {
+	FileName string       `json:"Name"`
+	Sheets   []ExcelSheet `json:"Sheets"`
+}
+
+func main() {
+	var paramPath string
+	flag.StringVar(&paramPath, "path", "./test.xlsx", "Excel File Path")
+	flag.Parse()
+
+	if len(paramPath) == 0 {
+		fmt.Println("excel file path is empty!")
+		return
+	}
+
+	excelData, err := ReadExcel(paramPath)
+	if err != nil {
+		panic(err)
+	}
+
+	jsonStr, err := Excel2Json(&excelData)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(jsonStr)
+}
+
+func ReadExcel(excelPath string) (ExcelData, error) {
+	var excelData ExcelData
+	excelData.FileName = excelPath
+	xlFile, err := xlsx.OpenFile(excelPath)
+	if err != nil {
+		return excelData, err
+	}
+
+	for _, v := range xlFile.Sheets {
+		var sheet ExcelSheet
+		sheet.SheetName = v.Name
+		for _, row := range v.Rows {
+			cols := []string{}
+			for _, cell := range row.Cells {
+				cols = append(cols, cell.String())
+			}
+			sheet.Rows = append(sheet.Rows, cols)
+		}
+		excelData.Sheets = append(excelData.Sheets, sheet)
+	}
+
+	return excelData, nil
+}
+
+func Excel2Json(excelData *ExcelData) (string, error) {
+	b, err := json.MarshalIndent(excelData, "", "    ")
+	return string(b), err
+}
+
+```

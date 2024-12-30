@@ -1,0 +1,191 @@
+---
+title: '表驱动法介绍 （简单易懂）'
+date: '2017-04-15'
+tags: ['C/C++', 'Design']
+draft: false
+summary: 介绍表驱动法及函数指针应用。用表驱动法可简化获取每月天数的代码，函数指针可用于表驱动中，如处理不同 Event 的代码，通过定义结构体和表来实现更精致灵活的代码。但要注意函数指针的致命缺点，使用时需小心“类型陷阱”。 
+---
+
+函数指针的使用其实是很灵活的，它有很多技巧性很高的应用，在表驱动方法中的应用很典型，这里着重介绍一下。
+
+## 什么是表驱动方法
+表是几乎所有数据结构课本都要讨论的非常有用的数据结构。表驱动方法出于特定的目的来使用表，下面将对此进行讨论。
+程序员们经常谈到"表驱动"方法，但是课本中却从未提到过什么是"表驱动"方法。表驱动方法是一种使你可以在表中查找信息，而不必用很多的逻辑语句（if或Case）来把它们找出来的方法。事实上，任何信息都可以通过表来挑选。在简单的情况下，逻辑语句往往更简单而且更直接。但随着逻辑链的复杂，表就变得越来越富有吸引力了，通过下面的这个例子大家就能知道什么是所谓的表驱动方法了。
+
+假设你需要一个可以返回每个月中天数的函数（为简单起见不考虑闰年），一个比较笨的方法是一个大的if语句：
+```
+int iGetMonthDays(int iMonth)
+{
+ int iDays;
+ if(1 == iMonth) {iDays = 31;}
+ else if(2 == iMonth) {iDays = 28;}
+ else if(3 == iMonth) {iDays = 31;}
+ else if(4 == iMonth) {iDays = 30;}
+ else if(5 == iMonth) {iDays = 31;}
+ else if(6 == iMonth) {iDays = 30;}
+ else if(7 == iMonth) {iDays = 31;}
+ else if(8 == iMonth) {iDays = 31;}
+ else if(9 == iMonth) {iDays = 30;}
+ else if(10 == iMonth) {iDays = 31;}
+ else if(11 == iMonth) {iDays = 30;}
+ else if(12 == iMonth) {iDays = 31;}
+ return iDays;
+}
+```
+
+可以看出本来应该很简单的一件事情，代码却是这么冗余，解决这个的办法就可以用表驱动方法。
+```
+static int aiMonthDays[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+/* 我们可以先定义一个静态数组，这个数组用来保存一年十二个月的天数 */
+int iGetMonthDays(int iMonth)
+{
+ return aiMonthDays[(iMonth - 1)];
+}
+```
+接下来不用多说了，大家都能看出用这种表驱动的方法代替这种情逻辑行不强，但分支很多的代码是多么令人"赏心悦目"的了。
+
+## 函数指针在表驱动方法中的应用
+在使用表驱动方法时需要说明的一个问题是，你将在表中存储些什么。在某些情况下，表查寻的结果是数据。如果是这种情况，你可以把数据存储在表中。在其它情况下，表查寻的结果是动作。在这种情况下，你可以把描述这一动作的代码存储在表中。在某些语言中，也可以把实现这一动作的子程序的调用存储在表中，也就是将函数的指针保存在表中，当查找到这项时，让程序用这个函数指针来调用相应的程序代码，这个就是函数指针在表驱动方法中的应用。
+
+其实说到这已经说了很多表驱动方法的相关问题了，现在要把函数指针也应用进去，很多人应该已经想到会是个什么样子了，其实也很简单，通过下面这两段伪代码的例子就可以充分体现函数指针在表驱动方法中应用会使代码更加精致。
+
+我们在写一段程序的过程中会经常遇到这样的问题，我们在写一个Task的主函数中有时会要等待不同的Event通知，并且处理不同的分支，首先有如下的Event Bit的宏定义和相应的处理函数的声明。
+```
+#define TASK_EVENT_BIT00  (1 << 0)
+#define TASK_EVENT_BIT01  (1 << 1)
+#define TASK_EVENT_BIT02  (1 << 2)
+#define TASK_EVENT_BIT03  (1 << 3)
+#define TASK_EVENT_BIT04  (1 << 4)
+#define TASK_EVENT_BIT05  (1 << 5)
+#define TASK_EVENT_BIT06  (1 << 6)
+#define TASK_EVENT_BIT07  (1 << 7)
+#define TASK_EVENT_BIT08  (1 << 8)
+#define TASK_EVENT_BIT09  (1 << 9)
+
+void vDoWithEvent00();
+void vDoWithEvent01();
+void vDoWithEvent02();
+void vDoWithEvent03();
+void vDoWithEvent04();
+void vDoWithEvent05();
+void vDoWithEvent06();
+void vDoWithEvent07();
+void vDoWithEvent08();
+void vDoWithEvent09();
+```
+
+我们一般首先想到的写法是
+```
+
+unsigned long ulEventBit;
+for(;;)
+{
+ xos_waitFlag(&ulEventBit);
+ if(ulEventBit & TASK_EVENT_BIT00)
+ {
+  vDoWithEvent00();
+ }
+ if(ulEventBit & TASK_EVENT_BIT01)
+ {
+  vDoWithEvent01();
+ }
+ if(ulEventBit & TASK_EVENT_BIT02)
+ {
+  vDoWithEvent02();
+ }
+ if(ulEventBit & TASK_EVENT_BIT03)
+ {
+  vDoWithEvent03();
+ }
+ if(ulEventBit & TASK_EVENT_BIT04)
+ {
+  vDoWithEvent04();
+ }
+ if(ulEventBit & TASK_EVENT_BIT05)
+ {
+  vDoWithEvent05();
+ }
+ if(ulEventBit & TASK_EVENT_BIT06)
+ {
+  vDoWithEvent06();
+ }
+ if(ulEventBit & TASK_EVENT_BIT07)
+ {
+  vDoWithEvent07();
+ }
+ if(ulEventBit & TASK_EVENT_BIT08)
+ {
+  vDoWithEvent08();
+ }
+ if(ulEventBit & TASK_EVENT_BIT09)
+ {
+  vDoWithEvent09();
+ }
+}
+```
+可以看出这样写是不是显得程序太长了呢。
+下面我们再看看同样的一段代码用函数指针和表驱动方法结合的方法写出会是什么样子。
+```
+typedef struct {
+ unsigned long   ulEventBit;     
+ void     (*Func)(void);    
+} EventDoWithTable_t;
+/* 定义EventBit 与相应处理函数关系的结构体 */
+static const EventDoWithTable_t astDoWithTable[] = {
+ { TASK_EVENT_BIT00    , vDoWithEvent00},
+ { TASK_EVENT_BIT01    , vDoWithEvent01},
+ { TASK_EVENT_BIT02    , vDoWithEvent02},
+ { TASK_EVENT_BIT03    , vDoWithEvent03},
+ { TASK_EVENT_BIT04    , vDoWithEvent04},
+ { TASK_EVENT_BIT05    , vDoWithEvent05},
+ { TASK_EVENT_BIT06    , vDoWithEvent06},
+ { TASK_EVENT_BIT07    , vDoWithEvent07},
+ { TASK_EVENT_BIT08    , vDoWithEvent08},
+ { TASK_EVENT_BIT09    , vDoWithEvent09}
+};
+/* 建立EventBit与相应处理函数的关系表 */
+ulong ulEventBit;
+int  i;
+for(;;)
+{
+ xos_waitFlag(&ulEventBit);
+ for(i = 0 ; i < sizeof(astDoWithTable)/sizeof(astDoWithTable[0]); i ++)
+ {
+  if ( ( ulEventBit & astDoWithTable[i].ulEventBit ) &&
+    ( astDoWithTable[i].Func != NULL ) )
+  {
+   (*astDoWithTable[i].Func)();
+   /* 通过函数指针来调用相应的处理函数 */
+  }
+ }
+}
+```
+可以看出这种代码的风格使代码变得精致得多了，并且使程序的灵活性大大加强了，如果我们还要再加入EventBit，只修改表中的内容就可以了。
+
+## 总结
+通过上面介绍的，相信大家已经对函数指针的使用方法有所了解了，但是需要提醒大家，凡事都要具体情况具体分析，使用函数指针的时候一定要多加小心，因为函数指针有它的一个致命的缺点。
+
+函数指针的致命缺点是：无法对参数 (parameter) 和返回值 (return value) 的类型进行检查，因为函数已经退化成指针，指针是不带有这些类型信息的。少了类型检查，当参数或者反回值不一致时，会造成严重的错误。有些编译器并不会帮我们找出函数指针这样的致命错误。所以，许多新的编程语言都不支持函数指针了，而改用其他方式。
+
+从上面的例3中我们可以看到
+```
+int max(int x,int y){  return x>y?x:y; } 
+int min(int x,int y){  return x<y?x:y; } 
+int add(int x,int y){  return x+y; }
+```
+
+这三个函数都有两个参数，而在后面却把处理函数定义成
+```
+int process(int x,int y, int (*f)())    
+{
+ return (*f)(x,y);
+} 
+```
+
+其中第三个参数是一个函数的指针，从表面上看它是个没有参数，并且返回int型的函数的指针，但是在后面却用process(a,b,max)的方式进行调用，max带有两个参数，这段程序在C语言中就可以顺利的编译通过（但是在C++中却编译不通过），可以看出如果编译器没有检查出错误，而我们又不小心写错的话，后果是很严重的，比如return (*f)(x,y);不小心写成return (*f)(x);在C语言中可以正常的被编译通过，但是运行结果一定不是我们想要的。
+
+因此在C语言中使用函数指针的时候，一定要小心"类型陷阱"，小心地使用函数指针，只有这样我们才可以从函数指针中获益。
+
+from: [http://blog.csdn.net/sunyonggao/article/details/1598781](http://blog.csdn.net/sunyonggao/article/details/1598781)
+
+> 2011-07-02

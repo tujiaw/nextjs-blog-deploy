@@ -1,0 +1,51 @@
+---
+title: 'const用法（迁移2011-01-04）'
+date: '2017-01-22'
+tags: ['C/C++']
+draft: false
+summary: const 可指定语义约束，编译器强制实施。函数参数加 const 有不同含义，返回值前加 const 及类成员函数后加 const 也有特定规则，如函数参数加 const 可限制被指物或指针，类成员函数后加 const 不能给成员变量赋值，可用 mutable 解决。 
+---
+
+vo...
+---
+const允许你指定一个语义约束（也就是指定一个“不该被改动”的对象），而编译器会强制实施这项约束。它允许你告诉编译器和其他程序员某值应该保持不变。编程时如果需要保持某个值不变， 你就应该用const， 这样编译器就会确保这条约束不被违反。  
+### 函数参数加const 
+---
+```
+void func(int * const val)//地址不能变
+(*(val++)); //错误， 地址改变了
+*val = 100; //正确， 值改变了
+void func(const int * val)//所指的值不能变
+void func(int const *val) //这两种写法是一样的，const都在*号的左边
+((*val)++); //错误，值改变了
+val = val +3; //正确， 所指的地址改变了
+
+```
+    如果关键字const出现在星号左边， 表示被指物是常量；   
+    如果出现在星号右边， 表示指针自身是常量；   
+    如果出现在星号的两边， 表示被指物和指针两者都是常量。   
+
+### 函数返回值前加const
+---
+```
+class Rational{...};
+const Rational operator* (const Rational& lhs, const Rational& rhs);//重载*号
+Rational a, b, c;
+(a * b) = c; //错误， 
+```
+
+###  类的成员函数后面加const
+---
+```
+class People
+{
+    ...
+void set_number(int n) const
+{
+    num = n; //错误， 成员函数后面加了const不能给成员变量赋值
+}
+
+int num;
+};
+```
+> 解决办法是：mutable int num; //在num前加mutable(可变的)

@@ -1,0 +1,55 @@
+---
+title: 'Python批量替换博客中七牛云图片地址'
+date: '2021-05-20'
+tags: ['Python']
+draft: false
+summary: 
+---
+
+博客里面的很多图片以前用的是七牛云，但是七牛云免费的不支持https导致目前博客里面的部分图片显示不出来，于是我把七牛云里面的所有图片都下载下来上传到博客所在的服务器上去，直接访问自己的服务器来展示，这样需要替换图片地址。
+
+# 替换图片地址
+七牛云图片地址，这个域名用CNAME指向的七牛云：
+```
+http://images.ningto.com/123456.png
+```
+修改后的地址：
+```
+/upload/123456.png
+```
+
+# 步骤
+* 下载七牛云图片到本地
+* 遍历需要替换的本地图片所在目录
+* 根据图片名字拼接成需要替换的字符串
+* 根据字符串去博客所在的数据库查找相应的文章
+* 替换文章中图片地址然后更新数据库
+
+# 代码
+```
+import pymysql
+import os
+
+def replace_image(imagedir):
+  db = pymysql.Connect(host="127.0.0.1", port=3306, user="username", passwd="password", database="blog", charset="utf8")
+  cursor = db.cursor()
+  for name in os.listdir(imagedir):
+    src = 'http://images.ningto.com/' + name
+    dst = '/upload/' + name
+    cursor.execute("select _id, content from posts where content like '%%%s%%'" % src)
+    rows = cursor.fetchall()
+    for row in rows:
+      id = row[0]
+      content = row[1].replace(src, dst)
+      try:
+        cursor.execute("update posts set content=%s where _id='%s'" % (db.escape(content), id))
+        db.commit()
+        print('success id:%s' % id)
+      except Exception as e:
+        db.rollback()
+        print('failed id:%s, error:%s' % (id, str(e)))
+  db.close()
+  ```
+  注意点：
+  1. mysql中模糊查找的时候左右两边要用两个%  
+  2. 更新content的时候由于文章中有很多特殊字符所以要用escape转义

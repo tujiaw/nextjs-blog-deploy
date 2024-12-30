@@ -1,0 +1,67 @@
+---
+title: 'Chrome简单插件开发，自动初始化gitalk评论'
+date: '2021-03-02'
+tags: ['Web', 'Javascript']
+draft: false
+summary: 
+---
+
+Chrome简单插件开发——自动初始化gitalk评论
+
+# gitalk增加手动初始化评论
+我给博客增加了gitalk评论，确实蛮方便好用的，但是没有初始评论需要管理员去创建，还好它提供了一个参数来手动创建
+```
+createIssueManually: true
+```
+这样当你发表一篇文章后点击一下评论里的初始化按钮就可以了，虽然没有完全自动化但是也能接受，毕竟你文章都写完了点个按钮也不是什么麻烦事。
+
+![](https://ningto.com/upload/20210305-ntscreenshot-100120.png)
+
+# 怎样给所有以前的文章初始化评论
+对于新写的文章还好，但是以前的这么多文章一个个去点还是比较麻烦的，于是就想写个简单的js脚本来自动化把所有文章的评论初始化完。
+
+刚开始是想使用Chrome开发者工具的，但是试下来还是有些问题，对于网页加载到下一篇文章后的脚本代码怎么编写还有些疑惑，所以干脆就用chrome插件的方式来实现。结果试下来效果还不错，代码也简单，现在已顺利初始化完了博客里的所有文章评论。
+
+# Chrome插件编写
+创建一个目录随便叫什么名字，在目录下新增文件，注意matches就是你的网页地址有www和没有www是有区别的
+* manifest.json文件
+* jquery.min.js文件，如果需要用jquery
+* myscript.js文件，这就是你写的脚本
+
+manifest.json
+```
+{  
+  "name": "第一个Chrome插件",  
+  "manifest_version": 2,  
+  "version": "1.0",  
+  "description": "我的第一个Chrome插件，还不错吧",  
+  "content_scripts": [  
+    {  
+      "matches": ["https://ningto.com/*"], 
+      "js": ["jquery.min.js", "myscript.js"]  
+    }  
+  ]
+} 
+```
+
+myscript.js
+```
+document.body.style.backgroundColor="gray"; 
+setInterval(function() {
+  var btn = jQuery("#gitalk-container .gt-btn")[0];
+  if (btn) {
+    btn.click();
+    var u = "https://ningto.com" + jQuery("#goto_next_post").attr("href");
+    document.location.href = u;
+  }
+}, 1000);
+```
+
+[jquery.min.js下载](https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js)
+
+代码很简单，第一行背景变灰只是看一下脚本有没有执行，然后每一秒钟判断一下初始化评论的按钮有没有出来，如果加载出来的就点击一下，然后获取下一篇文章的url转到一个网页，最后循环这个简单的过程就可以了。
+
+# 加载Chrome插件
+点击Chrome浏览器右上角三个点的图标->选择更多工具->扩展程序->加载已解压的扩展程序，找到之前创建的目录就可以了。
+
+![](https://ningto.com/upload/20210305-ntscreenshot-095949.png)

@@ -1,0 +1,37 @@
+---
+title: 'koa2给所有页面渲染全局数据'
+date: '2017-11-02'
+tags: ['Web', 'Node.js']
+draft: false
+summary: 文章介绍 koa2 给所有页面渲染全局数据的方法。通过在所有路由前新增代码捕捉每次请求并写入 mongodb 新增访问量及返回总访问量，前端可在模板中获取该变量实现显示用户访问量。 
+---
+
+# 场景
+给我的博客增加显示用户访问量，后台的每个请求访问量都新增1，每个页面的渲染都返回当前访问量计数。
+
+# 捕捉每次请求
+在所有路由之前新增
+```
+  app.use(async (ctx, next) => {
+    const totalhit = await Extends.addHit(ctx.path);
+    ctx.state = Object.assign(ctx.state, { totalhit: totalhit });
+    await next();
+  })
+```
+Extends.addHit写入mongodb新增访问量并且返回当前总访问量
+
+# 每个请求中返回总访问量
+还是在上面的代码中将总访问量totalhit赋值给ctx.state，由于state是一个对象，可能存在其他数据所以要使用Object.assign的方式将总访问量属性拷贝给state对象。
+
+这样，每个渲染的html模板都可以获取totalhit变量。本博客使用的模板引擎是koa-swig。
+
+# 前端实现
+```
+<a href="http://3inns.cn" style="color:red;">
+{% if totalhit %}
+您是第{{ totalhit }}位访问者
+{% else %}
+3inns.cn
+{% endif %}
+</a>
+```

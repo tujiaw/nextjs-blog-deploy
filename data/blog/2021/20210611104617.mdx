@@ -1,0 +1,538 @@
+---
+title: 'datetime封装常用功能'
+date: '2021-06-11'
+tags: ['C/C++']
+draft: false
+summary: 
+---
+
+datetime支持windows，linux，异常安全，封装了常见的转换函数，精确到毫秒。
+
+支持常见日期的计算、修改、比较。
+
+
+```
+#pragma once
+
+#include <string>
+#include <ctime>
+
+class DateTime {
+public:
+    static DateTime now();
+    static int64_t nowMSTimestamp();
+    static int64_t nowTimestamp();
+    static DateTime fromDateTimeString(const std::string &datetime);
+    static DateTime fromYmdHMS(const std::string &datetime);
+    static DateTime fromDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond);
+    static DateTime fromDate(int year, int month, int day);
+    static bool isLeapYear(int year);
+    static int daysOfMonth(int year, int month);
+    static int datePeriod(const DateTime &from, const DateTime &to);
+    static std::pair<int, int> yearDayPeriod(DateTime date1, DateTime date2);
+
+    DateTime();
+    explicit DateTime(tm& tmstruct);
+    DateTime(tm &tmstruct, int millisecond);
+    DateTime(const DateTime& dateTime);
+    DateTime& operator=(const DateTime& dateTime);
+
+    void setTM(tm &tmstruct, int millisecond);
+    DateTime& fromTimestamp(int64_t second);
+    DateTime& fromMsTimestamp(int64_t millisecond);
+    void swap(DateTime& dateTime);
+    tm makeTM() const;
+    tm* tmstruct(tm &tmstruct) const;
+    std::string format(const char *format) const;
+    int64_t sub(const DateTime &from);
+
+    // eg :20201222
+    std::string formatYmd() const;
+    // eg :20201222135030
+    std::string formatYmdHMS() const;
+    // eg: 2020-12-22
+    std::string formatDate() const;
+    // eg: 2020-12-22 17:40:07
+    std::string formatDateTime() const;
+    // eg: 2020-12-22 17:40:07.123
+    std::string formatDateTimeMS() const;
+    // eg: 17:40
+    std::string formatHourMinute() const;
+    // eg: 17:40:07
+    std::string formatHourMinuteSecond() const;
+
+    int daysInMonth() const;
+    int daysInYear() const;
+    int daysInWeek() const;
+    bool parseFull(int &year, int &month, int &day, int &hour, int &minute, int &second, int &millisecond) const;
+    bool parseYearMonthDay(int &year, int &month, int &day) const;
+    DateTime& addYear(int years, bool *success = NULL);
+    DateTime& addMonth(int months, bool *success = NULL);
+    DateTime& addDay(int days, bool *success = NULL);
+    DateTime& addHour(int hours, bool *success = NULL);
+    DateTime& addMinute(int minutes, bool *success = NULL);
+    DateTime& addSecond(int seconds, bool *success = NULL);
+
+    int year() const;
+    int month() const;
+    int day() const;
+    int hour() const;
+    int minute() const;
+    int second() const;
+
+    inline int millisec() const { return msTimestamp_ % 1000; }
+    inline time_t timestamp() const { return msTimestamp_ / 1000; }
+    inline time_t msTimestamp() const { return msTimestamp_; }
+    inline bool operator == (const DateTime& dateTime) const { return msTimestamp_ == dateTime.msTimestamp_; }
+    inline bool operator != (const DateTime& dateTime) const { return msTimestamp_ != dateTime.msTimestamp_; }
+    inline bool operator <  (const DateTime& dateTime) const { return msTimestamp_ < dateTime.msTimestamp_; }
+    inline bool operator <= (const DateTime& dateTime) const { return msTimestamp_ <= dateTime.msTimestamp_; }
+    inline bool operator >  (const DateTime& dateTime) const { return msTimestamp_ > dateTime.msTimestamp_; }
+    inline bool operator >= (const DateTime& dateTime) const { return msTimestamp_ >= dateTime.msTimestamp_; }
+    inline void swap(DateTime& d1, DateTime& d2) { d1.swap(d2); }
+
+private:
+    int64_t msTimestamp_;
+};
+
+#include "datetime.h"
+#include <chrono>
+#include <iostream>
+#include <boost/date_time/gregorian/gregorian.hpp>
+
+boost::gregorian::date gregorianDate(const DateTime &dt)
+{
+    boost::gregorian::date ret;
+    std::string date = dt.formatDate();
+    if (date.empty()) {
+        return ret;
+    }
+
+    try {
+        ret = boost::gregorian::from_string(date);
+    } catch (std::exception &e) {
+		LOGGER_WARN("gregorianDate ERROR, date:" << date);
+    } catch (...) {
+		LOGGER_WARN("gregorianDate ERROR, date:" << date);
+    }
+    return ret;
+}
+
+DateTime DateTime::now()
+{
+    DateTime dt;
+    return dt.fromMsTimestamp(DateTime::nowMSTimestamp());
+}
+
+int64_t DateTime::nowMSTimestamp()
+{
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+}
+
+int64_t DateTime::nowTimestamp()
+{
+    using namespace std::chrono;
+    return duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+}
+
+DateTime DateTime::fromYmdHMS(const std::string &datetime)
+{
+    int year, month, day, hour, minute, second;
+    year = month = day = hour = minute = second = 0;
+    int count = sscanf(datetime.c_str(), "%4d%2d%2d%2d%2d%2d",
+        &year, &month, &day, &hour, &minute, &second);
+    if (count >= 3) {
+        return DateTime::fromDateTime(year, month, day, hour, minute, second, 0);
+    }
+    return DateTime();
+}
+
+DateTime DateTime::fromDateTimeString(const std::string &datetime)
+{
+    int year, month, day, hour, minute, second, millisec;
+    year = month = day = hour = minute = second = millisec = 0;
+    int count = sscanf(datetime.c_str(), "%4d-%2d-%2d %2d:%2d:%2d.%3d",
+        &year, &month, &day, &hour, &minute, &second, &millisec);
+    if (count >= 3) {
+        return DateTime::fromDateTime(year, month, day, hour, minute, second, millisec);
+    }
+    return DateTime();
+}
+
+DateTime DateTime::fromDateTime(int year, int month, int day, int hour, int minute, int second, int millisec)
+{
+    struct tm local;
+    local.tm_year = year - 1900;
+    local.tm_mon = month - 1;
+    local.tm_mday = day;
+    local.tm_hour = hour;
+    local.tm_min = minute;
+    local.tm_sec = second;
+    return DateTime(local, millisec);
+}
+
+DateTime DateTime::fromDate(int year, int month, int day)
+{
+    return DateTime::fromDateTime(year, month, day, 0, 0, 0, 0);
+}
+
+bool DateTime::isLeapYear(int year)
+{
+    return (year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0);
+}
+
+int DateTime::daysOfMonth(int year, int month)
+{
+    static int daysOfMonthTable[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    if (month >= 1 && month <= 12) {
+        if (month == 2 && isLeapYear(year)) {
+            return 29;
+        } else {
+            return daysOfMonthTable[month];
+        }
+    }
+    return 0;
+}
+
+int DateTime::datePeriod(const DateTime &from, const DateTime &to)
+{
+    std::string str = "[" + from.formatDate() + "/" + to.formatDate() + "]";
+    try {
+        return boost::gregorian::date_period_from_string(str).length().days();
+    } catch (std::exception &e) {
+		LOGGER_WARN("DateTime datePeriod exception, error:" << e.what() << ", str:" << str);
+    } catch (...) {
+		LOGGER_WARN("DateTime datePeriod exception, unkown error, str:" << str);
+    }
+    return 0;
+}
+
+std::pair<int, int> DateTime::yearDayPeriod(DateTime date1, DateTime date2)
+{
+    if (date1 > date2) {
+        date1.swap(date2);
+    }
+    int yearStart = date1.year();
+    int yearEnd = date2.year();
+    int y = yearEnd - yearStart;
+    date1.addYear(y);
+    if (date1 > date2) {
+        date1.addYear(-1);
+        y -= 1;
+    }
+    int d = DateTime::datePeriod(date1, date2);
+    return std::make_pair(y, d);
+}
+
+DateTime::DateTime() : msTimestamp_(0) {}
+DateTime::DateTime(tm& tmstruct) { setTM(tmstruct, 0); }
+DateTime::DateTime(tm &tmstruct, int millisec) { setTM(tmstruct, millisec); }
+DateTime::DateTime(const DateTime& dateTime) : msTimestamp_(dateTime.msTimestamp_) { }
+DateTime& DateTime::operator=(const DateTime& dateTime)
+{
+    if (&dateTime != this) {
+        msTimestamp_ = dateTime.msTimestamp_;
+    }
+    return *this;
+}
+
+void DateTime::setTM(tm &tmstruct, int millisec)
+{
+    time_t tt = mktime(&tmstruct);
+    if (tt != -1) {
+        if (millisec > 0 && millisec < 1000) {
+            msTimestamp_ = tt * 1000 + millisec;
+        } else {
+            msTimestamp_ = tt * 1000;
+        }
+    } else {
+        msTimestamp_ = 0;
+    }
+}
+
+DateTime& DateTime::fromTimestamp(int64_t second)
+{
+    msTimestamp_ = second * 1000;
+    return *this;
+}
+
+DateTime& DateTime::fromMsTimestamp(int64_t millisecond)
+{
+    msTimestamp_ = millisecond;
+    return *this;
+}
+
+void DateTime::swap(DateTime& dateTime)
+{
+    std::swap(msTimestamp_, dateTime.msTimestamp_);
+}
+
+tm DateTime::makeTM() const
+{
+    tm local;
+    tmstruct(local);
+    return local;
+}
+
+tm* DateTime::tmstruct(tm &tmstruct) const
+{
+    time_t tt = msTimestamp_ / 1000;
+#ifdef WIN32
+    errno_t err = localtime_s(&tmstruct, &tt);
+    if (err != 0) {
+		LOGGER_WARN("localtime_s error:" << err);
+        return NULL;
+    }
+    return &tmstruct;
+#else
+    tm *t = localtime_r(&tt, &tmstruct);
+    if (!t) {
+		LOGGER_WARN("localtime_r error, value:" << tt);
+    }
+    return t;
+#endif
+}
+
+std::string DateTime::format(const char *format) const
+{
+    tm local;
+    if (tmstruct(local)) {
+        char buffer[100];
+        strftime(buffer, sizeof(buffer), format, &local);
+        return buffer;
+    }
+    return "";
+}
+
+int64_t DateTime::sub(const DateTime &from)
+{
+    return msTimestamp_ - from.msTimestamp();
+}
+
+// eg :20201222
+std::string DateTime::formatYmd() const
+{
+    return format("%Y%m%d");
+}
+
+// eg :20201222135030
+std::string DateTime::formatYmdHMS() const
+{
+    return format("%Y%m%d%H%M%S");
+}
+
+// eg: 2020-12-22
+std::string DateTime::formatDate() const
+{
+    return format("%Y-%m-%d");
+}
+
+// eg: 2020-12-22 17:40:07
+std::string DateTime::formatDateTime() const
+{
+    return format("%Y-%m-%d %H:%M:%S");
+}
+
+// eg: 2020-12-22 17:40:07.123
+std::string DateTime::formatDateTimeMS() const
+{
+    std::string dt = formatDateTime();
+    if (dt.empty()) {
+        return dt;
+    }
+    char buf[32] = { 0 };
+    sprintf(buf, ".%03d", millisec());
+    return dt + std::string(buf);
+}
+
+// eg: 17:40
+std::string DateTime::formatHourMinute() const
+{
+    return format("%H:%M");
+}
+
+// eg: 17:40:07
+std::string DateTime::formatHourMinuteSecond() const
+{
+    return format("%H:%M:%S");
+}
+
+int DateTime::daysInMonth() const
+{
+    return makeTM().tm_mday;
+}
+
+int DateTime::daysInYear() const
+{
+    return makeTM().tm_yday;
+}
+
+int DateTime::daysInWeek() const
+{
+    return makeTM().tm_wday;
+}
+
+bool DateTime::parseFull(int &year, int &month, int &day, int &hour, int &minute, int &second, int &millisec) const
+{
+    tm local;
+    if (tmstruct(local)) {
+        year = local.tm_year + 1900;
+        month = local.tm_mon + 1;
+        day = local.tm_mday;
+        hour = local.tm_hour;
+        minute = local.tm_min;
+        second = local.tm_sec;
+        millisec = msTimestamp_ % 1000;
+        return true;
+    }
+    return false;
+}
+
+bool DateTime::parseYearMonthDay(int &year, int &month, int &day) const
+{
+    int hour, minute, second, millisec;
+    return parseFull(year, month, day, hour, minute, second, millisec);
+}
+
+DateTime& DateTime::addYear(int years, bool *success)
+{
+    int year, month, day, hour, minute, second, millisec;
+    year = month = day = hour = minute = second = millisec = 0;
+    if (!parseFull(year, month, day, hour, minute, second, millisec)) {
+		LOGGER_WARN("parseFull ERROR, msTimestamp:" << msTimestamp_);
+        return *this;
+    }
+
+    try {
+        boost::gregorian::date d(year, month, day);
+        d += boost::gregorian::years(years);
+        year = d.year();
+        month = d.month();
+        day = d.day();
+        if (success) {
+            *success = true;
+        }
+    } catch (std::exception &e) {
+		LOGGER_WARN("addYear exception, err:" << e.what() << ", msTimestamp:" << msTimestamp_ << ", value:" << years);
+    } catch (...) {
+		LOGGER_WARN("addYear exception, unkown, msTimestamp:" << msTimestamp_ << ", value:" << years);
+    }
+
+    msTimestamp_ = DateTime::fromDateTime(year, month, day, hour, minute, second, millisec).msTimestamp();
+    return *this;
+}
+
+DateTime& DateTime::addMonth(int months, bool *success)
+{
+    int year, month, day, hour, minute, second, millisec;
+    year = month = day = hour = minute = second = millisec = 0;
+    if (!parseFull(year, month, day, hour, minute, second, millisec)) {
+		LOGGER_WARN("parseFull ERROR, msTimestamp:" << msTimestamp_);
+        return *this;
+    }
+
+    try {
+        boost::gregorian::date d(year, month, day);
+        d += boost::gregorian::months(months);
+        year = d.year();
+        month = d.month();
+        day = d.day();
+        if (success) {
+            *success = true;
+        }
+    } catch (std::exception &e) {
+		LOGGER_WARN("addMonth exception, err:" << e.what() << ", msTimestamp:" << msTimestamp_ << ", value:" << months);
+    } catch (...) {
+		LOGGER_WARN("addMonth exception, unkown, msTimestamp:" << msTimestamp_ << ", value:" << months);
+    }
+
+    msTimestamp_ = DateTime::fromDateTime(year, month, day, hour, minute, second, millisec).msTimestamp();
+    return *this;
+}
+
+DateTime& DateTime::addDay(int days, bool *success)
+{
+    int year, month, day, hour, minute, second, millisec;
+    year = month = day = hour = minute = second = millisec = 0;
+    if (!parseFull(year, month, day, hour, minute, second, millisec)) {
+		LOGGER_WARN("parseFull ERROR, msTimestamp:" << msTimestamp_);
+        return *this;
+    }
+
+    try {
+        boost::gregorian::date d(year, month, day);
+        d += boost::gregorian::days(days);
+        year = d.year();
+        month = d.month();
+        day = d.day();
+        if (success) {
+            *success = true;
+        }
+    } catch (std::exception &e) {
+		LOGGER_WARN("addDay exception, err:" << e.what() << ", msTimestamp:" << msTimestamp_ << ", value:" << days);
+    } catch (...) {
+		LOGGER_WARN("addDay exception, unkown, msTimestamp:" << msTimestamp_ << ", value:" << days);
+    }
+
+    msTimestamp_ = DateTime::fromDateTime(year, month, day, hour, minute, second, millisec).msTimestamp();
+    return *this;
+}
+
+DateTime& DateTime::addHour(int hours, bool *success)
+{
+    try {
+        msTimestamp_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::milliseconds(msTimestamp_) + std::chrono::hours(hours)).count();
+        if (success) {
+            *success = true;
+        }
+    } catch (std::exception &e) {
+		LOGGER_WARN("addHour exception, err:" << e.what() << ", msTimestamp:" << msTimestamp_ << ", value:" << hours);
+    } catch (...) {
+		LOGGER_WARN("addHour exception, unkown, msTimestamp:" << msTimestamp_ << ", value:" << hours);
+    }
+    return *this;
+}
+
+DateTime& DateTime::addMinute(int minutes, bool *success)
+{
+    try {
+        msTimestamp_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::milliseconds(msTimestamp_) + std::chrono::minutes(minutes)).count();
+        if (success) {
+            *success = true;
+        }
+    } catch (std::exception &e) {
+		LOGGER_WARN("addMinute exception, err:" << e.what() << ", msTimestamp:" << msTimestamp_ << ", value:" << minutes);
+    } catch (...) {
+		LOGGER_WARN("addMinute exception, unkown, msTimestamp:" << msTimestamp_ << ", value:" << minutes);
+    }
+
+    return *this;
+}
+
+DateTime& DateTime::addSecond(int seconds, bool *success)
+{
+    try {
+        msTimestamp_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::milliseconds(msTimestamp_) + std::chrono::seconds(seconds)).count();
+        if (success) {
+            *success = true;
+        }
+    } catch (std::exception &e) {
+		LOGGER_WARN("addSecond exception, err:" << e.what() << ", msTimestamp:" << msTimestamp_ << ", value:" << seconds);
+    } catch (...) {
+		LOGGER_WARN("addSecond exception, unkown, msTimestamp:" << msTimestamp_ << ", value:" << seconds);
+    }
+    return *this;
+}
+
+int DateTime::year() const { return makeTM().tm_year + 1900; }
+int DateTime::month() const { return makeTM().tm_mon + 1; }
+int DateTime::day() const { return makeTM().tm_mday; }
+int DateTime::hour() const { return makeTM().tm_hour; }
+int DateTime::minute() const { return makeTM().tm_min; }
+int DateTime::second() const { return makeTM().tm_sec; }
+
+```

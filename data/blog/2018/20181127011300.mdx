@@ -1,0 +1,32 @@
+---
+title: 'linux问题汇总'
+date: '2018-11-27'
+tags: ['Linux']
+draft: false
+summary: 
+---
+
+### Unable to find remote helper for 'https'    
+是因为/usr/libexec/git-core路径没在 PATH 环境变量中,这导致里面的 git-remote-https, git-remote-http 这些得不到执行。所以git所表现出来的功能不全。
+
+解决方法：  
+将 /usr/libexec/git-core 纳入 PATH，至少在使用 git 之前，设置一下PATH。
+```
+PATH=$PATH:/usr/libexec/git-core
+```
+或者直接在/etc/profile中修改
+
+
+### /bin/bash^M: bad interpreter: No such file or directory  
+大概率是从windows上将文件上传到linux导致的编码问题
+
+解决方法：  
+安装dos2unix：
+```
+ubuntu：
+apt install dos2unix
+redhat：
+yum install dos2unix
+转换文件编码：
+dos2unix xxx.sh
+```

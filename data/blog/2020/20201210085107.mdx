@@ -1,0 +1,40 @@
+---
+title: 'mysql忘了密码 重置密码'
+date: '2020-05-14'
+tags: ['Database']
+draft: false
+summary: 忘记 MySQL 密码可通过编辑配置文件、重启 MySQL 后登录修改密码。先在[mysqld]下加 skip-grant-tables，重启后用特定命令修改密码，若仍有问题可再加两个操作，最后改回配置文件重启用新密码登录。 
+---
+
+编辑mysql配置文件
+```
+vi /etc/my.cnf
+```
+在[mysqld]下面加上skip-grant-tables，如：
+```
+[mysqld]
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+skip-grant-tables
+```
+重启mysql(centos7)
+```
+systemctl restart mysqld
+```
+登录mysql后重新修改密码
+```
+mysql -u root
+
+mysql> update mysql.user set authentication_string=PASSWORD('123456') where User='root';
+mysql> flush privileges;
+```
+注意，如果通过以上操作可能还是会出现之前登录不上去的问题，所以最好再加上两个操作，可能跟数据库版本有关吧
+```
+set password for root@localhost = password('123456'); 
+flush privileges; 
+```
+最后改回my.cnf，重启mysql，用密码登录
+```
+mysql -u root -p
+输入密码
+```

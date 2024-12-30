@@ -1,0 +1,21 @@
+---
+title: 'malloc_trim和SetProcessWorkingSetSize两个神奇的内存相关函数'
+date: '2020-06-11'
+tags: ['C/C++']
+draft: false
+summary: 介绍了 malloc_trim 和 SetProcessWorkingSetSize 两个内存相关函数。malloc_trim 是 linux 平台函数，可释放堆上可用内存；SetProcessWorkingSetSize 是 windows 平台函数，可设置进程工作集大小，将不使用内存交换到虚拟内存，频繁调用会降低性能。 
+---
+
+它们两个其实没有什么关系，相似之处是调用这两个函数后内存会有明显的下降，但是原理完全不同。
+
+# malloc_trim
+linux平台的函数，官方的解释是：从堆释放可用内存。  
+在程序中堆上new或者malloc的内存我们都会delete和free掉，由于linux的机制它们并没有立即将释放的内存归还给操作系统，这个也是正常的不用担心，因为linux会充分利用内存提高系统的性能。正常情况下我们也不会调用这个函数，只要正常调用了delete和free就可以了。但是如果你内存不够，或者某个操作占用了太高的内存，之后又很少用到这么多内存，你可以调用这个函数释放一下可用内存。
+
+
+# SetProcessWorkingSetSize
+windows平台的函数，设置指定进程的最小和最大工作集大小。
+当后面两个参数等于-1时，它可以将暂时不使用的内存交换到虚拟内存中（也就是页文件），当需要的时候再从虚拟内存加载到内存中，所以它实际上并没有释放内存，只是在虚拟内存和内存之间进行交换，频繁调用这个函数会降低程序的性能。但是毕竟可以减少内存占用，在关键时间点调用还是很有帮助的，如：程序第一次启动完成之后；
+
+> EmptyWorkingSet也可以实现如下函数调用的功能
+::SetProcessWorkingSetSize(::GetCurrentProcess(), -1, -1);

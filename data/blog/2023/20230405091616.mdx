@@ -1,0 +1,86 @@
+---
+title: 'C++20 模块入门指南'
+date: '2023-04-05'
+tags: ['C/C++']
+draft: false
+summary: C++20 引入模块特性以解决头文件问题。模块由 interface 和 implementation 组成，使用 import 导入，如 example 模块示例。命名应遵循规范，像 math 模块。模块能提升代码维护重用性，编译快、组织简单、冲突少。 
+---
+
+如果你正在学习 C++ 或从事 C++ 开发，那么你一定使用过头文件（header file）来实现代码的模块化。然而，在 C++ 早期版本中，头文件带来了很多问题，比如编译速度慢、头文件依赖复杂等等。因此，在 C++20 中引入了一个新的特性，那就是模块（module）。
+
+C++20 的模块是一种新的代码组织方式，可使代码更好地被维护和重用。与头文件相比，模块具有更快的编译速度、更简单的代码组织和更少的命名冲突等优势。在本篇文章中，我们将会介绍 C++20 中的模块，并提供一些使用模块的示例以便读者理解。
+# 1. 模块的基本结构
+模块由两部分组成：interface 和 implementation。其中，interface 是模块对外暴露的接口，而 implementation 则是模块内部的实现。
+
+举个例子，假设我们需要一个计算阶乘的函数，我们可以这样定义一个模块：
+```
+// example.ixx
+export module example;
+
+int factorial(int n);
+
+// example.cpp
+module example;
+
+int factorial(int n) {
+    if (n == 0) return 1;
+    return n * factorial(n - 1);
+}
+
+```
+这里，我们定义了一个名为 example 的模块，其中 interface 部分定义了一个函数 factorial，implementation 部分则实现了该函数。请注意，我们使用了 export 关键字来标识 interface，这告诉编译器该模块的接口是可以被其他模块使用的。
+
+# 2. 模块的使用方法
+使用模块的方法很简单，只需要使用 import 关键字来导入需要的模块即可。
+
+以下是一个简单的例子：
+```
+// main.cpp
+import example;
+
+int main() {
+    std::cout << factorial(5) << std::endl;
+    return 0;
+}
+
+```
+这里，我们通过 import example 导入了 example 模块，并使用其中的 factorial 函数计算 5 的阶乘。
+
+需要注意的是，当我们使用模块时，编译器会在 module search paths（模块搜索路径）中寻找需要的模块。
+
+# 3. 模块的命名规范
+模块的命名应该遵循一定的规范，以保证模块的唯一性和可读性。例如，我们可以按照项目的层次结构来组织模块，如下所示：
+```
+// math/module.ixx
+export module math;
+
+int pow(int x, int y);
+
+// math/module.cpp
+module math;
+
+int pow(int x, int y) {
+    int result = 1;
+    for (int i = 0; i < y; i++) {
+        result *= x;
+    }
+    return result;
+}
+
+// main/module.ixx
+export module main;
+
+import math;
+
+int main() {
+    std::cout << pow(2, 10) << std::endl;
+    return 0;
+}
+
+```
+在上面的例子中，我们将 math 模块和 main 模块分别放在不同的文件夹中，并按照命名规范来定义模块名。这样可以使得代码更加清晰和有条理。
+
+# 4. 总结
+C++20 的模块是一种新的代码组织方式，能够让你的代码更好地被维护和重用。与头文件相比，模块具有更快的编译速度、更简单的代码组织和更少的命名冲突等优势。此外，使用模块还可以提高代码的可读性和可维护性。
+
+在使用模块时，需要注意模块的结构和命名规范，以及搜索路径等问题。希望本文对 C++20 模块有一个初步了解，并能够在实际开发中运用到这一新特性。

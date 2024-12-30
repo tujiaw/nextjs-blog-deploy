@@ -1,0 +1,178 @@
+---
+title: 'keepalived实现服务高可用'
+date: '2019-12-10'
+tags: ['Linux']
+draft: false
+summary: 文章介绍 keepalived 实现服务高可用，两台服务器部署同一程序，主服务挂则从服务接替，keepalived 提供虚拟 IP 让客户端无感知。文中给出两台机器配置 keepalived 及相关脚本等步骤，并通过访问不同 IP 验证，还提到可根据需求通过脚本自动处理服务切换等情况。 
+---
+
+# 目标
+同一个程序部署在两台服务器上同时在运行，只有一个主服务在处理业务，当主服务挂了的时候另外一个服务器上的服务继续提供服务，保证业务不中断做到高可用。
+
+# 问题
+每个服务器的IP是不一样的，当服务切换后IP地址也变了，要想客户端对此无感知，keepalived会提供一个固定的虚拟IP，客户端连这个虚拟IP。当后台IP改变的时候虚拟IP会自动映射到实际IP，这样客户端不需要做任何改动。
+
+当主服务挂掉后，发生服务切换此时从服务升为主服务，但是当之前的主服务重启后不应该再切换回来（切换是有代价的）。使用keepalived配置的时候将state都设置为BACKUP并且设置为nopreempt不可抢占模式
+
+# 解决方案
+准备两台机器分别是：172.16.75.170, 172.16.75.171，确保是互通的，虚拟IP是：172.16.75.11确保没有被占用。
+
+* 两台机器上安装keepalived
+```
+yum -y install keepalived
+```
+
+* 修改170上keepalived配置
+```
+vim /etc/keepalived/keepalived.conf
+内容如下：
+! Configuration File for keepalived
+
+global_defs {
+   router_id simplehttp_master
+}
+
+vrrp_script check {
+        script "/root/simple_http/check_simplehttp.sh"
+        interval 3
+}
+
+vrrp_instance VI_1 {
+    state BACKUP
+    nopreempt
+    interface eth0
+    virtual_router_id 51
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        172.16.75.11
+    }
+
+    track_script {
+        check
+    }
+}
+```
+
+* 修改171上keepalived配置
+```
+vim /etc/keepalived/keepalived.conf
+内容如下：
+! Configuration File for keepalived
+
+global_defs {
+   router_id simplehttp_backup
+}
+
+vrrp_script check {
+        script "/root/simple_http/check_simplehttp.sh"
+        interval 3
+}
+
+vrrp_instance VI_1 {
+    state BACKUP
+    nopreempt
+    interface eth0
+    virtual_router_id 51
+    priority 70
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        172.16.75.11
+    }
+
+    track_script {
+        check
+    }
+}
+```
+> router_id必须是唯一的
+
+* check_simplehttp.sh脚本内容，两台机器上都一样
+```
+#!/bin/sh
+
+SERVICE="simplehttp"
+RUN_DIR="/root/simple_http"
+if [ `ps -C $SERVICE --no-header | wc -l` -eq 0 ];then
+        echo "$SERVICE is stopped..."
+        exit 1
+else
+        echo "$SERVICE always running..."
+        exit 0
+fi
+```
+
+* 还需要准备一个简单http服务来测试  
+下面是一个简单的go服务，显示当前服务器时间和IP地址
+```
+package main
+
+import (
+	"fmt"
+	"net"
+	"net/http"
+	"time"
+)
+
+func getLocalIp() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, addr := range addrs {
+		if i, ok := addr.(*net.IPNet); ok && !i.IP.IsLoopback() {
+			if i.IP.To4() != nil {
+				return i.IP.String()
+			}
+		}
+	}
+	return ""
+}
+
+func main() {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "time:%s, ip:%s", time.Now().String()[:19], getLocalIp())
+	})
+	http.ListenAndServe(":6999", nil)
+}
+```
+编译后的程序名为：simplehttp
+
+> 注意check_simplehttp.sh脚本和simplehttp程序统一放在/root/simple_http目录下
+
+在两台机器上启动服务：
+```
+/root/simple_http/simplehttp &
+service keepalived start
+```
+keepalived日志：/var/log/messages
+
+# 验证
+先访问：curl http://172.16.75.170:6999和curl http://172.16.75.171:6999，如果输出类似内容：time:2019-12-10 16:52:34, ip:172.16.75.170，说明simple http服务启动成功了。
+
+再访问虚拟IP：curl http://172.16.75.11:6999如果输出如上内容说明keepalived启动成功了。curl输出的IP地址就是主服务的地址。
+
+假如当前主服务是：170，观察结果的时候curl要多执行几次（有时间差）  
+停掉170服务，访问curl http://172.16.75.11:6999输出171的IP地址    
+再次启动170服务，访问curl http://172.16.75.11:6999输出171的IP地址    
+停掉171服务，访问curl http://172.16.75.11:6999输出170的IP地址   
+
+> check_simplehttp.sh脚本可以配置的很灵活，它会根据interval的间隔秒数执行，exit 0表示正常，1表示失败。
+
+> 如果切换服务的代价很大，那么在simplehttp服务挂掉的时候自动拉起就可以了。
+
+> 如果服务自动拉起的代价太大，当simplehttp服务挂掉的时候切换服务。
+
+你可以自动拉起simplehttp服务，或者在simplehttp挂的时候同时stop掉keepalived服务，这些都是可以通过脚本来实现的。
+
+如通过notify_master,notify_backup可以在升为主和降为备的时候执行脚本  
+
+通过上面的验证，服务就部署完成了。

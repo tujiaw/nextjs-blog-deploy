@@ -1,0 +1,25 @@
+---
+title: 'ERROR  child process failed, exited with error number 62'
+date: '2020-04-19'
+tags: ['MongoDB']
+draft: false
+summary: 
+---
+
+今天做了数据库恢复动作，然后重启mongodb的时候出现如下错误：
+```
+ERROR: child process failed, exited with error number 62
+```
+
+解决方法是：
+找到dbpath所在的目录删除掉（注意你之前的数据应该有备份），如我的存放在db目录
+```
+rm -rf ./db
+mkdir db
+```
+然后重新创建db目录，再启动就可以了。
+
+注意，如果db目录不存在会报如下错误：
+```
+ERROR: child process failed, exited with error number 100
+```

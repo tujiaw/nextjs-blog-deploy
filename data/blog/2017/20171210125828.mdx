@@ -1,0 +1,393 @@
+---
+title: 'C、C++面试题（整理下）'
+date: '2017-10-24'
+tags: ['C/C++']
+draft: false
+summary: 这是关于 C、C++的面试题整理，包含打印源文件信息、main 主函数执行后代码执行、判断编译语言、整数数组排序、链表相关、程序输出分析、找第二大整数、寻找子串位置、判断单链表是否有环、指针找错、标准函数编写、头文件相关、C++调用 C 函数、String 实现、函数调用输出等多方面内容，还包括一些具体代码示例和解答。 
+---
+
+# 如何打印出当前源文件的文件名以及源文件的当前行号
+答：
+```
+cout << __FILE__;  
+cout << __LINE__;  
+```
+__FILE__和__LINE__是系统预定义宏，这种宏并不是在某个文件中定义的，而是由编译器定义的。
+
+# main主函数执行完毕后，是否可能会再执行一段代码，给出说明
+答：。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。
+
+# 如何判断一段程序是由C编译的还是由C++编译的
+答：
+```
+#ifdef __cplusplus
+cout << "c++" << endl;
+#else
+cout << "c" << endl;
+#endif
+```
+
+# 文件中有一组整数，要求排序后输出到另一个文件中
+答：
+```
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+using namespace std;
+
+template<class T>
+void Swap(T &x, T &y)
+{
+	T t;
+	t = x;	x = y;	y = t;
+}
+
+bool Order(vector<int> &arr_data)
+{
+	if (arr_data.empty())
+	{
+		return false;
+	}
+
+	int count = arr_data.size();
+
+	for (int i = 0; i < count - 1; i++)
+	{
+		for (int j = i + 1; j < count; j++)
+		{
+			if (arr_data[j] < arr_data[i])
+			{
+				Swap<int>(arr_data[j], arr_data[i]);
+			}
+		}
+	}
+
+	return true;
+}
+
+int main(int argc, char *argv[])
+{
+	ifstream in("one.txt");
+	ofstream out("two.txt");
+
+	vector<int> vi_array;
+	vector<int>::iterator iter;
+	int num;
+
+	while (!in.eof())
+	{
+		in >> num;
+		vi_array.push_back(num);
+	}
+
+	if (Order(vi_array))
+	{
+		for (iter = vi_array.begin(); iter != vi_array.end(); ++iter)
+		{
+			out << *iter << " ";
+		}
+	}
+
+	in.close();
+	out.close();
+	return 0;
+}
+```
+
+# 链表题，一个链表的节点结构
+答：[http://blog.csdn.net/tujiaw/article/details/6682227](http://blog.csdn.net/tujiaw/article/details/6682227)
+
+# 分析一下这段程序的输出（Autodesk）
+答：
+```
+
+class B
+{
+public:
+	B() { cout << "default constructor" << endl; }
+	B(int i) : data(i) { cout << "constructed by parameter " << data << endl; }
+	~B() { cout << "destructed" << endl; }
+
+private:
+	int data;
+};
+
+B Play( B b)
+{
+	return b;
+}
+
+int main(int argc, char *argv[])
+{
+	B t1 = Play(5);
+	B t2 = Play(t1);
+	// constructed by parameter 5
+	// destructed
+	// destructed
+
+	B t3 = Play(5);
+	B t4 = Play(10);
+	// constructed by parameter 5
+	// destructed
+	// constructed by parameter 10
+	// destructed
+
+	cin.get();
+	return 0;
+}
+```
+
+# 写一个函数找出一个整数数组中第二大的数（microsoft）
+答：
+```
+
+const int MIN_NUMBER = -32767;
+int FindSecondNumber(const int data[], int count)
+{
+	int max_number = data[0];
+	int second_max_number = MIN_NUMBER;
+	for (int i = 1; i < count; i++)
+	{
+		if (data[i] > max_number)
+		{
+			second_max_number = max_number;
+			max_number = data[i];
+		}
+		else if (data[i] > second_max_number)
+		{
+			second_max_number = data[i];
+		}
+	}
+
+	return second_max_number;
+}
+```
+
+# 写一个在一个字符串（n）中寻找一个字串（m）第一个位置的函数
+答：[KMP算法](http://blog.csdn.net/tujiaw/article/details/6764511)
+
+# 如何判断一个单链表是有环的（注意不能用标志位，最多只能用两个额外指针）
+答：
+```
+typedef struct _Node
+{
+	char val;
+	struct _Node *next;
+}Node;
+
+
+bool CheckRing(const Node *head)
+{
+	if (head == NULL)
+	{
+		return false;
+	}
+
+
+	Node *slow = head;
+	Node *fast = head->next;
+	while (fast != NULL && fast->next != NULL)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+		if (slow == fast)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+```
+
+# 指针找错题
+答：
+```
+void test1()
+{
+	char str[10];
+	char *str1 = "0123456789";
+	strcpy(str, str1);
+}
+// str需要11个元素才能存放得下str1，其中包含一个'\0'
+
+void test2()
+{
+	char str[10], str1[10];
+
+	for (int i = 0; i < 10; i++)
+	{
+		str1 = 'a';
+	}
+	strcpy(str, str1);
+}
+// str1不能在数组内结束（末尾无'\0'）；
+// 所复制的字节数具有不确定性；
+// strcpy所复制的字符串是以'\0'结束的。
+
+void test3(char *str1)
+{
+	char str[10];
+	if (strlen(str1) <= 10)
+	{
+		strcpy(str, str1);
+	}
+}
+// 由于strlen没有把'\0'计算在内，所以当str1有10个元素的时候，情况如test1，
+// 将<=改为<
+```
+
+# 编写一个标准的strcpy和strlen函数
+答：
+```
+
+char* StrcpyEx(char *dest, const char *src)
+{
+	assert((dest != NULL) && (src != NULL));
+
+
+	char *ret = dest;
+	while ((*dest++ = *src++) != '\0');
+
+
+	return ret;
+}
+
+
+int StrlenEx(const char *src)
+{
+	assert(src != NULL);
+
+
+	int len = 0;
+	while ((*src++) != '\0')
+	{
+		len++;
+	}
+
+
+	return len;
+}
+```
+
+# 头文件中的ifndef/define/endif的作用
+答：防止该头文件被重复引用。
+
+# ```#include <file.h>```与```#include "file.h"```的区别
+答：前者是从Standard Library的路径寻找和引用file.h，而后者是从当前工作路径搜寻并引用file.h。
+
+# 在C++程序中调用被C编译器编译后的函数，为什么要加extern "C"
+答：作为一种面向对象的语言，C++支持函数重载，而过程式语言C不支持。函数被C++编译后在符号库中的名字与C语言的不同，而用extern "C"修饰的变量和函数是按照C语言方式编译和链接的。所以它的作用是实现C++与C以及其它语言的混合编程。
+用法：
+```
+#ifdef __cplusplus
+extern "C" {
+#endif
+	...
+		...
+		...
+#ifdef __cplusplus
+}
+#endif
+```
+
+# String的具体实现
+答：[http://blog.csdn.net/tujiaw/article/details/6103609](http://blog.csdn.net/tujiaw/article/details/6103609)
+
+# What is displayed when Func() is called given the code:
+```
+
+class Number
+{
+public:
+	string type;
+	Number() : type("void") { }
+	explicit Number(short) : type("short") { }
+	Number(int) : type("int") { }
+};
+
+
+void Show(const Number &n) { cout << n.type << endl;}
+
+
+void Func()
+{
+	short s = 42;
+	Show(s);
+}
+```
+a) void   
+b)short  
+c)int  
+d)None of the above
+
+答：c, 之所以传一个int型的实参就会调用到Number(int)构造函数，
+是因为单参数构造函数会自动类型转换的,也就是说Number num = 42,
+相当于Number num(42);在单参数构造函数前面加explicit表示禁止这种转换。
+
+# Which is the correct output for the following code
+```
+double dArray[2] = {4, 8};
+double *p, *q;
+p = &dArray[0];
+q = p + 1;
+
+cout << q - p << endl;
+cout << (int)q - (int)p << endl;
+```
+a) 1 and 8    
+b) 8 and 4    
+c) 4 and 8    
+d) 8 and 1
+
+答：a，第一个指针加减只跟类型位置有关，由于4与8之间只差一个位置所以为1；
+第二个是指针转换为实际值的加减，由于4与8之间隔一个double，所以相差8个字节的地址。
+
+# Sony笔试题
+完成下列程序
+```
+*
+*.*.
+*..*..*..
+*...*...*...*...
+*....*....*....*....*....
+*.....*.....*.....*.....*.....*.....
+*......*......*......*......*......*......*......
+*.......*.......*.......*.......*.......*.......*.......*.......
+```
+答：
+```
+#include <iostream>
+using namespace std;
+
+#define NUM 8
+
+int main(void)
+{
+	int i, j, k;
+
+	/////////////////////////////////
+	for (i = 1; i <= NUM; i++)
+	{
+		for (j = 1; j <= i; j++)
+		{
+			cout << '*';
+			for (k = 1; k < i; k++)
+			{
+				cout << '.';
+			}
+		}
+		cout << endl;
+	}
+	/////////////////////////////////
+
+	cin.get();
+	return 0;
+}
+```
+
+# 将字符串中的单词进行倒序
+答：[http://blog.csdn.net/tujiaw/article/details/6759563](http://blog.csdn.net/tujiaw/article/details/6759563)
+
+# 将一个长度为n的字符串向左循环移动m位
+答：[http://blog.csdn.net/tujiaw/article/details/6759676](http://blog.csdn.net/tujiaw/article/details/6759676)

@@ -1,0 +1,24 @@
+---
+title: 'gorm写入数据库后时间差8小时'
+date: '2021-03-19'
+tags: ['Go']
+draft: false
+summary: 
+---
+
+这个很明显是时区的问题，首先检查一下数据库连接的uri，是否包含如下参数：
+```
+parseTime=true&loc=Local
+```
+重新连接数据库就可以了，如果还不行那你可能要看一下系统环境设置了。
+
+[官方文档链接](https://github.com/go-sql-driver/mysql#parameters)
+```
+loc
+Type:           string
+Valid Values:   <escaped name>
+Default:        UTC
+Sets the location for time.Time values (when using parseTime=true). "Local" sets the system's location. See time.LoadLocation for details.
+
+Note that this sets the location for time.Time values but does not change MySQL's time_zone setting. For that see the time_zone system variable, which can also be set as a DSN parameter.
+```

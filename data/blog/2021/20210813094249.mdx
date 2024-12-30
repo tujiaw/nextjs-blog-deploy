@@ -1,0 +1,69 @@
+---
+title: 'boost命令行解析'
+date: '2021-08-13'
+tags: ['Boost']
+draft: false
+summary: 
+---
+
+对于一些工具程序使用命令行是非常普遍的，也是很方便的。但是原始的main函数只提供了一个简单的参数使用方法，要想提供一些
+更丰富的命令交互还需要自己来解析。
+
+boost有提供这个功能用起来还是蛮方便的，下面就是简单的使用方法。
+
+# 头文件
+```
+#include <boost/program_options.hpp>
+```
+为了书写简单，重定义一下域名空间
+```
+namespace po = boost::program_options;
+```
+
+# 增加描述信息
+```
+	po::options_description desc("launch options");
+	desc.add_options()
+		("help", "launch help message")
+		("version", po::value<std::string>(), "plugin version")
+		("install", "install plugin")
+		("uninstall", "uninstall plugin")
+	;
+```
+help：帮助信息，后面不需要值  
+version：版本号，后面跟着字符串类型，所以使用version命令的时候后面必须跟着值  
+install：安装  
+uninstall：卸载  
+
+# 解析
+```
+	po::variables_map vm;
+	po::store(po::parse_command_line(argc, argv, desc), vm);
+	po::notify(vm);
+```
+
+# 获取值
+```
+	if (vm.count("help")) {
+		std::cout << desc << "\n";
+		return 0;
+	}
+```
+打印帮助信息
+
+```
+	if (vm.count("version")) {
+		std::string version = vm["version"].as<std::string>();
+    }
+```
+获取版本号
+
+# 使用方法
+```
+launch.exe --help
+launch.exe --version 1.0.0
+launch.exe --install
+launch.exe -- uninstall
+```
+# 异常
+如果你使用了未知的命令boost会抛出异常的，所以你应该捕获一下异常

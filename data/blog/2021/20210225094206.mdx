@@ -1,0 +1,25 @@
+---
+title: 'Qt启动第三方控制台程序并读取输出内容'
+date: '2021-02-25'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 
+---
+
+使用QProcess来启动程序，下面使用同步方式来启动：
+1. 准备好工作目录，将需要运行的程序放在工作目录下
+2. 准备启动的命令行（如果有参数，要拼装好参数）
+3. 设置工作目录（很重要）
+4. 启动命令
+5. 等待执行完成
+6. 读取输出结果
+
+代码演示了调用uploadimg.exe工具来上传图片
+```
+    QString command = QString("uploadimg.exe -url %1 -path %2").arg(UPLOAD_IMAGE_URL).arg(imgPath);
+    QProcess process;
+    process.setWorkingDirectory(Util::getRunDir());
+    process.start(command);
+    process.waitForFinished();
+    QByteArray arr = process.readAllStandardOutput();
+```

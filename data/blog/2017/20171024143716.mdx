@@ -1,0 +1,141 @@
+---
+title: 'visual stdio不同目录下的文件重名，类重名问题解决方法'
+date: '2017-10-24'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 文章介绍 visual stdio 不同目录下文件重名及类重名问题及解决方法。先给出特定目录结构及代码，编译时出现 warning 因同名 obj 文件导致类编译出错，简单改文件名可解决但会造成重复定义，加命名空间可解决。还可在重复 cpp 文件属性中修改输出文件对象文件名避免重名。
+---
+
+以下测试是在vs2008和vs2012中进行的
+
+先建一个空的Test控制台应用程序，目录结构如下：
+
+![目录](http://img.blog.csdn.net/20131207182756984?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdHVqaWF3/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+temp1目录下有两个文件：hello.h, hello.cpp
+
+```
+
+// temp1, hello.h
+
+#pragma once
+
+class Hello
+{
+public:
+	Hello();
+};
+
+
+```
+
+```
+
+// temp1, hello.cpp
+
+#include "hello.h"
+#include <iostream>
+
+Hello::Hello()
+{
+	std::cout << "temp1, hello" << std::endl;
+}
+```
+
+temp2目录下也有两个文件：hello.h, hello.cpp
+
+```
+
+// temp2, hello.h
+
+#pragma once
+
+class Hello
+{
+public:
+	Hello();
+};
+
+
+```
+
+```
+
+// temp2, hello.cpp
+
+#include "hello.h"
+#include <iostream>
+
+Hello::Hello()
+{
+	std::cout << "temp2, hello" << std::endl;
+}
+```
+
+工程目录结构如下：
+
+![工程目录](http://img.blog.csdn.net/20131207183649328?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdHVqaWF3/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+main.cpp代码如下：
+
+```
+
+#include <iostream>
+#include "./temp1/hello.h"
+
+int main(int argc, char *argv[])
+{
+	Hello h;
+
+	system("pause");
+}
+
+```
+
+我们知道这样肯定是有问题的，但是问题出在哪里呢？
+
+首先，我们编译工程，output显示：
+
+```
+1>------ 已启动全部重新生成: 项目: Test, 配置: Debug Win32 ------
+1>  hello.cpp
+1>  hello.cpp
+1>  main.cpp
+1>  正在生成代码...
+1>Debug\hello.obj : warning LNK4042: 对象被多次指定；已忽略多余的指定
+1>  Test.vcxproj -> F:\project\TcpDemo\Debug\Test.exe
+```
+
+========== 全部重新生成: 成功 1 个，失败 0 个，跳过 0 个 ==========
+
+注意这个warning， 由于两个文件重名了，即使它们在不同的目录，但是生成的obj文件是在同一个目录下，所以导致相同名字的obj文件只有一个。这样就很清楚了Hello类只有一个编译成功了，另外一个被忽略了。
+
+这样并不是我们想要的，因为即使这两个类名字相同但实现并不同。
+
+简单的解决方法改个名字就可以了（还有一种方法最后再说），但是这样编译的时候又会造成一个问题，重复定义。
+
+hello2.obj : error LNK2005: "public: \_\_thiscall Hello::Hello(void)" (??0Hello@@QAE@XZ) 已经在 hello.obj 中定义
+加命名空间就可以了，如：temp1中的hello在`namespace temp1 { ... }`中，temp2中的hello在`namespace temp2{ ... }`中。
+
+这样问题就都解决了，如main.cpp代码如下，运行输出结果就是对的。
+
+```
+
+#include <iostream>
+#include "./temp2/hello.h"
+#include "./temp1/hello.h"
+
+int main(int argc, char *argv[])
+{
+	temp1::Hello h1;
+	temp2::Hello h2;
+
+	system("pause");
+}
+```
+
+其实我主要想说的是文件重名问题，改个文件名就Ok了，
+但是有时候我们在不想改名字或者不方便改名的情况下怎么办呢？
+
+在重复的cpp文件上单击鼠标右键->属性->输出文件->对象文件名```$(IntDir)```后面加上我们想要生成的对象文件名（只要obj文件不重名就可以了），如：
+修改temp2目录下的hello.cpp对象文件名为：```$(IntDir)hello2```。

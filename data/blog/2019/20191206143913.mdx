@@ -1,0 +1,27 @@
+---
+title: 'git github代理'
+date: '2019-12-06'
+tags: ['Linux']
+draft: false
+summary: 家里电脑下载 github 代码慢，用蓝灯。找到其 http proxy 地址 127.0.0.1:50705，通过 open_github_proxy.sh 和 close_github_proxy.sh 脚本可打开或关闭 github 代理，方便下载代码。 
+---
+
+家里电脑下载github代码太慢只有几KB，临时使用免费的蓝灯来下载。
+
+* 打开蓝灯的网页找到左上角点开菜单找到Settings然后ADVANCED SETTINGS找到http proxy地址，我的是：127.0.0.1:50705
+* 打开命令行窗口执行如下脚本打开关闭github代理
+
+open_github_proxy.sh
+```
+#!/bin/bash
+git config --global http.https://github.com.proxy 127.0.0.1:50705
+git config --global https.https://github.com.proxy 127.0.0.1:50705
+
+```
+
+close_github_proxy.sh
+```
+#!/bin/bash
+git config --global --unset http.https://github.com.proxy
+git config --global --unset https.https://github.com.proxy
+```

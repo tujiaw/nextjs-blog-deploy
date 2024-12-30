@@ -1,0 +1,103 @@
+---
+title: 'nodejs批量ping'
+date: '2017-11-03'
+tags: ['Node.js']
+draft: false
+summary: 文章介绍 nodejs 批量 ping ，使用 net-ping 模块，通过读取 gui-config.json 中 ip 地址列表进行 ping 测试，需管理员权限运行 cmd 执行 node ping.js ，展示了测试结果。 
+---
+
+在一批大量的ip地址之中查找哪个地址是有效的并且应答的时间最快
+
+nodejs中可以使用net-ping模块
+
+ip地址所在的json文件格式如下，只粘贴部分信息，文件名：gui-config.json
+```
+{
+	"configs" : [
+		{
+			"remarks" : "德国",
+			"server" : "172.104.155.76",
+			"method" : "rc4-md5",
+			"obfs" : "plain",
+			"obfsparam" : "",
+			"remarks_base64" : "5b635Zu9",
+			"tcp_over_udp" : false,
+			"udp_over_tcp" : false,
+			"protocol" : "origin",
+			"obfs_udp" : false,
+			"enable" : true,
+			"id" : "12-AC-19-DF-D8-3D-2F-F3-8C-52-34-C3-8B-12-B6-F5"
+		},
+		{
+			"remarks" : "俄罗斯",
+			"server" : "92.38.129.13",
+			"method" : "rc4-md5",
+			"obfs" : "plain",
+			"obfsparam" : "",
+			"remarks_base64" : "5L-E572X5pav",
+			"tcp_over_udp" : false,
+			"udp_over_tcp" : false,
+			"protocol" : "origin",
+			"obfs_udp" : false,
+			"enable" : true,
+			"id" : "0F-4B-E0-06-6E-69-75-D1-E4-68-F2-CD-A2-B3-04-06"
+		}
+	],
+}
+```
+
+nodejs代码
+```
+const ping = require ("net-ping");
+const session = ping.createSession();
+const fs = require('fs');
+
+function pingHost(host) {
+  session.pingHost(host, (error, target, sent, rcvd) => {
+    if (error) {
+      console.log(`${target} failed:${error.toString()}`);
+    } else {
+      const spent = rcvd.getTime() - sent.getTime();
+      console.log(`${target} ok, spent: ${spent}ms`);
+    }
+  })
+}
+
+const guiconfig = 'C:/Users/tujiawei/Downloads/pgfastss/gui-config.json';
+const content = fs.readFileSync(guiconfig, 'utf8');
+const contentObj = JSON.parse(content);
+contentObj.configs.forEach((item) => {
+  pingHost(item.server);  
+})
+
+```
+
+需要注意的是，我的机器运行这个js文件在windows下需要管理员权限  
+所以，用管理员权限运行cmd（打开命令行提示工具），cd到指定目录执行
+```
+node ping.js
+```
+结果如下：
+```
+60.248.112.164 ok, spent: 44ms
+175.98.163.226 ok, spent: 63ms
+175.98.163.216 ok, spent: 67ms
+92.38.129.13 ok, spent: 72ms
+47.88.224.254 ok, spent: 75ms
+103.76.104.227 ok, spent: 165ms
+45.58.54.190 ok, spent: 166ms
+172.104.155.76 failed:RequestTimedOutError: Request timed out
+92.38.128.22 failed:RequestTimedOutError: Request timed out
+144.217.85.91 failed:RequestTimedOutError: Request timed out
+103.95.207.238 failed:RequestTimedOutError: Request timed out
+172.104.93.179 failed:RequestTimedOutError: Request timed out
+172.104.124.59 failed:RequestTimedOutError: Request timed out
+172.104.109.25 failed:RequestTimedOutError: Request timed out
+172.104.98.116 failed:RequestTimedOutError: Request timed out
+103.29.70.32 failed:RequestTimedOutError: Request timed out
+172.104.110.187 failed:RequestTimedOutError: Request timed out
+61.244.217.201 failed:RequestTimedOutError: Request timed out
+47.88.227.73 failed:RequestTimedOutError: Request timed out
+47.88.231.100 failed:RequestTimedOutError: Request timed out
+47.88.225.110 failed:RequestTimedOutError: Request timed out
+```

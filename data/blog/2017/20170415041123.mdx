@@ -1,0 +1,106 @@
+---
+title: 'WTL 给一个对话框添加垂直滚动条'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 介绍给对话框添加垂直滚动条的方法，通过消息映射宏、OnInitDialog 初始化及响应 WM_VSCROLL、WM_SIZE、WM_MOUSEWHEEL 等消息来实现，包括各消息处理函数的具体逻辑。 
+---
+
+消息映射宏
+```
+MESSAGE_HANDLER(WM_VSCROLL, OnVscroll)
+MESSAGE_HANDLER(WM_SIZE, OnSize)
+MESSAGE_HANDLER(WM_MOUSEWHEEL, OnMouseWheel)
+```
+
+在OnInitDialog里获取窗口的实际大小，以及初始化滚动条位置
+```
+::GetWindowRect(m_hWnd, &m_wndRect);
+ScreenToClient(&m_wndRect);
+m_nScrollPos = 0;
+```
+
+响应消息
+```
+
+	LRESULT OnVscroll(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+	{
+		int curPos = HIWORD(wParam);
+		int nDelta = 0;
+		int nScrollStep = (m_nScrollRange) / 9;
+		m_nScrollPos = ::GetScrollPos(m_hWnd, SB_VERT);
+		switch (LOWORD(wParam))
+		{
+		case SB_LINEDOWN:
+			if (m_nScrollPos >= m_nScrollRange)
+			{
+				return 0;
+			}
+			nDelta = min(nScrollStep, m_nScrollRange - m_nScrollPos);
+			break;
+		case SB_LINEUP:
+			if (m_nScrollPos <= 0)
+			{
+				return 0;
+			}
+			nDelta = -min(nScrollStep, m_nScrollPos);
+			break;
+		case SB_PAGEDOWN:
+			if (m_nScrollPos >= m_nScrollRange)
+			{
+				return 0;
+			}
+			nDelta = min(m_nScrollRange, m_nScrollRange - m_nScrollPos);
+			break;
+		case SB_PAGEUP:
+			if (m_nScrollPos <= 0)
+			{
+				return 0;
+			}
+			nDelta = -min(m_nScrollRange, m_nScrollPos);
+			break;
+		case SB_THUMBPOSITION:
+		case SB_THUMBTRACK:
+			nDelta = curPos - m_nScrollPos;
+			break;
+		default:
+			break;
+		}
+		m_nScrollPos += nDelta;
+		::SetScrollPos(m_hWnd, SB_VERT, m_nScrollPos, TRUE);
+		::ScrollWindow(m_hWnd, 0, -nDelta, NULL, m_wndRect);
+		::UpdateWindow(m_hWnd);
+		return 0;
+	}
+	LRESULT OnSize(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+	{
+		SCROLLINFO si;
+		si.cbSize		= sizeof(SCROLLINFO);
+		si.fMask		= SIF_ALL;
+		si.nMin			= 0;
+		si.nMax			= m_wndRect.Height();			//窗口的实际高度
+		si.nPage		= HIWORD(lParam);				//窗口的显示高度
+		si.nPos			= 0;
+		SetScrollInfo(SB_VERT, &si, TRUE);
+		
+		m_nScrollRange = si.nMax - si.nPage;			//滚动范围
+		return 0;
+	}
+	LRESULT OnMouseWheel(UINT , WPARAM wParam, LPARAM , BOOL& )
+	{
+		MouseWheelHandle(HIWORD(wParam));
+		return 0;
+	}
+	void MouseWheelHandle(short nDir)
+	{
+		if (nDir > 0)
+		{
+			::SendMessage(m_hWnd, WM_VSCROLL, SB_LINEUP, 0);
+		}
+		else if (nDir < 0)
+		{
+			::SendMessage(m_hWnd, WM_VSCROLL, SB_LINEDOWN, 0);
+		}
+	}
+```
+> （迁移2011-05-08）

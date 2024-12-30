@@ -1,0 +1,87 @@
+---
+title: '将字符串中的单词进行倒序'
+date: '2017-10-24'
+tags: ['C/C++']
+draft: false
+summary: 文章介绍将字符串中单词倒序的方法，先整体倒序，再逐个单词倒序。通过`ReverseString`函数实现字符串倒序，`ReverseAllWord`函数先整体倒序后逐个单词倒序。代码示例在`_tmain`函数中进行了测试。 
+---
+
+// 将字符串中的单词进行倒序，如：hello,world 倒序后：world,hello
+// 思路：先将整篇文章进行倒序，然后将所有单词进行倒序
+// 整篇文章倒序：dlrow,olleh
+// 所有单词倒序：world,hello
+```
+#include <iostream>
+using namespace std;
+
+void ReverseString(char * const str, const int count);
+
+void ReverseAllWord(char *str);
+
+int _tmain(int argc, char *argv[])
+{
+	char str[] = "I can do it,because I think I can";
+
+	ReverseAllWord(str);
+	
+	cout << str << endl;
+
+	getchar();
+	return 0;
+}
+
+void ReverseString(char * const str, const int count)
+{
+	if (str == NULL || count < 2)
+	{
+		return;
+	}
+
+	char *start = str;
+	char *end = str + count - 1;
+	char tmp;
+
+	while (end > start)
+	{
+		tmp = *end;
+		*end = *start;
+		*start = tmp;
+
+		start++;
+		end--;
+	}
+}
+
+void ReverseAllWord(char *str)
+{
+	if (str == NULL)
+	{
+		return;
+	}
+
+	char *traverse = str;
+	char *word_start = NULL;
+	char *word_end = NULL;
+
+	ReverseString(str, (int)strlen(str));
+
+	while (*traverse)
+	{
+		if (::isalpha(*traverse))
+		{
+			word_start = traverse;
+			word_end = traverse;
+			while (*word_end && ::isalpha(*word_end))
+			{
+				word_end++;
+			}
+
+			int num = (int)(word_end - word_start);
+			ReverseString(word_start, num);
+
+			traverse += (num-1);
+		}
+		traverse++;
+	}
+}
+```

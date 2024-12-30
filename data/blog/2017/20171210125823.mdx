@@ -1,0 +1,95 @@
+---
+title: 'node.js中exports与module.exports区别'
+date: '2017-12-10'
+tags: ['Javascript']
+draft: false
+summary: 文章介绍 node.js 中 exports 与 module.exports 的区别。两种导出方式不同，给 exports 增加成员时两者一样，将对象赋值给 exports 时只有 module.exports 正确。原理是主调函数传参包装，exports 对 module.exports 是引用，混着用易出错，一般导出对象用 module.exports，其他用 exports。 
+---
+
+我们知道exports是对module.exports的引用，那么使用的过程中有什么区别呢？
+
+# 使用方法
+通常我们有两种导出方式，假如将他们都放在test.js文件中
+
+## 给exports增加成员
+```
+exports.hello = function() {
+    console.log('exports hello')
+}
+
+module.exports.hello = function() {
+    console.log('module exports hello')
+}
+```
+使用方法
+```
+const test = require('./test.js')
+test.hello()
+```
+上面两种导出方式是一样的
+
+## 将对象赋值给exports
+```
+exports = function() {
+    console.log('hello')
+}
+
+module.exports = function() {
+    console.log('hello')
+}
+```
+使用方法
+```
+const hello = require('./test.js')
+hello()
+```
+此时，第一种导出方式是错误的。程序显示'TypeError: hello is not a function'，第二种方式是对的。
+
+# 导出原理
+为什么我们能在test.js中使用exports，require，module.exports以及__dirname和__filename变量，是因为主调函数传过来的。
+我们在test.js模块中写的代码实际上加了一层包装，如下：
+```
+(function(exports, require, module, __filename, __dirname) {
+    // 我们导出的函数
+    exports = function() {
+        console.log('hello')
+    }
+});
+```
+所以，上面导出出错的原因是，exports是对module.exports的引用是个形参，对exports引用进行赋值只是改变了exports自身的指向，
+并没有改变module.exports指向的地址。exports断开了之前与module.exports之间的关系。它们的实现过程大致如下代码，为了与现有的名字区分我加了个0：
+```
+function require0(module0, exports0) {
+    ((module0, exports0) => {
+        // 错误
+        exports0 = function() {
+            console.log('111111111111')
+        }
+        // 正确
+        // module0.exports = function() {
+        //     console.log('2222222222222)
+        // }
+    })(module0, module0.exports0)
+    return module0.exports
+}
+
+const test = require0(module, module.exports)
+test()
+```
+再举个简单的例子：
+```
+var module0 = {
+    exports0: 1
+}
+
+function test(m, e) {
+    e = 2                   // 错误，结果是：1
+    // m.exports0 = 2       // 正确，结果是：2
+}
+
+test(module0, module0.exports0)
+console.log(module0.exports0)
+```
+
+# 结论
+所以说，如果只是导出一个对象就要使用module.exports，其他情况使用exports就可以了。但是最好不要混着用。

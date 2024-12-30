@@ -1,0 +1,171 @@
+---
+title: '设计模式-简单工厂模式'
+date: '2017-04-15'
+tags: ['C/C++', 'Design']
+draft: false
+summary: 总结：介绍了设计模式中的简单工厂模式，通过工厂类创建不同产品类实例。给出了 Product、Factory 等相关类的代码示例，包括虚析构函数等概念及 main 函数的使用。 
+---
+
+工厂方法模式 是一种面向对象的设计模式。通过调用不同的方法返回需要的类，而不是去实例化具体的类。 对实例创建进行了包装。 工厂方法是一组方法， 他们针对不同条件返回不同的类实例，这些类一般有共同的父类。
+
+工厂方法模式实施一种按需分配的策略， 即传入参数进行选择， 工厂方法根据参数进行选择，返回具体的实例。
+
+```
+// Product.h
+
+#ifndef _PRODUCT_H_
+#define _PRODUCT_H_
+
+class Product
+{
+protected:
+	Product();
+
+public:
+	virtual ~Product() = 0;
+};
+
+// 这里可以有多个Product子类
+class ConcreteProduct : public Product
+{
+public:
+	~ConcreteProduct();
+	ConcreteProduct();
+};
+
+#endif // _PRODUCT_H_
+```
+
+```
+// Product.cpp
+
+#include <iostream>
+using namespace std;
+
+#include "Product.h"
+
+Product::Product()
+{
+	cout << "Product::Product" << endl;
+}
+
+Product::~Product()
+{
+	cout << "Product::~Product" << endl;
+}
+
+///////////////////////////////////////////
+
+ConcreteProduct::ConcreteProduct()
+{
+	cout << "ConcreteProduct::ConcreteProduct" << endl;
+}
+
+ConcreteProduct::~ConcreteProduct()
+{
+	cout << "ConcreteProduct::~ConcreteProduct" << endl;
+}
+```
+
+```
+// Factory.h
+
+#ifndef _FACTORY_H_
+#define _FACTORY_H_
+
+class Product;
+
+class Factory
+{
+protected:
+	Factory();
+
+public:
+	virtual ~Factory() = 0;
+	virtual Product* CreateProduct() = 0;
+};
+
+class ConcreteFactory : public Factory
+{
+public:
+	ConcreteFactory();
+	~ConcreteFactory();
+	Product* CreateProduct();
+};
+
+#endif // _FACTORY_H_
+```
+
+```
+// Factory.cpp
+
+#include <iostream>
+using namespace std;
+
+#include "Factory.h"
+#include "Product.h"
+
+Factory::Factory()
+{
+	cout << "Factory::Factory" << endl;
+}
+
+Factory::~Factory()
+{
+	cout << "Factory::~Factory" << endl;
+}
+
+
+/////////////////////////////////////////////////
+
+ConcreteFactory::ConcreteFactory()
+{
+	cout << "ConcreteFactory::ConcreteFactory" << endl;
+}
+
+ConcreteFactory::~ConcreteFactory()
+{
+	cout << "ConcreteFactory::~ConcreteFactory" << endl;
+}
+
+// 可以通过传不同的参数来创建不同的产品
+Product* ConcreteFactory::CreateProduct()
+{
+	return new ConcreteProduct();
+}
+```
+
+```
+// main.cpp
+
+#include <iostream>
+using namespace std;
+
+#include "Factory.h"
+#include "Product.h"
+
+#define IF_EXIST_DELETE(OBJECT) \
+{ \
+	if (OBJECT) \
+	{ \
+		delete OBJECT; \
+		OBJECT = NULL; \
+	} \
+}
+
+int main(int argc, char *argv[])
+{
+	Factory *factory = new ConcreteFactory();
+	Product *product  = factory->CreateProduct();
+
+	IF_EXIST_DELETE(product);
+	IF_EXIST_DELETE(factory);
+
+	system("pause");
+	return 0;
+}
+```
+虚析构函数的作用： 当用一个基类的指针删除一个派生类的对象时，派生类的析构函数会被调用。
+虚函数与纯虚函数：定义一个函数为虚函数，不代表函数为不被实现的函数。定义他为虚函数是为了允许用基类的指针来调用子类的这个函数。定义一个函数为纯虚函数，才代表函数没有被实现。定义他是为了实现一个接口，起到一个规范的作用，规范继承这个类的.程序员必须实现这个函数。 
+
+> 2011-07-14

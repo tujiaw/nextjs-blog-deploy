@@ -1,0 +1,35 @@
+---
+title: '分离WinMain中传进来的字符串（迁移2011-01-14）'
+date: '2017-01-22'
+tags: ['Windows']
+draft: false
+summary: 文章主要讲分离 WinMain 中传进的字符串，WinMain 可接受外部字符串但获取的是整个，要获取多个需分离源字符串，文中给出 MSDN 介绍的方法，通过相关函数处理并输出结果。 
+---
+
+我们知道WinMain函数是可以接受外部字符串的， 但是它获取的是整个字符串，
+如果要获取多个字符串， 就必须把源字符串分离开， 下面是MSDN里介绍的方法：
+```
+#include <windows.h>
+#include <stdio.h>
+#include <shellapi.h>
+int __cdecl main()
+{
+   LPWSTR *szArglist;
+   int nArgs;
+   int i;
+   szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
+   if( NULL == szArglist )
+   {
+        wprintf(L"CommandLineToArgvW failed/n");
+        return 0;
+   }
+   else
+   {
+	for( i=0; i<nArgs; i++)
+	    printf("%d: %ws/n", i, szArglist[i]);
+   }
+   LocalFree(szArglist);
+   return(1);
+}
+
+```

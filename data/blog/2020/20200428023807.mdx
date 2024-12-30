@@ -1,0 +1,91 @@
+---
+title: '获取本地IP地址'
+date: '2020-04-28'
+tags: ['C/C++']
+draft: false
+summary: 介绍获取本地 IP 地址的方法，C/C++中 Windows 和 Linux 平台都支持的代码，先通过不同方式获取，再给出 Qt 的写法，代码清爽，可获取本地 IP 地址。 
+---
+
+首先来一种windows和linux平台都支持的
+```
+#ifdef WIN32
+#include <boost/asio.hpp>
+#include <boost/asio/io_service.hpp>
+#else
+#include <stdio.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <arpa/inet.h>
+#endif
+
+std::string getLocalIpAddress(const std::string &slash) {
+		static bool s_once = true;
+		static std::string s_result;
+
+		if (s_once) {
+			s_once = false;
+#ifdef WIN32
+			using boost::asio::ip::tcp;
+			try {
+				boost::asio::io_service io_service;
+				tcp::resolver resolver(io_service);
+				tcp::resolver::query query(tcp::v4(), boost::asio::ip::host_name(), "");
+				tcp::resolver::iterator iter = resolver.resolve(query);
+				tcp::resolver::iterator end; // End marker.
+				while (iter != end) {
+					tcp::endpoint ep = *iter++;
+					if (!s_result.empty()) {
+						s_result += slash;
+					}
+					s_result += ep.address().to_string();
+				}
+			}
+			catch (std::exception &e) {
+				std::cerr << "get local ip address failed, " << e.what() << std::endl;
+			}
+#else
+			struct ifaddrs * ifAddrStruct = NULL;
+			struct ifaddrs * ifa = NULL;
+			void * tmpAddrPtr = NULL;
+
+			getifaddrs(&ifAddrStruct);
+			for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
+				if (!ifa->ifa_addr) {
+					continue;
+				}
+				if (ifa->ifa_addr->sa_family == AF_INET) { // check it is IP4
+														   // is a valid IP4 Address
+					tmpAddrPtr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+					char addressBuffer[INET_ADDRSTRLEN];
+					inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
+					std::string address(addressBuffer);
+					if (address != "127.0.0.1") {
+						if (!s_result.empty()) {
+							s_result += slash;
+						}
+						s_result += address;
+					}
+				}
+			}
+			if (ifAddrStruct != NULL) freeifaddrs(ifAddrStruct);
+#endif
+		}
+		return s_result;
+	}
+```
+
+再来看一下Qt的写法，看起来清爽多了
+```
+	QString getLocalHost()
+	{
+		QStringList ipList;
+		const QHostAddress &localhost = QHostAddress(QHostAddress::LocalHost);
+		for (const QHostAddress &address : QNetworkInterface::allAddresses()) {
+			if (address.protocol() == QAbstractSocket::IPv4Protocol && address != localhost)
+			ipList << address.toString();
+		}
+		return ipList.join("-");
+	}
+```

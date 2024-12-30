@@ -1,0 +1,187 @@
+---
+title: 'MySQL基础操作快速入门'
+date: '2020-05-15'
+tags: ['Database']
+draft: false
+summary: 本文介绍 MySQL 基础操作，包括安装（Ubuntu、Centos）、使用 shell 访问、创建删除数据库（创建如“events”，删除命令）、使用数据库（先指定再查看表）、创建表（如“potluck”表结构）、插入数据、更新数据（改“Sandy”确认状态）、添加删除列、删除行等基本用法，对初学者有帮助。 
+---
+
+# 关于MySQL
+MySQL是一种开源数据库管理软件，可帮助用户存储，组织和检索数据。
+这是一个非常强大的程序，具有很大的灵活性-本教程将提供MySQL的最基本介绍。
+# MySQL安装
+快速安装方式如下。
+Ubuntu
+```text
+sudo apt-get install mysql-server
+```
+Centos
+```text
+sudo yum install mysql-server
+/etc/init.d/mysqld start
+```
+# 使用shell访问MySQL
+在linux上安装MySQL之后，可以在终端中键入以下命令来访问MySQL
+```text
+mysql -u root -p
+```
+输入root用户对应的密码之后就可以进入mysql命令行操作
+
+有两点要注意：
+* 所有MySQL命令都以分号结尾;如果该短语不以分号结尾，则该命令将不会执行。
+* 另外，尽管不是必需的，但MySQL命令通常以大写形式编写，而数据库、表、用户名或文本则以小写形式编写，以便于区分。
+  但是，MySQL命令行不区分大小写。
+  
+# 创建删除数据库
+mysql将数据存储在数据库中，数据库中可以创建不同的表  
+您可以通过键入以下内容快速检查哪些数据库可用：
+```text
+SHOW DATABASES;
+```
+屏幕输出如下：
+```sql
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| test               |
++--------------------+
+4 rows in set (0.00 sec)
+```
+创建数据库非常容易：
+```mysql
+CREATE DATABASE 数据库名;
+```
+例如，我们创建一个名叫events的数据库
+```mysql
+CREATE DATABASE events;
+```
+最常用的删除数据库的命令是：
+```mysql
+DROP DATABASE 数据库名;
+```
+# 怎样使用数据库
+创建了新数据库之后我们就可以存入信息了。  
+首先，我们要在数据库里面创建一张表。
+  
+指定我们要使用的数据库
+```mysql
+USE events;
+```
+查看当前数据库表信息
+```mysql
+SHOW tables; 
+```
+由于这是一个新数据库，因此MySQL没有任何内容可显示，屏幕将输出“ Empty set”。
+
+# 创建表
+假设我们正在计划结交朋友，我们可以使用MySQL来跟踪事件的详细信息。  
+让我们创建一个新的MySQL表：
+```mysql
+CREATE TABLE potluck (id INT NOT NULL PRIMARY KEY AUTO_INCREMENT, 
+name VARCHAR(20),
+food VARCHAR(30),
+confirmed CHAR(1), 
+signup_date DATE);
+```
+该命令做了如下事情：
+* 它在events数据库中创建了一个名叫potluck的表
+* 这个表有5列，分别是：id, name, food, confirmed和signup_date
+* id列是一个自动增长的非空主键
+* name列是一个可变长度的字符串，最大长度为20个字符
+* food列是一个可变长度的字符串，最大长度为30个字符
+* confirmed列是一个字符，用'Y、'N'来表示
+* signup_date列是一个日期类型，格式如：yyyy-mm-dd
+
+用SHOW TABLES;看一下表信息如下：
+```text
++------------------+
+| Tables_in_events |
++------------------+
+| potluck          |
++------------------+
+1 row in set (0.00 sec)
+```
+查看详细的表结构：
+```mysql
+DESCRIBE potluck;
+```
+输出：
+```text
++-------------+-------------+------+-----+---------+----------------+
+| Field       | Type        | Null | Key | Default | Extra          |
++-------------+-------------+------+-----+---------+----------------+
+| id          | int(11)     | NO   | PRI | NULL    | auto_increment |
+| name        | varchar(20) | YES  |     | NULL    |                |
+| food        | varchar(30) | YES  |     | NULL    |                |
+| confirmed   | char(1)     | YES  |     | NULL    |                |
+| signup_date | date        | YES  |     | NULL    |                |
++-------------+-------------+------+-----+---------+----------------+
+5 rows in set (0.01 sec)
+```
+请记住，尽管MySQL命令行不注意大小写，但表和数据库名称区分大小写：potluck与POTLUCK或Potluck不同。
+
+# 向表中插入数据
+使用下面的命令向表中插入一条数据：
+```mysql
+INSERT INTO `potluck` (`id`,`name`,`food`,`confirmed`,`signup_date`) VALUES (NULL, "John", "Casserole","Y", '2012-04-11');
+```
+再增加点数据：
+```mysql
+INSERT INTO `potluck` (`id`,`name`,`food`,`confirmed`,`signup_date`) VALUES (NULL, "Sandy", "Key Lime Tarts","N", '2012-04-14');
+INSERT INTO `potluck` (`id`,`name`,`food`,`confirmed`,`signup_date`) VALUES (NULL, "Tom", "BBQ","Y", '2012-04-18');
+INSERT INTO `potluck` (`id`,`name`,`food`,`confirmed`,`signup_date`) VALUES (NULL, "Tina", "Salad","Y", '2012-04-10'); 
+```
+查看一下增加后的数据：
+```mysql
+SELECT * FROM potluck;
+```
+输出：
+```text
++----+-------+----------------+-----------+-------------+
+| id | name  | food           | confirmed | signup_date |
++----+-------+----------------+-----------+-------------+
+|  1 | John  | Casserole      | Y         | 2012-04-11  |
+|  2 | Sandy | Key Lime Tarts | N         | 2012-04-14  |
+|  3 | Tom   | BBQ            | Y         | 2012-04-18  |
+|  4 | Tina  | Salad          | Y         | 2012-04-10  |
++----+-------+----------------+-----------+-------------+
+4 rows in set (0.00 sec)
+```
+
+# 更新表中数据
+将Sandy的confirmed改为'Y'
+```mysql
+UPDATE `potluck` 
+SET 
+`confirmed` = 'Y' 
+WHERE `potluck`.`name` ='Sandy';
+```
+
+# 添加删除列
+给表增加一个email列:
+```mysql
+ALTER TABLE potluck ADD email VARCHAR(40);
+```
+默认将新列插入到最后，如果你想将email列查到name后面，可以这样写：
+```mysql
+ALTER TABLE potluck ADD email VARCHAR(40) AFTER name; 
+```
+删除email列：
+```mysql
+ALTER TABLE potluck DROP COLUMN email;
+```
+
+# 删除行
+语法如下：
+```mysql
+DELETE from [table name] where [column name]=[field text];
+```
+如，删除Sandy的信息：
+```mysql
+DELETE from potluck  where name='Sandy';
+```
+
+以上就是mysql的一些基本用法，希望对初学者有帮助。

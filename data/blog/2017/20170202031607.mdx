@@ -1,0 +1,51 @@
+---
+title: '让程序只有一个应用程序实例在运行'
+date: '2017-02-02'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 文章介绍让程序只有一个实例运行的方法，开始加代码实现。有三种：一是找先前窗口实例并激活；二是用互斥对象，创建后判断是否已存在；三是用事件对象，创建后判断是否已存在，若已存在则直接返回。（迁移 2011 - 05 - 28） 
+---
+
+当一个应用程序正在运行的时候我们不希望双击这个应用程序的时候又开启一个新的运行实例， 而仅仅只需要激活先前的实例即可。下面介绍三种简单的方法， 都是在程序开始的时候加入代码：
+
+第一种方法：
+```
+	HWND hOldWnd = NULL;
+/// define OLD_WND_NAME "先前窗口实例的名字"
+	hOldWnd = ::FindWindowEx(NULL, NULL, NULL, OLD_WND_NAME); 
+	if (hOldWnd)
+	{
+		::ShowWindow(hOldWnd, SW_RESTORE);
+		::SetForegroundWindow(hOldWnd);
+		return 0;
+	}
+```
+
+第二种方法（互斥对象）：
+```
+HANDLE hMutex;
+hMutex = CreateMutex(NULL, TRUE, L"any name");
+if (hMutex)
+{
+    if (ERROR_ALREADY_EXISTS == GetLastError())
+    {
+        // 直接返回
+        return 0;
+    }
+}
+```
+
+第三种方法（事件对象）：
+```
+HANDLE hEvent;
+hEvent= CreateEvent(NULL, FALSE, FALSE, L"any name");
+if (hEvent)
+{
+    if (ERROR_ALREADY_EXISTS == GetLastError())
+    {
+        // 直接返回
+        return 0;
+    }
+}
+```
+> （迁移2011-05-28）

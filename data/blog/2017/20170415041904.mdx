@@ -1,0 +1,34 @@
+---
+title: 'WTL CHyperLink类的用法'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 介绍 WTL CHyperLink 类用法，需含 atlctrlx.h 头文件，声明变量并在 OnInitDialog 函数中进行子类化等操作，在消息映射宏中响应事件，可实现点击链接打开指定网页。 
+---
+
+* 包含atlctrlx.h头文件 
+* 声明一个CHyperLink类的变量
+```
+CHyperLink		m_linkIntro;
+```
+* 在OnInitDialog函数里
+```
+m_linkIntro.SubclassWindow(GetDlgItem(IDC_STATIC_LINK));
+DWORD linkStyle = m_linkIntro.GetHyperLinkExtendedStyle() | HLINK_COMMANDBUTTON | HLINK_NOTIFYBUTTON;
+m_linkIntro.SetHyperLinkExtendedStyle(linkStyle);
+m_linkIntro.SetHyperLink(L"this is hyperlink");
+```
+* 在消息映射宏里
+```
+NOTIFY_HANDLER(IDC_STATIC_LINK, NM_CLICK, OnLinkIntro)
+```
+* 响应事件
+```
+LRESULT OnLinkIntro(int wParam, LPNMHDR lpNMHdr, BOOL& bHandled)
+{
+    ::ShellExecute(NULL, L"open", L"http://www.csdn<a href="http://lib.csdn.net/base/dotnet" class='replace_word' title=".NET知识库" target='_blank' style='color:#df3434; font-weight:bold;'>.NET</a>",
+                    NULL, NULL, SW_SHOWNORMAL);
+    return 0;
+}
+```
+> 迁移2011-05-08

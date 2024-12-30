@@ -1,0 +1,139 @@
+---
+title: 'Qt json文件读写'
+date: '2020-09-22'
+tags: ['Qt', 'C/C++']
+draft: false
+summary: 介绍 Qt 中 JSON 读写，提供便捷 C++ API。封装 json 字符串与 QVariantMap 转换函数。展示读取和写入 json 文件的代码，注意写入时需指定 utf8 编码，避免中文转换失败。 
+---
+
+Qt提供了处理JSON数据的支持。JSON是一种数据编码格式派生自Javascript，现在在internet上广泛用作数据交换格式。
+Qt中的JSON支持提供了一个易于使用的C++ API来解析、修改和保存JSON数据。
+它还支持以二进制格式保存数据，这种格式可以直接“mmap”，而且访问速度非常快。
+
+简单封装一下json字符串和QVariantMap之间的转换：
+```
+QVariantMap json2map(const QByteArray &val) {
+    QJsonParseError jError;
+    QJsonDocument jDoc = QJsonDocument::fromJson(val, &jError);
+    if (jError.error == QJsonParseError::NoError) {
+        if (jDoc.isObject()) {
+            QJsonObject jObj = jDoc.object();
+            return jObj.toVariantMap();
+        }
+    }
+    QVariantMap ret;
+    return ret;
+}
+
+QString json2str(const QVariantMap &val) {
+    QJsonObject jobj = QJsonObject::fromVariantMap(val);
+    QJsonDocument jdoc(jobj);
+    return QString(jdoc.toJson(QJsonDocument::Indented)); // 为了易于阅读加上了缩进
+}
+```
+
+json字符串:
+```
+{
+    "current": 1,
+    "groupList": [
+        {
+            "list": [
+                "556",
+                "766959751",
+                "543",
+                "619",
+                "630",
+                "488",
+                "24"
+            ],
+            "name": "44"
+        },
+        {
+            "list": [
+                "556",
+                "766959751",
+                "543",
+                "619",
+                "630",
+                "488",
+                "24"
+            ],
+            "name": "分组一"
+        }
+    ]
+}
+
+```
+定义如下结构：
+```
+	struct BrokerGroupData {
+		int current = -1;
+		QList<QPair<QString, QStringList>> groupList;
+
+		void fromJson(const QByteArray &str);
+		QString toJson() const;
+	};
+	
+	void BrokerGroupData::fromJson(const QByteArray &str) {
+	QVariantMap mp = json2map(str);
+	bool ok = false;
+	int currentRow = mp["current"].toInt(&ok);
+	if (ok) {
+		this->current = currentRow;
+	}
+
+	this->groupList.clear();
+	QList<QVariant> groupList = mp["groupList"].toList();
+	foreach(const QVariant &group, groupList) {
+		QVariantMap &groupMp = group.toMap();
+		QString name = groupMp["name"].toString();
+		QStringList brokerList = groupMp["list"].toStringList();
+		this->groupList.append(qMakePair(name, brokerList));
+	}
+}
+
+QString BrokerGroupData::toJson() const {
+	QVariantMap mp;
+	mp["current"] = this->current;
+	QList<QVariant> groupList;
+	for (int i = 0; i < this->groupList.size(); i++) {
+		QVariantMap groupMp;
+		groupMp["name"] = this->groupList[i].first;
+		groupMp["list"] = this->groupList[i].second;
+		groupList.append(groupMp);
+	}
+	mp["groupList"] = groupList;
+	return json2str(mp);
+}
+```
+
+json文件读写：
+```
+// 读取
+	QString brokergroupPath = "brokergroup.json";
+	QFile file(brokergroupPath);
+	if (!file.open(QFile::ReadOnly | QFile::Text)) {
+		return;
+	}
+	
+	BrokerGroupData data;
+	data.fromJson(file.readAll());
+	
+// 写入
+	QString brokergroupPath = "brokergroup.json"
+	QFile file(brokergroupPath);
+	if (!file.open(QFile::WriteOnly | QFile::Truncate | QFile::Text)) {
+		return;
+	}
+
+	BrokerGroupData data;
+	// ... data对象赋值
+	QTextStream in(&file);
+	in.setCodec("utf-8");
+	in << data.toJson();
+	in.flush();
+	file.close();
+```
+
+> 注意json字符串写入文件的时候一定要指定为utf8编码，否则如果字符串中有中文，从文件中读取json字符串后转换为对象的时候会失败。

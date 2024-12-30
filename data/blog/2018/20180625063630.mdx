@@ -1,0 +1,60 @@
+---
+title: '解决github慢的问题'
+date: '2018-06-25'
+tags: ['Windows']
+draft: false
+summary: 这篇文章介绍了如何解决GitHub下载速度慢的问题。作者通过查询GitHub域名对应的IP地址，并修改Windows系统的hosts文件，使得GitHub的下载速度大大提高。同时，文章还提供了在MAC电脑上修改hosts文件的步骤。最后，作者测试了修改后的效果，下载速度达到了400~500kiB/s。
+---
+
+每次clone项目非常慢只有几十kb，稍微大一点的项目要花费蛮长的时间而且中途可能会断掉，下面方法可以解决这个问题。
+
+# 获取github域名对应的IP地址
+访问[https://www.ipaddress.com](https://www.ipaddress.com)(如果不行的话可能要翻墙)网站，分别查询：github.com和github.global.ssl.fastly.net域名对应的IP地址，如下我查询到的结果：
+```
+	192.30.253.112		github.com
+	151.101.185.194		github.global.ssl.fastly.net
+```
+
+# 修改hosts文件
+windows系统hosts文件路径是：
+```
+C:\Windows\System32\drivers\etc
+```
+
+直接打开文件修改是不行的需要管理员权限。
+* 点击windows桌面的开始菜单，搜索栏中搜索cmd，右键列表中的cmd.exe以管理员权限打开，转到hosts文件所在目录：
+```
+cd C:\Windows\System32\drivers\etc
+```
+* 在cmd中用notepad打开
+```
+notepad hosts
+```
+* 将下面信息粘贴到文件末尾，保存文件。下面两个IP地址以自己查到的为准。
+```
+# github
+	192.30.253.112		github.com
+	151.101.185.194		github.global.ssl.fastly.net
+```
+> github.com对应的IP地址可能有多个，如果某个不行可以换个试试
+
+# 不重启电脑生效hosts
+还是在之前的cmd窗口输入如下命令：
+```
+ipconfig /flushdns
+```
+执行结果显示：
+```
+Windows IP 配置
+已成功刷新 DNS 解析缓存。
+```
+
+# MAC电脑修改host文件
+```
+sudo vi /etc/hosts
+将下来两行粘贴在文件末尾就可以了
+192.30.253.112		github.com
+151.101.185.194		github.global.ssl.fastly.net
+```
+# 测试
+用git clone一个大一点的项目非常快，我的电脑下载速度达到了400~500kiB/s。

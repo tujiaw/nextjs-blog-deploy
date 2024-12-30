@@ -1,0 +1,170 @@
+---
+title: '腾讯OCR文字识别API调用'
+date: '2020-09-04'
+tags: ['Go']
+draft: false
+summary: 该 Go 代码实现腾讯 OCR 文字识别 API 调用，通过上传图像获取识别字段信息。定义相关结构体和函数，包括获取请求数据、生成签名等。在 main 函数中发起 POST 请求并处理响应，将识别结果输出。代码可从指定链接获取更多信息。 
+---
+
+根据用户上传的图像，返回识别出的字段信息。  
+腾讯AI开放平台地址：https://ai.qq.com/console/capability/overview
+
+```
+package main
+
+import (
+	"bytes"
+	"crypto/md5"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+)
+
+const APPID = 2156348148x
+const APPKEY = "XFpS522Lm1kPcAQ3x"
+const OCRURL = "https://api.ai.qq.com/fcgi-bin/ocr/ocr_generalocr"
+
+type Param struct {
+	key string
+	value string
+}
+
+type RequestData struct {
+	AppId int
+	TimeStamp int
+	NonceStr string
+	Sign string
+	Image string
+	Params string
+}
+
+type Response struct {
+	Ret int `json:"ret"`
+	Msg string `json:"msg"`
+	Data struct {
+		Item_list [] struct {
+			Item string `json:"item"`
+			Itemstring string `json:"itemstring"`
+			Itemcoord [] struct {
+				X int `json:"x"`
+				Y int `json:"y"`
+				Width int `json:"width"`
+				Height int `json:"height"`
+			} `json:"itemcoord"`
+			Words [] struct {
+				Character string `json:"character"`
+				Confidence float64 `json:"confidence"`
+			} `json:"words"`
+		} `json:"item_list"`
+	} `json:"data"`
+}
+
+func main() {
+	data, err := GetRequestData("./ntscreenshot_20200905_145215.png")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	request, err := http.NewRequest("POST", OCRURL, bytes.NewBufferString(data.Params))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	client := http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer response.Body.Close()
+	var rsp Response
+	err = json.NewDecoder(response.Body).Decode(&rsp)
+	if err != nil {
+		log.Println("json decode error", err)
+		return
+	}
+	fmt.Println(rsp)
+}
+
+func GetSign(params []Param) string {
+	sort.Slice(params, func(i, j int)bool {
+		return params[i].key < params[j].key
+	})
+	var s string
+	for _, param := range params {
+		if len(param.value) > 0 {
+			s += fmt.Sprintf("%s=%s&", param.key, url.QueryEscape(param.value))
+		}
+	}
+	s += fmt.Sprintf("app_key=%s", APPKEY)
+
+	data := []byte(s)
+	dataSum := md5.Sum(data)
+	s = fmt.Sprintf("%x", dataSum)
+
+	s = strings.ToUpper(s)
+	return s
+}
+
+func GetRequestData(imgPath string) (RequestData, error) {
+	fileData, err := GetByteFromFile(imgPath)
+	if err != nil {
+		return RequestData{}, err
+	}
+
+	req := RequestData{
+		AppId: APPID,
+		TimeStamp: int(time.Now().Unix()),
+		NonceStr: "123456",
+		Sign: "",
+		Image: fileData,
+	}
+	var params []Param
+	params = append(params, Param{key:"app_id", value: strconv.Itoa(req.AppId)})
+	params = append(params, Param{key:"time_stamp", value: strconv.Itoa(req.TimeStamp)})
+	params = append(params, Param{key:"nonce_str", value: req.NonceStr})
+	params = append(params, Param{key:"sign", value: req.Sign})
+	params = append(params, Param{key:"image", value: req.Image})
+	req.Sign = GetSign(params)
+	req.Params = ""
+	for _, param := range params {
+		if param.key == "sign" {
+			req.Params += fmt.Sprintf("sign=%s&", req.Sign)
+		} else if len(param.value) > 0 {
+			req.Params += fmt.Sprintf("%s=%s&", param.key, url.QueryEscape(param.value))
+		}
+	}
+	if len(req.Params) > 1{
+		req.Params = req.Params[0:len(req.Params) - 1]
+	}
+	return req, nil
+}
+
+func GetByteFromFile(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	pic, err := ioutil.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(pic), nil
+}
+
+```
+https://blog.csdn.net/li18434/article/details/105851285

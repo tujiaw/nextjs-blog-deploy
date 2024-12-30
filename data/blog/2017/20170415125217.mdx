@@ -1,0 +1,123 @@
+---
+title: '内存文件映射-进程间通信'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 介绍内存文件映射用于进程间通信，Microsoft 加入支持可创建内存映射文件无需专门磁盘文件。创建文件映射对象后可像使用任务内存区域，共享数据时传入名称。进程不再需要可调用 CloseHandle 收回存储器，分普通文件和页文件，示例展示进程 1 和进程 2 的操作。 
+---
+
+许多应用程序会在运行过程中创建一些数据，并需要将这些数据传输给其他进程，或与其他进程共享这些数据。如果为了共享数据而必须让应用程序在磁盘上创建数据文件并把数据保存在文件中，那将非常不方便。
+
+Microsoft意识到了这一点，并加入了相应的支持，让系统能够创建以页交换文件为后备存储器的内存映射文件，这样就不需要用磁盘上专门的文件来作为后备存储器了。这种方法和为磁盘文件创建内存映射文件的方法几乎完全相同，甚至更简单。一方面，由于不必创建或打开一个专门的磁盘文件，因此不需要调用CreateFile。我们只需要像原来那样调用CreateFileMapping，并将INVALID_HANDLE_VALUE作为hFile参数传入。这告诉系统我们创建的文件映射对象的物理存储器不是磁盘上的文件，而是希望系统从页交换文件中调拨物理存储器。所需分配的存储器大小由CreateFileMapping的dwMaximumSizeHigh和dwMaxinumSizeLow参数决定。
+
+一旦创建了文件映射对象，并把一个视图映射到了进程的地址空间中，我们就可以像使用任务内存区域一样使用它了。如果想要和其他进程共享数据，那么可以在调用CreateFileMapping的时候将一个以0为终止符的字符串作为pszName参数传入。这样其他想要访问共享数据的进程就能够以同一个名称为参数来调用CreateFileMapping或OpenFileMapping。
+
+当一个进程不再需要访问文件映射对象的时候，应该调用CloseHandle。当所有句柄都已关闭的时候，系统会从页交换文件中收回所有已调拨的存储器。
+
+内存映射文件可以分为两种：
+* 一种是普通的文件，它需要一个普通的文件句柄，用于快速的读写文件，这种文件的数据在进程退出后会保存在硬盘上，所以进程在下次运行时可以得到之前的数据；
+* 另一种是页文件，当创建内存映射文件的时候传入无效的句柄，这时会把页文件当作临时的共享存储空间，当进程退出后这些数据是不会存储下来的。因为共享内存通常只关注执行期间的数据共享，所以一般是使用这种内存映射文件。
+
+先开启进程1，然后在进程2中就可以获取进程1中的数据了， msdn中的例子如下：
+```
+// process1.cpp
+
+#include <windows.h>
+#include <stdio.h>
+#include <conio.h>
+#include <tchar.h>
+
+#define BUF_SIZE 256
+TCHAR szName[] = TEXT("Global\\MyFileMappingObject");
+TCHAR szMsg[] = TEXT("Message from first process.");
+
+int _tmain()
+{
+	HANDLE hMapFile;
+	LPCTSTR pBuf;
+
+	hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE,
+					NULL,
+					PAGE_READWRITE,
+					0,
+					BUF_SIZE,
+					szName);
+
+	if (hMapFile == NULL)
+	{
+		_tprintf(TEXT("Could not create file mapping object (%d).\n"),
+			GetLastError());
+		return 1;
+	}
+	pBuf = (LPTSTR)MapViewOfFile(hMapFile,
+						FILE_MAP_ALL_ACCESS,
+						0,
+						0,
+						BUF_SIZE);
+
+	if (pBuf == NULL)
+	{
+		_tprintf(TEXT("Could not map view of file (%d). \n"),
+			GetLastError());
+		CloseHandle(hMapFile);
+		return 1;
+	}
+
+	CopyMemory((void*)pBuf, szMsg, (_tcslen(szMsg) * sizeof(TCHAR)));
+	_getch();
+
+	UnmapViewOfFile(pBuf);
+	CloseHandle(hMapFile);
+
+	return 0;
+}
+```
+```
+//process2.cpp
+
+#include <windows.h>
+#include <stdio.h>
+#include <conio.h>
+#include <tchar.h>
+#pragma comment(lib, "user32.lib")
+
+#define BUF_SIZE 256
+TCHAR szName[] = TEXT("Global\\MyFileMappingObject");
+
+int _tmain()
+{
+	HANDLE hMapFile;
+	LPCTSTR pBuf;
+
+	hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS,
+					FALSE,
+					szName);
+	if (hMapFile == NULL)
+	{
+		_tprintf(TEXT("Could not open file mapping object (%d). \n"),
+			GetLastError());
+		return 1;
+	}
+
+	pBuf = (LPTSTR)MapViewOfFile(hMapFile,
+						FILE_MAP_ALL_ACCESS,
+						0,
+						0,
+						BUF_SIZE);
+
+	if (pBuf == NULL)
+	{
+		_tprintf(TEXT("Could not map view of file (%d).\n"),
+			GetLastError());
+		CloseHandle(hMapFile);
+		return 1;
+	}
+	MessageBox(NULL, pBuf, TEXT("Process2"), MB_OK);
+	UnmapViewOfFile(pBuf);
+	CloseHandle(hMapFile);
+
+	return 0;
+}
+```
+
+> 2011-07-19

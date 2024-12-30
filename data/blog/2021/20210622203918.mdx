@@ -1,0 +1,127 @@
+---
+title: '多个Qt程序共享公共库'
+date: '2021-06-22'
+tags: ['Qt']
+draft: false
+summary: 
+---
+
+使用Qt框架编写的GUI应用程序必须要带上常用的几个Qt动态库和插件，如果有多个独立的Qt程序，他们不是放在同一个目录下，那么这些通用的Qt库必须每个程序都提供一份，这样会导致整个产品安装包较大。
+
+# 目的
+我们的目的是要公用这些动态库，对整个产品进行瘦身。
+
+之前的产品目录可能是：
+```
+myapp/
+    app.exe
+    project1/
+        p1.exe
+        qt*.dll
+        plugins/
+    project2/
+        p2.exe
+        qt*.dll
+        plugins/
+    project3/
+        p3.exe
+        qt*.dll
+        plugins/
+```
+每个project都会提供一份重复的Qt依赖库
+
+改造后：
+```
+myapp/
+    app.exe
+    project1/
+        p1.exe
+    project2/
+        p2.exe
+    project3/
+        p3.exe
+    common/
+        qt*.dll
+        plugins/
+```
+将每个project公用的库独立到common中去，这样project只包含自己的可执行文件和依赖库。
+
+# 实现
+## plugin查找
+为了能找到plugin我们新建一个qt.conf文件，内容如下：
+```
+[Paths]
+Prefix=../common
+Plugins=plugins
+```
+将此文件加入到qrc中，Prefix是：/qt，Alias是：etc/qt.conf，因为QLibraryInfo会优先从:/qt/etc/qt.conf路径载入资源。
+
+加入qt.conf之后注意要对qrc文件进行编译。
+## common目录
+将Qt公用库拷贝到common目录下，将插件目录放在plugins目录下（为了plugin查找），目录结构如下：
+```
+common/
+    common.manifest
+    Qt5Core.dll
+    Qt5Gui.dll
+    Qt5Widget.dll
+    Qt5*.dll
+    opengl32sw.dll
+    plugins/
+        iconengines/
+        imageformats/
+        platforms/
+        styles/
+        translations/
+```
+关键是common.manifest文件，内容如下，与此文件同目录的需要用到的dll都要包含进来，注意名字要一致。
+```
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+    <assemblyIdentity type="win32" name="common" version="1.0.0.0" processorArchitecture="x86"/>
+    <file name="Qt5Widgetsd.dll"/>
+    <file name="D3Dcompiler_47.dll"/>
+	<file name="libEGLd.dll"/>
+	<file name="libGLESV2d.dll"/>
+	<file name="opengl32sw.dll"/>
+	<file name="Qt5Cored.dll"/>
+	<file name="Qt5Guid.dll"/>
+	<file name="Qt5Svgd.dll"/>
+</assembly>
+```
+## 让应用程序加载common
+添加如下代码在main函数的上面
+```
+#pragma comment(linker, "/manifestdependency:\"name='common' "\
+                        "processorArchitecture='*' version='1.0.0.0' "\
+                        "type='win32'\"")
+```
+此时如果common目录与exe是在同一个目录是没问题的。要想project下的exe加载到上一级common目录还需要在exe所在目录下新建一个config文件，名字必须是"应用程序名.exe.config"，如：p1.exe，那么config文件名为：p1.exe.config，内容如下：
+```
+<configuration>
+	<windows>
+		<assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+		<probing privatePath="../common"/>
+		</assemblyBinding>
+	</windows>
+</configuration>
+```
+privatePath指明common所在的相对目录，所以最终目录结构如下：
+```
+myapp/
+    app.exe
+    project1/
+        p1.exe
+        p1.exe.config
+    project2/
+        p2.exe
+        p2.exe.config
+    project3/
+        p3.exe
+        p3.exe.config
+    common/
+        common.manifest
+        qt*.dll
+        plugins/
+```
+这样所有公共的dll和plugin都可以放到common目录下。

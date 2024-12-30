@@ -1,0 +1,33 @@
+---
+title: 'Expression  _BLOCK_TYPE_IS_VALID(pHead->nBlockUse)'
+date: '2020-08-31'
+tags: ['C/C++']
+draft: false
+summary: 用新 visual studio 编译老代码，Debug 时 QString 的 toStdString 和 toStdWString 触发“Expression _BLOCK_TYPE_IS_VALID(pHead->nBlockUse)”错误，换成特定转换函数就没事，原因可能与内存有关，需分析 QString 源码。 
+---
+
+用新的visual studio 2017或者2019来编译老代码（vs2013），Debug的时候发现QString的toStdString和toStdWString方法触发以上错误（Release没有问题），换成下面两个转换函数就没问题了：
+```
+std::wstring towstring(const QString& str)
+	{
+		std::wstring result;
+		result.reserve(str.size());
+		for (int i = 0; i < str.size(); i++) {
+			result.push_back(str.at(i).unicode());
+		}
+		return result;
+	}
+
+	std::string tostring(const QString& str)
+	{
+		QByteArray b = str.toLocal8Bit();
+		std::string result;
+		result.reserve(b.size());
+		for (int i = 0; i < b.size(); i++) {
+			result.push_back(b[i]);
+		}
+		return result;
+	}
+```
+
+具体原因需要分析QString源码，应该是跟内存有关。

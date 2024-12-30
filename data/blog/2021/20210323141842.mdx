@@ -1,0 +1,142 @@
+---
+title: 'Go竞态检测'
+date: '2021-03-23'
+tags: ['Go']
+draft: false
+summary: 
+---
+
+# 介绍
+竞争条件是最隐蔽和难以捉摸的编程错误之一。它可能会导致不稳定和莫名其妙的故障，而且很可能是在代码部署到生产环境很久之后才会产生。虽然Go的并发机制使编写干净的并发代码变得容易，但它们并不能防止竞争条件问题。所以写代码的时候要小心，多测试是必需的，还好有工具可以帮助我们。
+
+Go1.1就有了竞态检测器[race detector](https://golang.org/doc/articles/race_detector)
+
+# 工作原理
+竞态检测器与go工具链集成在一起，当设置了-race命令行标志后，编译器会记录下所有内存访问的代码，哪些内存被访问了，而运行时库则监视对共享变量的非同步访问。当检测到这种“不雅”行为时，将打印一个警告。(有关该算法的详细信息，请参考[这篇文章](https://github.com/google/sanitizers/wiki/ThreadSanitizerAlgorithm)。)
+
+竞态检测只能在代码运行的过程中实际触发了竞态条件时才能被检测到，所以在运行程序的时候记得带上race参数。但是，启用了race的程序会消耗大量的内存和CPU（10倍），因此一直启用race检测器是不切实际的，一般是在测试的时候使用，而且要模拟并发的环境，这样更容易检测得到。
+
+# 使用竞态检测
+race检测器与Go工具链完全集成，要构建启用了race检测器的代码，只需在命令行中添加-race标志
+```
+$ go test -race mypkg    // test the package
+$ go run -race mysrc.go  // compile and run the program
+$ go build -race mycmd   // build the command
+$ go install -race mypkg // install the package
+```
+下载，并运行
+```
+$ go get -race golang.org/x/blog/support/racy
+$ racy
+```
+
+# 示例1，Timer.Reset
+这个例子是启动一个Timer随机等待0~1秒，打印程序自启动到执行时的时间差，然后再重置Timer继续之前的操作，执行5秒后程序退出。
+```
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	start := time.Now()
+	var t *time.Timer
+	t = time.AfterFunc(randomDuration(), func() {
+		fmt.Println(time.Since(start))
+		t.Reset(randomDuration())
+	})
+	time.Sleep(5 * time.Second)
+}
+
+func randomDuration() time.Duration {
+	return time.Duration(rand.Int63n(1e9))
+}
+```
+这个程序看起来好像没问题，我自己也执行了很多次都没发现问题。  
+但是我们加上-race参数运行会报以下警告：
+```
+go run -race .\main.go
+
+==================
+WARNING: DATA RACE
+Read at 0x00c0000e4018 by goroutine 8:
+  main.main.func1()
+      F:/github/godemo/main.go:14 +0x11e
+
+Previous write at 0x00c0000e4018 by main goroutine:
+  main.main()
+      F:/github/godemo/main.go:12 +0x194
+
+Goroutine 8 (running) created at:
+  time.goFunc()
+      C:/Program Files/Go/src/time/sleep.go:180 +0x5a
+==================
+```
+提示在t=和t.Reset这两行有问题，仔细分析一下发现t.Reset执行如果早于t=的赋值，那么t就是nil会造成内存错误，如下提示。为什么会出现这个问题呢，因为AfterFunc的第二个参数是func，它跟t赋值操作很可能不在同一个线程，你无法保证AfterFunc先返回还是func先执行完成，所以就会出现竞态的问题。
+```
+panic: runtime error: invalid memory address or nil pointer dereference
+```
+> 解决问题
+```
+func main() {
+	start := time.Now()
+	var t *time.Timer
+	reset := make(chan bool)
+	t = time.AfterFunc(randomDuration(), func() {
+		fmt.Println(time.Now().Sub(start))
+		reset <- true
+	})
+
+	for time.Since(start) < 5*time.Second {
+		<-reset
+		t.Reset(randomDuration())
+	}
+}
+```
+这样写，再用race检测就不会出现问题了，因为t=和t.Rese在同一个线程里面。
+
+当然这样写可能比较复杂，更好的实现方案是：
+```
+func main() {
+	start := time.Now()
+	var f func()
+	f = func() {
+		fmt.Println(time.Now().Sub(start))
+		time.AfterFunc(time.Duration(rand.Int63n(1e9)), f)
+	}
+	time.AfterFunc(time.Duration(rand.Int63n(1e9)), f)
+	time.Sleep(5 * time.Second)
+}
+```
+
+# 示例2，ioutil.Discard
+这个例子就不细说了，大概是之前的实现有bug，codereview的时候发现了这个问题然后修复了。
+```
+io.Copy(ioutil.Discard, reader)
+```
+将读到的数据丢弃，类似如：/dev/null，如下类：
+```
+var blackHole [4096]byte // shared buffer
+
+func (devNull) ReadFrom(r io.Reader) (n int64, err error) {
+    readSize := 0
+    for {
+        readSize, err = r.Read(blackHole[:])
+        n += int64(readSize)
+        if err != nil {
+            if err == io.EOF {
+                return n, nil
+            }
+            return
+        }
+    }
+}
+```
+blackHole黑洞是一个全局的变量，这里就是问题所在。  
+
+解决方法：  
+通过给每次ioutil使用一个唯一的缓冲区，这个bug最终得到了修复，丢弃、消除共享缓冲区上的竞争条件。
+具体修复代码[参考](https://codereview.appspot.com/7011047)

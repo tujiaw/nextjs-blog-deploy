@@ -1,0 +1,43 @@
+---
+title: 'amqp connection framing-error  Expected AMQP protocol header'
+date: '2020-04-23'
+tags: ['C/C++']
+draft: false
+summary: 解决连接 qqpidd 时报错的问题
+---
+
+使用qpid proton的demo去连接qqpidd (qpid-cpp) version 1.39.0的时候报如下错误：
+```
+amqp:connection:framing-error: AMQP header mismatch: Pre standard AMQP connection ['AMQP\x01\x01\x00\x0a']
+```
+
+版本信息如下：
+```
+Qpid Proton 0.31.0
+qpidd (qpid-cpp) version 1.39.0
+```
+
+找了很多信息大概知道了原因，从[proton官网](https://qpid.apache.org/proton/index.html)介绍中可以看到下面这句话，它是用AMQP1.0协议进行通信的。
+```
+Proton makes it trivial to integrate with the AMQP 1.0 ecosystem from any platform
+```
+
+qpidd是支持AMQP1.0（新的）和0-10（老的），但是很明显直接启动是不支持AMQP1.0协议的，从网上找到答案是启动的时候要去加载amqp.so动态库。我的启动命令是：
+```
+qpidd --auth=no --load-module=/usr/lib64/qpid/daemon/amqp.so -d --log-to-file ./qpidd.log
+```
+或者使用qpidd.conf，启动命令：qpidd --config ./qpidd.conf
+```
+daemon=yes
+auth=no
+load-module=/usr/lib64/qpid/daemon/amqp.so
+log-to-file=./qpidd.log
+connection-limit-per-ip=1000
+max-queues-per-user=100
+connection-limit-per-user=100
+```
+这样就解决问题了，如果没有找到amqp.so，你可能要自己去编译。
+
+有的网友是在编译qpidd的时候加上"-Damqp_force=true"参数解决问题的，不过这个我没试过。
+
+这个帖子给了我很多帮助：http://qpid.2158936.n2.nabble.com/QPID-C-Broker-and-QPID-Proton-C-Example-interoperability-problem-td7649519.html

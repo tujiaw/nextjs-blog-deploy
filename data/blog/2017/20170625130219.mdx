@@ -1,0 +1,64 @@
+---
+title: 'javascript怎么实现类似如C++函数中使用静态数据'
+date: '2017-06-25'
+tags: ['Javascript']
+draft: false
+summary: 在 JavaScript 中实现类似 C++函数中静态数据，可利用闭包。如通过创建立即调用函数表达式，在内部定义并返回一个函数，该函数可访问内部的变量，避免全局污染。像防抖函数 debounce 就利用了此原理。 
+---
+
+静态数据是一些不变的数据可以多次使用而不用频繁创建，C++中通常把他们放在cpp文件的include下面，或者如果其他地方不会用到的话可以直接写在要用到的函数里面。如果是javascript的话把它直接写在函数外面就是全局变量了这个肯定是不好的，放在函数里面每次运行函数的时候都会构建这个对象对运行时是有损耗的，那应该放到哪里呢？
+
+先看C++的通常做法：
+```
+// xxx.cpp
+static std::string s_data[] = ["1", "2", "3", "4", "5"," 6"];
+
+或者：
+void func() {
+  static std::string s_data[] = ["1", "2", "3", "4", "5"," 6"];
+  ...
+}
+```
+
+javascript是没有static这个用法的，它需要闭包来解决这个问题：
+```
+var test = (function() {
+  var s_data = ["1", "2", "3", "4", "5"," 6"];
+  return function() {
+    // 这里就可以使用s_data
+    console.log(s_data);
+  }
+}());
+
+test();
+```
+注意最后一行用()运算法立刻调用我们刚刚构造出来的函数，其实这个函数才是我们真正要用的，这样只有test才能访问到s_data，并且不会污染到全部变量。
+
+```
+// 防抖函数 
+function debounce(fn, delay) {
+  // 持久化一个定时器 timer
+  let timer = null;
+  // 闭包函数可以访问 timer
+  return function() {
+    // 通过 'this' 和 'arguments' 获得函数的作用域和参数
+    let self = this;
+    let args = arguments;
+    // 如果事件被触发，清除 timer 并重新开始计时
+    clearTimeout(timer);
+    timer = setTimeout(function() {
+      fn.apply(self, args);
+    }, delay);
+  }
+}
+
+const test = debounce(function() {
+  console.log('hello, world!')
+}, 100);
+
+// 调四次只执行了一次
+test();
+test();
+test();
+test();
+```

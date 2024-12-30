@@ -1,0 +1,119 @@
+---
+title: '中国诗词写入mongodb'
+date: '2018-10-19'
+tags: ['Node.js', 'MongoDB']
+draft: false
+summary: '本文介绍了如何将中国诗词数据从JSON文件写入MongoDB数据库。通过定义多个Mongoose模型，分别对应不同的诗词类型和作者信息，然后遍历指定目录下的JSON文件，解析并保存到相应的集合中。'
+---
+
+原项目地址：https://github.com/chinese-poetry/chinese-poetry  
+将其json写入mongodb  
+
+代码如下：
+```
+const fs = require('fs')
+const path = require('path');
+const mongoose = require('mongoose');
+const option = {
+    reconnectTries: Number.MAX_VALUE,
+    reconnectInterval: 3000,
+    useNewUrlParser: true,
+}
+mongoose.connect('mongodb\://127.0.0.1:27017/chinese-poetry', option);
+
+const AuthorSongSchema = new mongoose.Schema({
+    name: { type: String },
+    short_description: { type: String },
+    description: { type: String }
+})
+
+const CiSongSchema = new mongoose.Schema({
+    author: { type: String },
+    rhythmic: { type: String },
+    paragraphs: { type: [String] }
+})
+
+const AuthorsSchema = new mongoose.Schema({
+    name: { type: String },
+    desc: { type: String }
+})
+
+const PoetSchema = new mongoose.Schema({
+    author: { type: String },
+    title: { type: String },
+    paragraphs: { type: [String] },
+    strains: { type: [String] }
+})
+
+const LunyuSchema = new mongoose.Schema({
+    chapter: { type: String },
+    paragraphs: { type: [String] }
+})
+
+const ShijingSchema = new mongoose.Schema({
+    title: { type: String },
+    chapter: { type: String },
+    section: { type: String },
+    content: { type: [String] }
+})
+
+const AuthorSongModel = mongoose.model('author_song', AuthorSongSchema);
+const CiSongModel = mongoose.model('ci_song', CiSongSchema);
+const AuthorsSongModel = mongoose.model('authors_song', AuthorsSchema);
+const AuthorsTangModel = mongoose.model('authors_tang', AuthorsSchema);
+const PoetSongModel = mongoose.model('peot_song', PoetSchema);
+const PoetTangModel = mongoose.model('peot_tang', PoetSchema);
+const LunyuModel = mongoose.model('lunyu', LunyuSchema);
+const ShijingModel = mongoose.model('shijing', ShijingSchema);
+
+let jsonFileList = []
+const handler = {
+    'author.song': async (item) => { await new AuthorSongModel(item).save() },
+    'ci.song': async (item) => { await new CiSongModel(item).save() },
+    'authors.song': async (item) => { await new AuthorsSongModel(item).save() },
+    'authors.tang': async (item) => { await new AuthorsTangModel(item).save() },
+    'poet.song': async (item) => { await new PoetSongModel(item).save() },
+    'poet.tang': async (item) => { await new PoetTangModel(item).save() },
+    'lunyu': async (item) => { await new LunyuModel(item).save() },
+    'shijing': async (item) => { await new ShijingModel(item).save() },
+}
+function getFileList(dir) {
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+        const subfile = path.join(dir, file)
+        const stat = fs.lstatSync(subfile)
+        if (stat.isDirectory()) {
+            getFileList(subfile)
+        } else if (stat.isFile()) {
+            if (subfile.includes('.json')) {
+                jsonFileList.push(subfile)
+            }
+        }
+    }
+}
+
+ (async function() {
+    getFileList(path.join(__dirname, 'chinese-poetry'))
+    for (const file of jsonFileList) {
+        const nameArr = path.basename(file).split('.')
+        const n = Math.min(2, nameArr.length - 1) // 去掉.json
+        let shortname = ''
+        for (let i = 0; i < n; i++) {
+            shortname = shortname + (shortname.length ? '.' : '') + nameArr[i]
+        }
+        
+        if (handler[shortname]) {
+            console.log(file)
+            try {
+                const itemList = JSON.parse(fs.readFileSync(file, 'utf-8'))
+                for (const item of itemList) {
+                    await handler[shortname](item)
+                }
+            } catch (err) {
+                console.log(err)
+            }
+        }
+    }
+ })()
+
+```

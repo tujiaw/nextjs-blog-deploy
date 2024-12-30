@@ -1,0 +1,51 @@
+---
+title: 'ntscreenshot截图工具马赛克功能实现'
+date: '2021-02-10'
+tags: ['Windows', 'Qt']
+draft: false
+summary: 
+---
+
+截图后如果有一些敏感信息不想被别人看到，可以使用马赛克工具将其涂抹掉，用法是点击马赛克图标后按下鼠标左键涂抹敏感信息。
+
+# 实现原理 
+一张图片可以认为是有很多个小色块组成，假如每个色块是正方形的并且宽度是blockWidth，那么整张图片x,y轴分割imageWidth/blockWidth, imageHeight/blockWidth个坐标，当鼠标在这些色块上划过时选择当前色块中的其中一个颜色来填充色块。
+
+
+# 将鼠标的轨迹转化为各个色块
+将鼠标的x,y轴位置除以色块的宽度再乘以色块的宽度就可以得到色块的rect值，代码如下：
+```
+QVector<std::tuple<QRect, QColor>> mosaics_;
+void DrawMode::addMosaic(const QPoint &pos, const QColor &clr)
+{
+    int blockWidth = DrawSettings::penWidth() * 2 + 2;
+    int x = (pos.x() / blockWidth) * blockWidth;
+    int y = (pos.y() / blockWidth) * blockWidth;
+    QRect rect(x, y + blockWidth / 2, blockWidth, blockWidth);
+    for (const auto& m : mosaics_) {
+        QRect r = std::get<0>(m);
+        if (rect == r) {
+            return;
+        }
+    }
+    mosaics_.push_back(std::make_tuple(rect, clr));
+}
+```
+为了绘制时效果更好一点，我们把色块的绘制区域往上移动半个色块的宽度，这样鼠标正好在色块的y轴中间位置。
+
+去重，相隔比较近的鼠标位置产生的色块可能是同一个，所以同一个色块只保留一个，按照同一种算法一张图片上的色块是固定的。
+
+# 绘制
+得到鼠标经过的色块和颜色后就可以进行绘制了，在paintEvent里实现
+```
+    painter.save();
+    painter.setPen(Qt::NoPen);
+    for (auto m : mosaics) {
+        painter.setBrush(std::get<1>(m));
+        painter.drawRect(std::get<0>(m));
+    }
+    painter.restore();
+```
+
+源码请看项目：ntscreenshot中的src/view/DrawPanel.cpp  
+[ntscreenshot源码](https://github.com/tujiaw/ntscreenshot)

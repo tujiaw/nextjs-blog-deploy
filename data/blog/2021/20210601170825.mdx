@@ -1,0 +1,43 @@
+---
+title: 'MySql查询前一条后一条记录'
+date: '2021-06-01'
+tags: ['Database']
+draft: false
+summary: 
+---
+
+这个需求跟文章的上一篇和下一篇导航很相似，根据当前的ID查找最近的上一个和下一个记录，可以根据ID也可以根据其他如时间字段来判断。
+
+如有n条记录ID不是连续的：1,4,6,7,13，查找ID为4的上一个和下一个记录，那分别就是1和6了。
+
+这里有好几种方法，根据实际情况选择合适的。
+
+# 方法一
+上一条：
+```
+select * from posts where id = (select max(id) from posts where id < 4)
+```
+下一条：
+```
+select * from posts where id = (select min(id) from posts where id > 4)
+```
+
+# 方法二
+上一条：
+```
+SELECT * FROM posts WHERE id < 4 ORDER BY id DESC LIMIT 1;
+```
+下一条：
+```
+SELECT * FROM posts WHERE id > 4 ORDER BY id LIMIT 1;
+```
+
+# 方法三
+一次查询搞定
+```
+select * from posts 
+where ( 
+        id = IFNULL((select min(id) from posts where id > 4),0) 
+        or  id = IFNULL((select max(id) from posts where id < 4),0)
+      )    
+```

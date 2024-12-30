@@ -1,0 +1,59 @@
+---
+title: '对char与wchar_t一些疑惑的理解'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 文章主要探讨 char 与 wchar_t，指出 char 存 ascii 码字符，wchar_t 存汉字等双字节字符。通过示例解释 char 存储汉字的原理及 memcpy_a 函数对 wchar_t 汉字串拷贝的方式，还提到用宽字符函数输出汉字需包含特定头文件和设置 locale。 
+---
+
+对于char和wchar_t我们知道前者用来存储一个字节后者可以用来存储两个字节，所以像字母数字之类的ascii编码的字符都可以用char来存储。然而，汉字是需要两个字节才能存储的，所以用wchar_t才能符合我们的需求。但是我们经常看到char用于一些汉字方面的处理，这样就产生了一些疑惑， 如：
+```
+char a[] = "你好";
+printf("%s\n", a);
+```
+> 输出结果：你好
+
+**解释：**按理说char只能存一个字节也就是半个汉字，那为什么可以输出我们希望的结果呢？我们用strlen(a)可以得到结果为4，看来确实是一个char只存了一个字节，2个汉字所以需要4个char，由UltraEdit我们可以知道“你好”的二进制编码是：c4 e3 ba c3， 所以a[0],a[1],a[2],a[3],分别对应这四个值。也就是说如果我们单个取a[0]或a[1]的话肯定得不到我想要的汉字，之所以能输出正确的结果是由于编译器会从左至右尽量多的读入合法的数据,这样a[0]与a[1]组合，a[2]与a[3]组合就输出了我们想要的汉字。
+
+看了memcpy_a的实现，为什么它可以对wchar_t类型的汉字串进行拷贝呢？首先原串与目标串都是void*类型，需要转化为一个已知的类型才行。转化为char*然后对其加1，说明它会指向下一个字节(如果是wchar_t它会偏移两个字节)，而每个汉字是有两个字节的所以count其实是汉字个数的2倍，也就是说它是半个汉字来进行拷贝，并不是一个汉字一个汉字的拷贝，由于这些都是在内存中操作的，所以我们并不关心它们是怎样拷贝的，只要原串与目标串的内存中内容是一样的就达到了我们的要求。从这里可以看出我们在用这个函数的时候容易出错的地方：
+```
+memcpy_a(dst, src, wcslen(src)); // 错误
+memcpy_a(dst, src, wcslen(src) *sizeof(src[0])); //正确
+memcpy_a(dst, src, sizeof(src)); //如果是数组的话可以，当然如果数组退化为了指针是不行的
+```
+
+最后，如果用宽字符函数输出汉字的话要包含头文件```#include <locale.h>```，在main函数下起始处```::setlocale(LC_ALL, "Chs");```
+```
+#include <stdio.h>
+#include <locale.h>
+using namespace std;
+
+void* memcpy_a(void *dst, const void *src, size_t count)
+{
+	void *ret = dst;
+
+	while (count--)
+	{
+		*(char*)dst = *(char*)src;
+		dst = (char*)dst + 1;
+		src = (char*)src + 1;
+	}
+
+	return ret;
+}
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+	::setlocale(LC_ALL, "Chs");
+
+	wchar_t src[] = L"我们是这样子的";
+	wchar_t dst[128] = {0};
+
+	memcpy(dst, src, wcslen(src) * sizeof(src[0]));
+	wprintf(L"dst = %s\n", dst);
+	
+	cin.get();
+	return 0;
+}
+```
+> 2011-08-17

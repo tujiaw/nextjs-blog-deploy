@@ -1,0 +1,117 @@
+---
+title: 'jemalloc C++实践'
+date: '2020-11-27'
+tags: ['C/C++']
+draft: false
+summary: 介绍 jemalloc C++实践，包括下载、解压、编译安装，给出 c++ 测试源码及 CMakeLists，展示编译测试过程和链接 jemalloc 的情况，还可通过环境变量配置满足特殊要求，相关内容可参考[https://github.com/jemalloc/jemalloc/blob/dev/TUNING.md] 
+---
+
+jemalloc是一种通用的malloc(3)实现，优点是避免内存碎片和可伸缩并发支持。
+
+# 下载源码
+```
+wget https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2
+```
+
+# 解压
+```
+tar -jxvf jemalloc-5.2.1
+```
+
+# 编译安装
+```
+cd jemalloc-5.2.1
+./configure
+make
+make install
+```
+> 我的是Centos安装后头文件在/usr/local/include/jemalloc，库文件/usr/local/lib
+
+# 测试
+c++源码main.cpp：
+```
+#include <iostream>
+#include <jemalloc/jemalloc.h>
+#include <vector>
+#include <string>
+#include <unistd.h>
+#include <ctime>
+
+class Widget {
+        public:
+                Widget() { }
+                ~Widget() {}
+                void hello() { std::cout << "hello, world" << std::endl;}
+        private:
+                std::string str_;
+                char buf[1024];
+                int i;
+                int j;
+                std::string str2_;
+};
+
+int main() {
+        time_t t = time(NULL);
+        for (int i = 0; i < 100000000; i++) {
+                Widget *w = new Widget();
+                delete w;
+        }
+
+        std::cout << "cost:" << time(NULL) - t << "s" << std::endl;
+        return 0;
+}
+
+```
+CMakeLists:
+```
+cmake_minimum_required(VERSION 2.8)
+
+project(cpptest)
+
+ADD_DEFINITIONS(-DJEMALLOC_NO_DEMANGLE)
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -ldl -ljemalloc -g -O3")
+
+include_directories(
+        /usr/local/include
+)
+
+link_directories(
+        /usr/local/lib
+)
+
+aux_source_directory(. SRC)
+set(ALL ${SRC})
+
+add_executable(cpptest ${ALL})
+
+target_link_libraries(cpptest libjemalloc.a)
+```
+编译测试程序：  
+在main.cpp所在目录下操作：
+```
+mkdir bld
+cd bld
+cmake ..
+make
+```
+编译后生成：cpptest  
+查看有没有链接jemalloc：ldd cpptest，输出如下：
+```
+CMakeCache.txt  CMakeFiles  cmake_install.cmake  cpptest  Makefile
+[root@VM-0-10-centos bld]# ldd cpptest
+        linux-vdso.so.1 =>  (0x00007ffdfddec000)
+        libdl.so.2 => /lib64/libdl.so.2 (0x00007f3fe1519000)
+        libjemalloc.so.2 => /usr/local/lib/libjemalloc.so.2 (0x00007f3fe1078000)
+        libstdc++.so.6 => /lib64/libstdc++.so.6 (0x00007f3fe0d71000)
+        libm.so.6 => /lib64/libm.so.6 (0x00007f3fe0a6f000)
+        libgcc_s.so.1 => /lib64/libgcc_s.so.1 (0x00007f3fe0859000)
+        libpthread.so.0 => /lib64/libpthread.so.0 (0x00007f3fe063d000)
+        libc.so.6 => /lib64/libc.so.6 (0x00007f3fe026f000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007f3fe171d000)
+```
+
+jemalloc还可以通过环境变量配置来满足特殊要求， 如：
+```
+export MALLOC_CONF="background_thread:true"
+```
+[https://github.com/jemalloc/jemalloc/blob/dev/TUNING.md](https://github.com/jemalloc/jemalloc/blob/dev/TUNING.md)

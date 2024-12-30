@@ -1,0 +1,187 @@
+---
+title: 'linux笔记'
+date: '2017-10-24'
+tags: ['Linux']
+draft: false
+summary: 总结：涵盖 Linux 诸多操作，如编译加 -g 参数用 gdb 查段错误位置、各种输入法安装与配置、常用快捷键（emacs）、文件操作、系统命令（top、df 等）、进程管理（kill 等）、SSH 开启与配置、解决乱码、svn 操作、deb 包安装及查看程序对库的依赖等内容。 
+---
+
+1>编译程序时加入-g参数, 就可以使用gdb ./a.out查看段错误位置
+
+2>可执行程序所在的目录为当前目录
+
+3>killall ibus-daemon   //关闭ibus  
+  ibus-daemon -d -x -r  //启动ibus
+
+4>ibus输入法安装
+```
+sudo add-apt-repository ppa:shawn-p-huang/ppa
+sudo apt-get update
+sudo apt-get install ibus-gtk ibus-pinyin ibus-pinyin-db-open-phrase
+```
+最后需要注销一下.
+
+5>ubuntu 9.10下安装sunpinyin
+```
+$ tar xvf ibus-sunpinyin-2.0.1.tar.gz
+$ cd sunpinyin-2.0
+$ ./configure --enable-ibus --disable-documents --prefix=/usr --libexecdir=/usr/lib/ibus-sunpinyin
+$ make
+$ sudo make install
+```
+checking for sqlite3… configure: error: Package requirements (sqlite3 >= 3.0) were not
+
+解决方法：
+```
+sudo apt-get install libsqlite3-dev
+```
+
+6>emacs常用快捷键  
+C+x 1 2 3 ...分屏  
+C+x u 撤销上一次操作  
+C+x C+s 保存  
+C+x C+c 退出  
+C+x C+f 打开其他文件  
+C+g 取消C+x的输入  
+C+p 上一行  
+C+n 下一行  
+C+s 向前搜索  
+C+r 向后搜索  
+C+a 光标跳到行首  
+C+f 光标前移一个字符  
+C+k 删除当前行中光标后的所有字符  
+C+e 光标跳到行尾  
+C+x k删除当前Tab页  
+复制，粘贴：  
+C+空格键进入编辑模式，这时移动鼠标标记区域；  
+Alt + w复制，Ctrl + y粘贴  
+1.关闭当前缓冲区快捷键 C+x k  
+2.在配置里加入(pc-selection-mode)使用shift加方向键快速选取  
+3.C+page键进行缓冲区切换  
+
+7>重启IBUS
+```
+killall ibus-daemon
+ibus-daemon -d
+```
+
+8>deb文件安装方法：sudo dpkg -i **.deb
+
+9>搜索文件：find 路径 -name 文件名  
+根据文件内容找文件：find 路径 | xargs grep 内容
+
+10>ubuntu
+```
+sudo aptitude search *** 搜索软件
+sudo apt-get install *** 安装软件
+```
+
+11>文件操作  
+拷贝文件：cp filepath1 filepath2  
+移动文件：mv filepath1 filepath2  
+
+12>简单命令  
+系统目录：cd /  
+上级目录：cd ..  
+用户目录：cd ~  
+显示当前目录下的文件：ls  
+
+13>查看内存率：top -n 1 |grep Mem  
+查看CPU使用：top -n 1 |grep Cpu  
+查看硬盘：df -h  
+
+14>比如,我用ps -ef | grep aa  获得aa进程:  
+oracle  2100 2085  0  00:30  pts/0 00:00:01  aa  
+在之前基础上显示第一列  
+```
+ps -ef | grep aa  | awk '{print $1}'  
+```
+15>查看指定的id号， 然后kill掉  
+ps -ef | grep 进程名  
+或者直接：killall -9 name  
+
+16>安装man帮助手册：
+```
+sudo apt-get install manpages-posix manpages-posix-dev
+```
+
+17>开启SSH：  
+SSH分客户端openssh-client和openssh-server
+
+如果你只是想登陆别的机器的SSH只需要安装openssh-client（ubuntu有默认安装，如果没有则sudo apt-get install openssh-client），如果要使本机开放SSH服务就需要安装openssh-server
+sudo apt-get install openssh-server
+
+然后确认sshserver是否启动了：  
+ps -e |grep ssh  
+
+如果看到sshd那说明ssh-server已经启动了。
+
+如果没有则可以这样启动：sudo /etc/init.d/ssh start  
+
+ssh-server配置文件位于/ etc/ssh/sshd_config，在这里可以定义SSH的服务端口，默认端口是22，你可以自己定义成其他端口号，如222。
+
+然后重启SSH服务：
+```
+sudo /etc/init.d/ssh stop
+sudo /etc/init.d/ssh start
+```
+
+然后使用以下方式登陆SSH：  
+```
+ssh tuns@192.168.0.100 tuns为192.168.0.100机器上的用户，需要输入密码。
+```
+断开连接：exit
+
+18>解决ubuntu gedit中文乱码问题
+```
+gconftool-2 --set --type=list --list-type=string /apps/gedit-2/preferences/encodings/auto_detected "[UTF-8,CURRENT,GB18030,BIG5-HKSCS,UTF-16]"
+```
+
+19>svn  
+导入新工程：  
+```
+svn import -m "New import" myproj http://www.svnchina.com/svn/host_pick
+```
+
+20>deb包安装  
+```
+$ dpkg -i file.deb
+```
+
+21>Sunpinyin安装方法：  
+Sunpinyin 是Linux 上一款非常好用的中文拼音输入法。  
+Ubuntu 10.04 上方便快速的安装Sunpinyin。  
+添加ibus ppa当前的库中  
+```
+sudo add-apt-repository ppa:ibus-dev/ibus-1.3-lucid 
+```
+更新下库  
+```
+sudo apt-get update
+```
+如果没有ibus 先安装，有就跳过
+```
+sudo apt-get install ibus
+```
+安装sunpinyin
+```
+sudo apt-get install ibus-sunpinyin
+```
+安装完后 打开ibus 设置 System(系统)－>Perference (首选项)－>ibus 
+
+点击输入法下拉选择汉语中的Sunpinyin 点击添加，通过向上排序将Sunpinyin设置为默认输入法， OK。
+
+Ctrl+space切换下输入法体验下Sunpinyin吧。
+
+22>安装cmake:
+```
+sudo apt-get install cmake
+```
+安装boost
+```
+sudo apt-get install libboost1.40-dev
+```
+23> 查看程序对库的依赖
+```
+ldd exename
+```

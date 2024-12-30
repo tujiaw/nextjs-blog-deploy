@@ -1,0 +1,95 @@
+---
+title: 'go模拟命令行文件拷贝命令'
+date: '2020-02-23'
+tags: ['Go']
+draft: false
+summary: 本文介绍用 Go 模拟命令行文件拷贝命令，提及熟悉 flag、bufio 等包及函数，代码实现了文件是否存在判断、创建拷贝文件等功能，通过 main 函数和测试示例展示了普通拷贝和强制拷贝的操作。 
+---
+
+通过这个小程序可以熟悉下面这些包和函数：
+1.  命令行参数解析（flag）;
+2. 从命令行读取输入数据（bufio, reader）;
+3. 文件操作，判断文件是否存在，创建拷贝文件(io, defer);
+4. 基本操作（fmt， string）
+
+代码：
+```
+package main
+
+import (
+	"bufio"
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"strings"
+)
+
+func fileExit(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || os.IsExist(err)
+}
+
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+	_, err = io.Copy(dstFile, srcFile)
+	return err
+}
+
+func copyFileAction(src, dst string, force bool) error {
+	if fileExit(dst) {
+		if !force {
+			return errors.New("dst file is exit")
+		}
+
+		fmt.Println("force copy, please input y?")
+		reader := bufio.NewReader(os.Stdin)
+		line, _, err := reader.ReadLine()
+		if err != nil {
+			return errors.New(fmt.Sprint("read line error:%v", err))
+		}
+
+		if strings.TrimSpace(string(line)) != "y" {
+			return nil
+		}
+	}
+	return copyFile(src, dst)
+}
+
+func main() {
+	var force bool
+	flag.BoolVar(&force, "f", false, "force copy when exiting")
+	flag.Parse()
+
+	if flag.NArg() < 2 {
+		flag.Usage()
+		return
+	}
+
+	err := copyFileAction(flag.Arg(0), flag.Arg(1), force)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+```
+
+测试：
+```
+普通拷贝，目标文件存在时不进行操作
+project.exe test.txt test2.txt
+
+强制拷贝，如果目标文件存在时会提示是否进行覆盖操作
+project.exe -f test.txt test2.txt
+```

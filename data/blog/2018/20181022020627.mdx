@@ -1,0 +1,37 @@
+---
+title: '简单shell守护脚本——mongodb'
+date: '2018-10-22'
+tags: ['Linux', 'Shell']
+draft: false
+summary: '这篇文章介绍了一个简单的shell守护脚本，用于监控和自动重启MongoDB。脚本会不断检查MongoDB进程是否存在，如果不存在，则会自动启动MongoDB。同时，文章还提供了MongoDB的配置文件示例，包括数据库路径、日志路径、PID文件路径、端口号、是否后台运行以及绑定的IP地址。'
+---
+
+简单shell守护脚本——mongodb
+
+由于云服务器内存不够，有时候mongodb会崩溃掉，此时我的博客会完全访问不了。写个进程守护脚本让它自动重启。
+```
+#!/bin/sh
+
+export RUNDIR=/root/mongodb/bin
+
+while true; do
+        server=`ps aux | grep mongod | grep -v grep`
+        if [ ! "$server" ]; then
+                $RUNDIR/mongod -f $RUNDIR/mongodb.conf
+                sleep 10
+        fi
+        sleep 30
+done
+
+```
+> 如果你不熟悉shell，最好严格按照上面的格式编写，否则有的地方多一个空格都会造成错误！
+
+顺便贴一下mongodb的配置，mongodb.conf。
+```
+dbpath=/root/mongodb/db
+logpath=/root/mongodb/logs/mongodb.log
+pidfilepath=/root/mongodb/mongod.pid
+port=27017
+fork=true
+bind_ip=127.0.0.1
+```

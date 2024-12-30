@@ -1,0 +1,134 @@
+---
+title: 'SetWindowLongPtr and GetWindowLongPtr 用法 实例（迁移2011-01-28）'
+date: '2017-01-19'
+tags: ['Windows']
+draft: false
+summary: 介绍 SetWindowLongPtr 与 GetWindowLongPtr 两种用法，重点阐述第二种在额外存储空间设置和获取值。以简单例子展示，分配堆内存并通过这两个函数操作，注意 32 位和 64 位系统指针字节数对偏移位置的影响。 
+---
+
+SetWindowLongPtr与GetWindowLongPtr主要有两种用法：   
+第一种是：改变指定窗口的属性；  
+第二种是：设置一个值在额外存储空间的指定偏移位置。  
+
+下面所说的是第二种用法：  
+首先，额外存储空间是指在设计一个窗口类时的cbWndExtra属性， 如：  
+```
+wndclass.cbWndExtra = 2 * sizeof(size_t);//额外分配两个size_t的空间
+
+```
+用SetWindowLongPtr可以在这个空间的某个偏移位置设置一个值， 当然设置一个值用处不大， 通常在这里设置的是一个地址， 这个地址可以是某个结构体的地址， 这样存储的数据就多了， 如：
+```
+//GWL_EXTRAMEMORY 额外内存里的偏移位置， hExtra存储的地址
+SetWindowLongPtr(hwnd, GWL_EXTRAMEMORY, reinterpret_cast<LONG_PTR>(hExtra));
+
+```
+用GetWindowLongPtr获取上面所设置的值， 如：  
+```
+hExtra = (HGLOBAL)GetWindowLongPtr(hwnd, GWL_EXTRAMEMORY);
+```
+下面简单例子是展示它们的用法， 但是并不能体现出真正的用处。  
+真正的用处是：当分配的内存在堆上时， 我们可以通过GetWindowLongPtr随时访问这块内存， 为了防止造成不必要的错误， 访问时最好加锁。  
+```
+#include <windows.h>
+
+#define GWL_EXTRAMEMORY sizeof(size_t)
+
+typedef struct tagExtraMemory EXTRAMEMORY;
+typedef struct tagExtraMemory* HEXTRAMEMORY;
+struct tagExtraMemory
+{
+	size_t	num;
+	wchar_t name[32];
+};
+
+LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
+
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+					 LPSTR lpCmdLine, int nCmdShow)
+{
+	static wchar_t szAppName[] = L"ExtraMemory";
+	HWND hwnd;
+	MSG msg;
+	WNDCLASS wndclass;
+
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 2 * sizeof(size_t);//额外分配两个size_t的空间
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hInstance = hInstance;
+	wndclass.lpfnWndProc = WindowProc;
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	
+	if (!RegisterClass(&wndclass))
+	{
+		MessageBox(NULL, L"Registerclass fail", L"tips", MB_ICONERROR);
+		return 0;
+	}
+
+	hwnd = CreateWindow(szAppName, L"tjw", WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+		NULL, NULL, hInstance, NULL);
+
+	ShowWindow(hwnd, nCmdShow);
+	UpdateWindow(hwnd);
+
+	while(GetMessage(&msg, NULL, 0, 0))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+	return (int)msg.wParam;
+}
+
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	HDC hdc;
+	PAINTSTRUCT ps;
+	RECT rect;
+
+	HGLOBAL hExtra;
+	LPVOID lpExtra;
+
+	switch(message)
+	{
+	case WM_CREATE:
+		{
+			hExtra  = GlobalAlloc(GHND, sizeof(EXTRAMEMORY));//分配堆内存
+			lpExtra = GlobalLock(hExtra);//在这里打断点， 查看hExtra的内存地址
+			SetWindowLongPtr(hwnd, GWL_EXTRAMEMORY, reinterpret_cast<LONG_PTR>(hExtra));
+			GlobalUnlock(hExtra);
+		}
+		break;
+
+	case WM_PAINT:
+		hdc = BeginPaint(hwnd, &ps);
+
+		GetClientRect(hwnd, &rect);
+		DrawText(hdc, L"hello, world!", -1, &rect,
+			DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+
+		EndPaint(hwnd, &ps);
+		break;
+
+	case WM_DESTROY:
+		{
+			hExtra = (HGLOBAL)GetWindowLongPtr(hwnd, GWL_EXTRAMEMORY);
+			lpExtra = GlobalLock(hExtra);//在这里打断点， 查看hExtra的内存地址
+			GlobalUnlock(hExtra);
+			GlobalFree(hExtra);//释放堆内存
+			
+			PostQuitMessage(0);
+		}
+		break;
+	}
+	return DefWindowProc(hwnd, message, wParam, lParam);
+}
+```
+> 注意：偏移位置加上指针的字节数不能超过额外存储空间
+如：32位系统额外存储空间为8， 偏移位置位4， 再加上指针是4个字节， 这样正好；
+如果是64位系统， 指针是8个字节， 所以一定要注意。

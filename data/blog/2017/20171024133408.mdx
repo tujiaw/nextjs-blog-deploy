@@ -1,0 +1,95 @@
+---
+title: '头文件宏定义'
+date: '2017-10-24'
+tags: ['C/C++']
+draft: false
+summary: 文章介绍了 C/C++ 头文件宏定义，包括各种条件判断、数组元素计数、断言等宏的定义，如`G_BEGIN_DECLS`等，还定义了相关的辅助函数如`_Assert`等。  
+---
+
+```
+/* Guard C code in headers, while including them from C++ */
+
+#ifdef  __cplusplus
+# define G_BEGIN_DECLS  extern "C" {
+# define G_END_DECLS    }
+#else
+# define G_BEGIN_DECLS
+# define G_END_DECLS
+#endif
+
+#ifndef NULL
+#  ifdef __cplusplus
+#    define NULL        (0L)
+#  else /* !__cplusplus */
+#    define NULL        ((void*) 0)
+#  endif /* !__cplusplus */
+#endif
+
+#ifndef FALSE
+#define FALSE  (0)
+#endif
+
+#ifndef TRUE
+#define TRUE  (!FALSE)
+#endif
+
+#undef MAX
+#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
+
+#undef MIN
+#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+
+#undef ABS
+#define ABS(a)   (((a) < 0) ? -(a) : (a))
+
+#undef CLAMP
+#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+
+////////////////////////////////////////////////////////////////
+/* Count the number of elements in an array. The array must be defined
+ * as such; using this with a dynamically allocated array will give
+ * incorrect results.
+ */
+#define G_N_ELEMENTS(arr) (sizeof (arr) / sizeof ((arr)[0]))
+
+#if !(defined (G_STMT_START) && defined (G_STMT_END))
+#  define G_STMT_START  do
+#  define G_STMT_END    while (0)
+#endif
+
+#define option_is_object(hoption) \
+    ((hoption)?true:false)
+    
+
+#define g_return_val_if_fail(expr, val) \
+    G_STMT_START { \
+    if(!(expr)) return val; \
+    }G_STMT_END
+
+#define g_return_if_fail(expr) \
+    G_STMT_START { \
+    if (!(expr)) return; \
+    }G_STMT_END
+
+
+
+/************定义断言宏************/
+#ifdef DEBUG
+    void _Assert(char*, unsigned);
+    #define ASSERT(f) \
+    if (f) \
+NULL; \
+    else \
+        _Assert(__FILE__, __LINE__)
+#else
+    #define ASSERT(f)
+#endif
+
+void _Assert(char* strFile, unsigned uLine)
+{
+    fflush(stdout);
+    fprintf(stderr, "\nAssertion failed:%s, line %u\n", strFile, uLine);
+    fflush(stderr);
+    abort();
+}
+```

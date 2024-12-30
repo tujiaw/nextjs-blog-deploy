@@ -1,0 +1,16 @@
+---
+title: '使用group by来统计每天产生的数据量'
+date: '2020-04-30'
+tags: ['Database']
+draft: false
+summary: 文章介绍使用 group by 统计每天流水表产生的数据量。通过截取 modify_time 的前 10 位作为日期，进行 group by 操作并按每天条数倒序排序，sql 写法如给出示例。 
+---
+
+有张流水表每天都会产生大量数据，我们需要统计每天产生了多少条数据。其中有个字段是modify_time，每产生一条数据就会写入当前时间，格式是2020-04-30 17:41:02。
+
+sql的写法是先查出每条数据的modify_time，截取前10位就可以了，然后在日期数据的基础上进行group by操作，根据每天的条数倒序排序。
+
+sql写法：
+```
+select mytable.date, count(mytable.date) as c from (select left(modify_time, 10) as date from my_test_table) as mytable group by mytable.date order by c desc
+```

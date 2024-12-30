@@ -1,0 +1,44 @@
+---
+title: 'swift delegate'
+date: '2017-06-10'
+tags: ['Mobile']
+draft: false
+summary: This code shows a Swift delegate example. It defines a `ModelDelegate` protocol with methods. The `Model` class has a delegate property and a `count` variable. The `View` class conforms to the protocol and implements the methods. An instance of `Model` and `View` is created, and the delegate is set. The `count` property is changed, triggering the delegate methods.  
+---
+
+```
+protocol ModelDelegate {
+    func willValueChanged(curValue: Int, newValue: Int)
+    func didValueChanged(curValue: Int, oldValue: Int)
+}
+
+class Model {
+    var delegate: ModelDelegate?
+    
+    var count: Int = 0 {
+        willSet {
+            delegate?.willValueChanged(count, newValue: newValue)
+        }
+        didSet {
+            delegate?.didValueChanged(count, oldValue: oldValue)
+        }
+    }
+}
+
+class View: ModelDelegate {
+    func willValueChanged(curValue: Int, newValue: Int) {
+        print("will, cur:\(curValue), new:\(newValue)")
+    }
+    
+    func didValueChanged(curValue: Int, oldValue: Int) {
+        print("did, cur:\(curValue), old:\(oldValue)")
+    }
+}
+
+let model = Model()
+let view = View()
+model.delegate = view
+model.count = 100
+model.count = 200
+
+```

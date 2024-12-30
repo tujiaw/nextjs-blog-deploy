@@ -1,0 +1,143 @@
+---
+title: 'Go 使用gomail发送邮件，包括附件'
+date: '2021-05-12'
+tags: ['Go']
+draft: false
+summary: 
+---
+
+这里使用的是gopkg.in/gomail.v2包，smtp协议。演示了发送日志目录。
+
+# 准备
+发送邮件首先要进行一些配置项，如下结构：
+```
+type MailConf struct {
+	User   string
+	Pass   string
+	Host   string
+	Port   int
+	MailTo []string
+	File   string
+}
+```
+* User：我的邮箱地址
+* Pass：登录邮箱的授权码（注意这里不是密码，不然会泄漏你的密码），下面会介绍163邮箱设置
+* Host：smtp服务器地址，163的是smtp.163.com
+* Port：smtp服务端口号，163的是25
+* MailTo：收件人的邮箱，可以是多个
+* File：附件的文件路径（如果是目录需要压缩）
+
+> 上面的服务器地址可以去相应的邮箱服务商那里去查询
+
+举例163邮箱授权码设置
+![](https://ningto.com/upload/20210512-ntscreenshot-094910.png)
+
+# 写邮件
+基本的邮件信息我们有：标题，内容，附件就可以了，看下面接口：
+```
+func SendMail(conf MailConf, subject string, htmlBody string, attachFilePath string) error
+```
+内容可以是html的格式，注意attachFilePath一定要是文件，不能是目录（目录要先压缩）
+
+# 压缩目录
+参考这篇文章 [Go 使用zip压缩文件目录](https://www.ningto.com/post/E9B2ABFEC4592FE4AAA976D9B079B928)
+
+# 源码
+```
+package main
+
+import (
+	"crypto/tls"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/tujiaw/goutil"
+	"gopkg.in/gomail.v2"
+)
+
+type MailConf struct {
+	User   string
+	Pass   string
+	Host   string
+	Port   int
+	MailTo []string
+	File   string
+}
+
+func main() {
+	zipsDir, err := initZipsDir()
+	if err != nil {
+		panic(err)
+	}
+
+	conf := MailConf{
+		User:   "xxxxxx@163.com",
+		Pass:   "TSFMYMDSCxxxxx",
+		Host:   "smtp.163.com",
+		Port:   25,
+		MailTo: []string{"xxxxxx@live.com"},
+		File:   "F:\\gitee\\gonetdisk20210412",
+	}
+	htmlBody := "<span>日志文件列表</span>"
+
+	var attachFilePath string
+	if goutil.FileExists(conf.File) {
+		if goutil.IsDir(conf.File) {
+			zipPath := filepath.Join(zipsDir, "clientlog"+time.Now().Format("20060102150405")+".zip")
+			fileList, err := ZipWrite(conf.File, zipPath)
+			if err == nil {
+				tmpList := make([]string, len(fileList))
+				for _, v := range fileList {
+					tmpList = append(tmpList, fmt.Sprintf("<li>%s</li>", v))
+				}
+				htmlBody += "<ol>" + strings.Join(tmpList, "") + "</ol>"
+				attachFilePath = zipPath
+			} else {
+				fmt.Println(err)
+			}
+		} else {
+			attachFilePath = conf.File
+		}
+	}
+
+	if err = SendMail(conf, "客户端日志", htmlBody, attachFilePath); err != nil {
+		log.Fatal(err)
+	}
+	log.Println("send success")
+}
+
+func SendMail(conf MailConf, subject string, htmlBody string, attachFilePath string) error {
+	msg := gomail.NewMessage()
+	msg.SetHeader("From", conf.User)
+	msg.SetHeader("To", conf.MailTo...)
+	msg.SetHeader("Subject", subject)
+	// msg.SetAddressHeader("Cc", "dan@example.com", "Dan")
+	msg.SetBody("text/html", htmlBody)
+	if goutil.FileExists(attachFilePath) {
+		msg.Attach(attachFilePath)
+	}
+	d := gomail.NewDialer(conf.Host, conf.Port, conf.User, conf.Pass)
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	return d.DialAndSend(msg)
+}
+
+// 将压缩后的zip文件放在zips目录下
+func initZipsDir() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	zipsDir := filepath.Join(dir, "zips")
+	if !goutil.FileExists(zipsDir) {
+		if err := os.MkdirAll(zipsDir, os.ModePerm); err != nil {
+			return "", err
+		}
+	}
+	return zipsDir, nil
+}
+
+```

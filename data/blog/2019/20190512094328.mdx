@@ -1,0 +1,138 @@
+---
+title: 'go logger'
+date: '2019-05-12'
+tags: ['Go']
+draft: false
+summary: 简单封装 go log ，有四个日志等级，可满足基本业务需求。通过 github.com/robfig/cron 每天生成新日志文件，示例代码展示了初始化和使用方法。 
+---
+
+简单封装了下go log，四个日志等级，能满足基本业务需求，通过github.com/robfig/cron可以每天生成一个日志文件
+
+```
+package logger
+
+import (
+	"io"
+	"log"
+	"os"
+)
+
+const (
+	LTrace = iota
+	LInfo
+	LWarn
+	LError
+)
+
+var (
+	file  *os.File
+	Trace *log.Logger
+	Info  *log.Logger
+	Warn  *log.Logger
+	Error *log.Logger
+)
+
+func newLevel(file *os.File, level, curLevel int) *log.Logger {
+	var flag int = (log.Ldate | log.Lmicroseconds | log.Lshortfile)
+	logNew := func(prefix string, l1, l2 int) *log.Logger {
+		if l1 <= l2 {
+			return log.New(io.MultiWriter(file, os.Stdout), prefix, flag)
+		} else {
+			return log.New(os.Stdout, prefix, flag)
+		}
+	}
+
+	switch level {
+	case LTrace:
+		return logNew("[TRACE] ", curLevel, LTrace)
+	case LInfo:
+		return logNew("[INFO ] ", curLevel, LInfo)
+	case LWarn:
+		return logNew("[WARN ] ", curLevel, LWarn)
+	case LError:
+		return logNew("[ERROR] ", curLevel, LError)
+	default:
+		return logNew("[TRACE] ", curLevel, LTrace)
+	}
+}
+
+func Init(path string, level int) error {
+	var oldFile = file
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		return err
+	}
+	Trace = newLevel(file, LTrace, level)
+	Info = newLevel(file, LInfo, level)
+	Warn = newLevel(file, LWarn, level)
+	Error = newLevel(file, LError, level)
+
+	if oldFile != nil {
+		oldFile.Close()
+	}
+	return nil
+}
+```
+
+在cron中初始化，每天凌晨生成一个新的日志文件
+```
+package schedule
+
+import (
+	"fmt"
+	"ningtogo/app/logger"
+	"time"
+
+	"github.com/robfig/cron"
+)
+
+var (
+	c *cron.Cron
+)
+
+func init() {
+	c = cron.New()
+	c.AddFunc("0 0 0 * * *", func() {
+		initLogger()
+	})
+	c.Start()
+	initLogger()
+}
+
+func initLogger() {
+	logPath := fmt.Sprintf("logs/ningtogo_%s.log", time.Now().Format("20060102"))
+	if err := logger.Init(logPath, logger.LTrace); err != nil {
+		fmt.Println("init logger failed", err)
+	} else {
+		logger.Info.Println("logger init success")
+	}
+}
+
+```
+
+使用：
+```
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"./logger"
+)
+
+func init() {
+	if err := logger.Init("test.log", logger.LInfo); err != nil {
+		fmt.Println("init logger failed", err)
+		os.Exit(1)
+	}
+}
+
+func main() {
+	logger.Trace.Println("trace message")
+	logger.Info.Println("info message")
+	logger.Warn.Println("warn message")
+	logger.Error.Println("error message")
+}
+
+```

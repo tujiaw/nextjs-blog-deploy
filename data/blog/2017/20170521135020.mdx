@@ -1,0 +1,47 @@
+---
+title: 'Material-UI FontIcon组件使用'
+date: '2017-05-21'
+tags: ['Web']
+draft: false
+summary: material-ui 的 FontIcon 组件含 900 多个系统图标但易显示不出。需下载资源并新建 css 文件设置字体，将其 link 到 html 中，使用方法多样，如`<FontIcon className="material-icons">keyboard_arrow_left</FontIcon>`。 
+---
+
+material-ui是一款优秀的react组件库，目前在[github](https://github.com/callemall/material-ui)上Star数已经达到了25759个。其中FontIcon组件包含了900多个系统图标，但是在使用的过程中你会发现图标显示不出来，解决方法如下：
+
+* 到这个地址[https://fonts.gstatic.com/s/materialicons/v22/2fcrYFNaTjcS6g4U3t-Y5ZjZjT5FdEJ140U2DJYC3mY.woff2](https://fonts.gstatic.com/s/materialicons/v22/2fcrYFNaTjcS6g4U3t-Y5ZjZjT5FdEJ140U2DJYC3mY.woff2)把资源下载下来，我这里再提供一个自己备份的地址：[/upload/o_1bgljqsqrvbv78v8lu1fsr1trca.woff2](/upload/o_1bgljqsqrvbv78v8lu1fsr1trca.woff2)
+
+* 新建一个css文件内容如下，注意里面的url地址就是上面资源的地址，也就是将此文件放在你的服务器上的地址（下面是测试的地址）
+
+```
+/* fallback */
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Material Icons'), local('MaterialIcons-Regular'), url(http://localhost:3000/imgs/2fcrYFNaTjcS6g4U3t-Y5ZjZjT5FdEJ140U2DJYC3mY.woff2) format('woff2');
+}
+
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+```
+
+* 最后，将上面的css文件link到html文件中就可以了。
+
+> 使用方法见文档，有好几种方法，如：
+```
+<FontIcon className="material-icons">keyboard_arrow_left</FontIcon>
+```

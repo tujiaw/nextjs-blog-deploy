@@ -1,0 +1,57 @@
+---
+title: 'Windows 7下硬盘安装Ubuntu 10.04简明教程（非Wubi安装，迁移2011-05-28）'
+date: '2017-02-02'
+tags: ['Linux']
+draft: false
+summary: 介绍 Windows7 下硬盘安装 Ubuntu10.04 教程，需先下载安装 EasyBCD_1.7.2，复制文件并解压，通过 EasyBCD 操作，在 menu.lst 输入内容，重启后选择 NeoGrub Bootloader 进入光盘系统，按步骤安装，成功后可出现 Windows7 引导菜单。 
+---
+
+相信不少朋友和我一样，都安装了Windows7系统。 随着电脑软硬件的快速更新换代，WindowsXP已经告别了历史的舞台，Windows7成了大多数Windows用户的选择。但不管Windows怎 么变，我们还是一样喜爱Ubuntu系统。操作系统变了，我们的安装方式也变了，以前的XP下的安装方式已经不行。
+
+下面本人将介绍适合新手、简单易懂的Windows 7下硬盘安装Ubuntu 10.04简明教程，
+经试验同样适用于Ubuntu 10.10版本。
+
+* 在Windows7中下载并安装EasyBCD_1.7.2：[http://www.linuxidc.com/Linux/2007-12/10060.htm](http://www.linuxidc.com/Linux/2007-12/10060.htm)  
+* 将 Ubuntu-10.04-desktop-i386.iso文件复制到C盘根目录，用压缩软件打开，再打开casper目录，把initrd.lz、 vmlinuz二个文件解压到C盘根目录下。
+* 运行EasyBCD_1.7.2进入操作窗口后  
+  1. 点Add/Remove Entries
+  2. 再点右下边的NeoGrub
+  3. 再点Install NeoGrub
+  4. 再点Save
+  5. 选中NeoGrub Bootloader，再点Configure
+    1. 左边按钮，Add/Remove Entries
+    2. 右下按钮，NeoGrub
+    3. 右下按钮，Install NeoGrub
+    4. 右上按钮，Save
+    5. 右下按钮，Configure
+
+* 在出现menu.lst记事本窗口中输入以下内容并保存（注意filename后面是你.iso文件的名字）：
+```
+root
+kernel /vmlinuz iso-scan/filename=/Ubuntu-10.04-desktop-i386.iso boot=casper splash
+initrd /initrd.lz
+boot
+```
+* 电脑重启后，就会发现启动菜单会多了一项NeoGrub Bootloader，选择后会进入Ubuntu 10.04光盘系统。按快捷键运行（Alt+F2）,在运行框内输入：
+```
+sudo umount -l /isodevice
+```
+> （注意一定要完成第五步的命令之后再点图标安装！！！）
+
+最后点桌面上的Ubuntu安装图标及可开始正常安装
+
+安装时：  
+其他的默认就可以  
+第四步选择手动指定    
+第五步添加交换空间(当前内存的2倍)   
+添加Ext4日志文件(/根目录)  
+
+安装成功后，重启电脑会直接进入Ubuntu 10.04，打开终端输入以下命令：
+```
+sudo update-grub
+```
+再次重启及可出现Windows7引导菜单
+
+希望以上教程能帮助到大家，如果你按以上方法安装成功了，请回贴支持一下，让更多的朋友都能看到本贴，帮助到更多需要在Windows7下硬盘安装Ubuntu 10.04的朋友们，谢谢大家了。
+
+[from](http://www.linuxidc.com/Linux/2010-05/25875.htm)

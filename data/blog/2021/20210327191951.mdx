@@ -1,0 +1,53 @@
+---
+title: 'Go寻找最长不含有重复字符的子串'
+date: '2021-03-27'
+tags: ['Go']
+draft: false
+summary: 
+---
+
+寻找最长不含有重复字符的子串，这道算法题很常见，现在用go语言来实现下。
+
+# 思路
+从头到尾遍历，设置一个起始位置start，当前最大不重复字符子串的长度maxLength以及位置maxStart，还有一个map存储了遍历过的所有字符最大的位置。
+
+遍历所有字符    
+1. 在map中查找当前字符：
+* 找到了，并且位置大于等于start，说明下一个子串的起始位置是start+1（这里是关键）  
+* 没有找到，或者找到的位置小于start，说明它是一个有效的字符  
+2. 当前字符所在的位置减去start位置加1如果大于maxLength，则更新maxLength同时记录下maxStart位置  
+3. 存储当前字符所在的位置  
+4. 最后根据maxStart和maxLength就可以得到最长子串了
+
+# 算法
+```
+package main
+
+import "fmt"
+
+func longSubString(s string) string {
+	m := make(map[byte]int)
+	start := 0
+	maxLength := 0
+	maxStart := 0
+	for i, _ := range s {
+		pos, ok := m[s[i]]
+		if ok && pos >= start {
+			start = pos + 1
+		}
+		if i-start+1 > maxLength {
+			maxLength = i - start + 1
+			maxStart = start
+		}
+		m[s[i]] = i
+	}
+	return s[maxStart : maxStart+maxLength]
+}
+
+func main() {
+	s := "dsgasg23dsgasd"
+	sub := longSubString(s)
+	fmt.Println(sub, len(sub))
+}
+
+```

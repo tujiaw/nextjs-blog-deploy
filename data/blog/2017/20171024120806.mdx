@@ -1,0 +1,74 @@
+---
+title: '将一个长度为n的字符串向左循环移动m位'
+date: '2017-10-24'
+tags: ['C/C++']
+draft: false
+summary: 文章介绍将长度为 n 的字符串向左循环移动 m 位的方法，通过先切分字符串为两部分并分别逆序，最后对整个字符串逆序实现。给出 C++代码示例，包含相关函数定义及主函数测试。 
+---
+
+```
+
+// 将一个长度为n的字符串向左循环移动m位，如：hello,world向左移动3位就变成了lo,worldhel
+// 思路：把字符串切成长为m和n-m的两半，先分别对两部分进行逆序，最后对整个字符串逆序。
+
+#include <iostream>
+using namespace std;
+
+
+void ReverseString(char * const str, const int count);
+
+void RotateLeft(char *str, int num);
+
+int _tmain(int argc, char *argv[])
+{
+	char str[] = "hello,world";
+
+	RotateLeft(str, 3);
+	
+	cout << str << endl;
+
+	getchar();
+	return 0;
+}
+
+void ReverseString(char * const str, const int count)
+{
+	if (str == NULL || count < 2)
+	{
+		return;
+	}
+
+	char *start = str;
+	char *end = str + count - 1;
+	char tmp;
+
+	while (end > start)
+	{
+		tmp = *end;
+		*end = *start;
+		*start = tmp;
+
+		start++;
+		end--;
+	}
+}
+
+void RotateLeft(char *str, int num)
+{
+	if (str == NULL || num < 1)
+	{
+		return;
+	}
+	
+	int length = (int)strlen(str);
+
+	num = (num + length) % length;
+
+	char *left = str;
+	char *right = str + num;
+
+	ReverseString(left, num);
+	ReverseString(right, length - num);
+	ReverseString(str, length);
+}
+```

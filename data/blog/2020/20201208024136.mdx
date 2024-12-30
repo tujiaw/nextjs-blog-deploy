@@ -1,0 +1,47 @@
+---
+title: 'CentOS7 U盘安装  No Caching mode page found'
+date: '2020-12-08'
+tags: ['Linux']
+draft: false
+summary: CentOS7 优盘安装时出现“[sda] No Caching mode page found”，需耐心等待超时输出错误信息，找到 U 盘位置（如 sda4），修改安装选项第二行，将 inst.stage2 改为 hd:/dev/sda4:/，按 Ctrl+X 安装，安装后启动网络。 
+---
+
+[sda] No Caching mode page found  
+[sda] Assuming drive cache: write through
+
+U盘安装CentOS7的时候出现上述错误的解决方法。
+此时会卡在这里，不要着急耐心等待，超时会输出错误信息（10分钟左右），等待可以输入命令的时候：
+```
+ls /dev/sd*
+```
+输出如下，每个机器的电脑不一样，我们需要找到U盘所在的位置，这个时候最好拍照记下来。
+```
+/dev/sda  /dev/sda1  /dev/sda2  /dev/sda3 /dev/sda4
+```
+大概率是后面那个如：sdc4或者sda4，我的是sda4。
+
+重启（reboot）再次进入Centos7安装选项的时候不要选择安装，按e键进入编辑，需要修改第二行，默认是：
+```
+vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS\x207\x20x86_64 rd.live.check quiet
+```
+改为U盘所在的设备目录，注意后面有冒号斜杠
+```
+vmlinuz initrd=initrd.img inst.stage2=hd:/dev/sda4:/ quiet
+```
+然后按Ctrl+X进行安装。
+
+如果上面选择对了，那就可以正常进入安装了，如果选择错了也不要着急，我们再换一个试下。
+但是不用再等待超时了（因为我们已经记下了/dev/sd*信息），直接按机箱上的重启按钮，重复上面的修改步骤。
+
+最后恭喜您安装成功！！！
+
+我是最小化安装的，系统安装好后是没有网络的还要启动一下网络：
+```
+vi /etc/sysconfig/network-scripts/ifcfg-enp3s0
+```
+将ONBOOT改为yes，然后重启网卡：
+```
+service network restart
+或者
+systemctl restart network
+```

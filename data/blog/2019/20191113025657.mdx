@@ -1,0 +1,207 @@
+---
+title: 'go 获取bing壁纸地址'
+date: '2019-11-13'
+tags: ['Go']
+draft: false
+summary: 文章介绍通过 Go 语言获取必应壁纸地址，必应首页背景图每天更新且无直接下载处，需分析网页源代码。提供获取地址、下载及记录历史信息的代码，包含相关函数如 GetImageName 等，可实现获取壁纸并下载到本地。 
+---
+
+必应首页背景图片每天一更新，如果想把它作为桌面壁纸好像没那么简单，它没有提供直接下载的地方也不能右键保存，但是通过分析网页源代码可以拿到我们要的信息。
+
+地址：[https://ningto.com/bing](https://ningto.com/bing)   
+历史图片： [https://ningto.com/bingimages](https://ningto.com/bingimages)  
+
+# 获取bing每日壁纸地址和标题
+图片url在body#bgImgProgLoad的data-ultra-definition-src属性上，标题在body#sh_cp的title属性上
+
+# 下载bing背景图
+获取到图片的url后还需要将其下载到本地。  
+GetImageName函数通过url获取图片的名字，为了防止重复下载可以先通过名字在本地找一下是否已经有相同名字的图片，当然名字也是可能重名，你可以加上当天日期。
+
+# 记录下载的历史信息
+每次下载的图片名字地址都会写入到json文件中作为一个记录，为了防止文件太大每个文件只写100条记录，超过了之后会通过日期写入新的文件中
+
+源码如下：
+```
+package model
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"ningtogo/configs"
+	"ningtogo/tools/logger"
+	"ningtogo/tools/util"
+	"os"
+	"path"
+	"time"
+
+	"github.com/PuerkitoBio/goquery"
+)
+
+type BingWallpaper struct {
+	Title string `json:"title"`
+	Url   string `json:"url"`
+}
+
+type Bing struct {
+	Url      string
+	Dir      string
+	JsonPath string
+}
+
+const MAX_HIS_COUNT = 100
+
+func GetImageName(imageUrl string) (string, error) {
+	u, err := url.Parse(imageUrl)
+	if err != nil {
+		return "", err
+	}
+	names, exist := u.Query()["id"]
+	if exist && len(names) > 0 {
+		return names[0], nil
+	}
+	return "", errors.New("name not found")
+}
+
+func NewBing() *Bing {
+	p := new(Bing)
+	p.Url = "https://ningto.com/bing"
+	p.Dir = configs.BingDir()
+	p.JsonPath = path.Join(configs.BingDir(), "his.json")
+	return p
+}
+
+func (p Bing) GetBingWallpaper() (BingWallpaper, error) {
+	HOST := "https://cn.bing.com"
+	result := BingWallpaper{}
+	resp, err := http.Get(HOST)
+	if err != nil {
+		return result, err
+	}
+	defer resp.Body.Close()
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return result, err
+	}
+
+	wallpaperUrl := ""
+	wallpaperTitle := ""
+	doc.Find("body #bgImgProgLoad").Each(func(i int, s *goquery.Selection) {
+		src, exist := s.Attr("data-ultra-definition-src")
+		if exist {
+			wallpaperUrl = HOST + src
+		}
+	})
+
+	doc.Find("body #sh_cp").Each(func(i int, s *goquery.Selection) {
+		wallpaperTitle, _ = s.Attr("title")
+	})
+
+	if len(wallpaperTitle) > 0 && len(wallpaperUrl) > 0 {
+		result.Title = wallpaperTitle
+		result.Url = wallpaperUrl
+		return result, nil
+	}
+	return result, errors.New("invalid")
+}
+
+func (p Bing) Download() error {
+	resp, err := http.Get(p.Url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	var wallpaper BingWallpaper
+	err = json.NewDecoder(resp.Body).Decode(&wallpaper)
+	if err != nil {
+		return err
+	}
+
+	name, err := GetImageName(wallpaper.Url)
+	if err != nil {
+		return err
+	}
+
+	imageLocalPath := path.Join(p.Dir, name)
+	if util.PathExist(imageLocalPath) {
+		logger.Info.Println("local image found", imageLocalPath)
+		return nil
+	}
+
+	if err = p.Write(wallpaper); err != nil {
+		logger.Error.Println("write failed", wallpaper)
+		return err
+	}
+
+	imageResp, err := http.Get(wallpaper.Url)
+	if err != nil {
+		return err
+	}
+	defer imageResp.Body.Close()
+
+	b, err := ioutil.ReadAll(imageResp.Body)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path.Join(p.Dir, name), b, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p Bing) Write(data BingWallpaper) error {
+	fmt.Println(data)
+	b, err := ioutil.ReadFile(p.JsonPath)
+	if err != nil {
+		logger.Info.Println(err, p.JsonPath)
+		// 忽略这个错误，第一次可能文件不存在
+	}
+
+	var dataList []BingWallpaper
+	if len(b) > 0 {
+		err = json.Unmarshal(b, &dataList)
+		if err != nil {
+			return err
+		}
+	}
+
+	dataList = append(dataList, data)
+
+	writeFile := func(path string, data []BingWallpaper) error {
+		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		encoder := json.NewEncoder(file)
+		encoder.SetEscapeHTML(false)
+		encoder.SetIndent("", "  ")
+		err = encoder.Encode(dataList)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if len(dataList) >= MAX_HIS_COUNT {
+		bakPath := path.Join(p.Dir, "his_"+time.Now().Format("20060102")+".json")
+		err = writeFile(bakPath, dataList)
+		if err == nil {
+			err = os.Remove(p.JsonPath)
+		}
+	} else {
+		err = writeFile(p.JsonPath, dataList)
+	}
+
+	return err
+}
+
+```

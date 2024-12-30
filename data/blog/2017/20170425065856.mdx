@@ -1,0 +1,29 @@
+---
+title: '无法定位程序输入点strnlen于动态链接库msvcrt.dll上(Qt XP)'
+date: '2017-04-25'
+tags: ['C/C++', 'Windows', 'Qt']
+draft: false
+summary: Qt 应用在 XP（sp3）系统出现“无法定位程序输入点 strnlen 于动态链接库 msvcrt.dll 上”错误，含 D3Dcompiler_47.dll 和 opengl32sw.dll。可移除前者用后者，或在 QApplication 实例化前加代码强制 XP 不使用前者，参考相关 Qt 文档。 
+---
+
+Qt应用程序在XP（sp3）系统上出现上述错误
+
+使用的Qt版本是5.6.2，我的应用程序中包含D3Dcompiler_47.dll和opengl32sw.dll
+
+## 解决方法1：
+移除D3Dcompiler_47.dll文件只使用opengl32sw.dll是可以的
+
+## 解决方法2：
+毕竟xp现在用的人比较少，方法1为了适应xp而移除文件总感觉有些隐患（这些依赖库是通过windeployqt.exe工具打包来的）。
+在QApplication实例化之前增加如下代码，这样就强制在xp上不使用D3Dcompiler_47.dll。
+```
+QSysInfo::WinVersion ver = QSysInfo::windowsVersion();
+if (QSysInfo::windowsVersion() == QSysInfo::WV_XP) {
+  // 为了支持XP
+  QGuiApplication::setAttribute(Qt::AA_UseSoftwareOpenGL);
+}
+```
+
+参考：  
+[Qt for Windows](http://doc.qt.io/qt-5/windows-requirements.html#dynamically-loading-graphics-drivers)  
+[Qt 5 on Windows ANGLE and OpenGL](https://wiki.qt.io/Qt_5_on_Windows_ANGLE_and_OpenGL)

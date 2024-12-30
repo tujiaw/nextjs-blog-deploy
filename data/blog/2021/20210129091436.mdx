@@ -1,0 +1,50 @@
+---
+title: 'golang 日志文件切割、保存最大文件数'
+date: '2021-01-29'
+tags: ['Go']
+draft: false
+summary: 
+---
+
+组合使用logrus和lumberjack库能达到我们的目的。  
+如：日志单个文件最大10M，最多保存30个日志，代码如下：
+```
+package Logger
+
+import (
+	"io"
+	"os"
+	"path"
+
+	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
+)
+
+var (
+	logger = logrus.New()
+	Debug  = logger.Debug
+	Info   = logger.Info
+	Warn   = logger.Warn
+	Error  = logger.Error
+)
+
+func Setting(logPath string) {
+	logger.Formatter = &logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+	}
+
+	logger.Out = io.MultiWriter(os.Stdout, &lumberjack.Logger{
+		Filename:   path.Join(logPath),
+		MaxSize:    10, // 日志文件最大大小，单位：MB
+		MaxBackups: 30, // 日志文件最多个数
+		LocalTime:  true,
+	})
+}
+
+```
+使用：
+```
+Logger.Setting("./logs/test.log")
+Logger.Info("this is info message")
+```

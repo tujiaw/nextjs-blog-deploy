@@ -1,0 +1,31 @@
+---
+title: '宽字符函数与普通C函数（迁移2010-12-28）'
+date: '2017-01-15'
+tags: ['C/C++']
+draft: false
+summary: 文章介绍了宽字符函数与普通 C 函数，如 iswalnum 等与 isalnum 等的对应关系，列举了多种宽字符函数及其对应的普通 C 函数，还提供了更多函数的查看链接。 
+---
+
+iswalnum、isalnum  测试字符是否为数字或字母    
+
+iswalpha、isalpha 测试字符是否是字母    
+
+iswcntrl、iscntrl 测试字符是否是控制符     
+
+iswdigit   isdi...
+---
+| 宽字符函数 | 普通C函数          | 普通C函数 |
+| ------------- |-------------| -----|
+| iswalnum     | isalnum | 测试字符是否为数字或字母 |
+| iswalpha      | isalpha      |   测试字符是否是字母 |
+| iswcntrl | iscntrl     |  测试字符是否是控制符 |
+| iswdigit |  isdigit |  测试字符是否为数字 |
+| iswgraph  |  isgraph |  测试字符是否是可见字符 |
+| iswlower  | islower  |   测试字符是否是小写字符 |
+| iswprint  | isprint  | 测试字符是否是可打印字符  |
+| iswpunct  |  ispunct |  测试字符是否是标点符号 |
+|  iswspace |  isspace |   测试字符是否是空白符号|
+| iswupper  |  isupper | 测试字符是否是大写字符  |
+|  iswxdigit |  isxdigit |  测试字符是否是十六进制的数字 |
+
+[更多函数请看这里](http://blog.csdn.net/tujiaw/article/details/6103240)

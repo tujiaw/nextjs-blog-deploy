@@ -1,0 +1,140 @@
+---
+title: '网页聊天气泡效果实现'
+date: '2017-06-03'
+tags: ['Node.js', 'Web']
+draft: false
+summary: 介绍网页聊天气泡效果实现，通过 ejs 模板实现收发消息布局，利用 flex 布局和特定样式打造左右对齐气泡，包含头像、名字、聊天内容等部分，文末提供 github 地址。 
+---
+
+# 模板
+收发消息模板（使用ejs），可以认为发消息在右边显示，收消息在左边显示。
+每条消息有三部分组成：头像、名字、聊天内容。
+头像和名字垂直布局，尖角和消息水平布局，消息整体水平布局，左边消息左对齐，右边消息右对齐，最后是调整各元素之间的间距。
+                            
+```
+<script id="left-message-template" type="text/template">
+    <div class="left-message-row">
+        <div class="avatar">
+            <div class="avatar-img">
+                <img src="<%= avatar %>" alt="">
+            </div>
+            <div class="avatar-name" data-toggle="tooltip" title="<%= name %>">
+                <%= name %>
+            </div>
+        </div>
+        <div class="message">
+            <div class="left-direction"></div>
+            <div class="left-message-content">
+                <%= content %>
+            </div>
+        </div>
+    </div>
+</script>
+<script id="right-message-template" type="text/template">
+    <div class="right-message-row">
+        <div class="message">
+            <div class="right-message-content">
+                <%= content %>
+            </div>
+            <div class="right-direction"></div>
+        </div>
+        <div class="avatar">
+            <div class="avatar-img">
+                <img src="<%= avatar %>" alt="">
+            </div>
+            <div class="avatar-name">
+                <span data-toggle="tooltip" title="<%= name %>"><%= name %></span>
+            </div>
+        </div>
+    </div>
+</script>
+```
+
+# 样式
+我们使用flex布局，left-direction、right-direction就是气泡的两个尖角 
+```
+.left-message-row {
+    display: flex;
+    flex-direction: row;
+}
+.right-message-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+}
+.message {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+.left-message-content {
+    background: #BCC6D6;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top:4px;
+}
+.right-message-content {
+    background: #A6D4F2;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 4px;
+}
+.left-direction {
+    border: solid transparent;
+    content: " ";
+    height: 0;
+    width: 0;
+    pointer-events: none;
+    border-color: rgba(213, 242, 239, 0);
+    border-right-color: #BCC6D6;
+    border-width: 8px;
+    margin-left: -5px;
+    margin-top: -5px;
+}
+.right-direction {
+    border: solid transparent;
+    content: " ";
+    height: 0;
+    width: 0;
+    pointer-events: none;
+    border-color: rgba(213, 242, 239, 0);
+    border-left-color: #A6D4F2;
+    border-width: 8px;
+    margin-right: -5px;
+    margin-top: -5px;
+}
+.avatar {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-top: 6px;
+    min-width: 50px;
+}
+
+.clear-margin-padding {
+    margin: 0px;
+    padding: 0px;
+}
+
+.avatar-img img {
+    width: 40px;
+    height: 40px;
+}
+.avatar-name {
+    margin-top: 4px;
+    font-size: 6px;
+    text-align: center;
+    max-width: 100px;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    -o-text-overflow:ellipsis;
+}
+```
+
+# 效果图
+![chat](/upload/o_1bhmgk9is13ovghb1pqq18g31ugqa.png)
+
+# 源码
+[github地址，有兴趣就Star一下吧](https://github.com/tujiaw/NodeChat)

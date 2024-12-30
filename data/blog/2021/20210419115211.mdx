@@ -1,0 +1,61 @@
+---
+title: 'Qt 绘制简单QPixmap'
+date: '2021-04-19'
+tags: ['Qt']
+draft: false
+summary: 
+---
+
+当我们需要一个简单的QPixmap的时候不想很麻烦的去要个切图，直接绘制一下就可以了，比如我们想实现下面这种列表框，需要绘制一个圆形和一个表示无颜色的图形。
+
+![](https://ningto.com/upload/20210419-ntscreenshot-095312.png)
+
+我们用lambda表达式来实现这个函数，绘制圆形代码：
+```
+    auto CreateRoundPixmap = [](int width, const QColor &color) -> QPixmap {
+        QPixmap p(width, width);
+        p.fill(Qt::transparent);
+        QPainter painter(&p);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QBrush(color));
+        painter.drawEllipse(0, 0, width, width);
+        return p;
+    };
+```
+width是圆的直径，color是画刷颜色。  
+其中有以下关键点：
+* p.fill(Qt::transparent)填充图片背景色，否则背景色不透明  
+* painter.setRenderHint(QPainter::Antialiasing, true)抗锯齿，否则绘制的形状不圆滑有锯齿，当然这样会消耗更多的计算资源  
+* painter.setPen(Qt::NoPen)画笔设置为空，否则有边框  
+
+绘制表示无颜色的图形（我也不知道这个形状叫什么名字）:
+```
+    auto CreateBlankPixmap = [](int width, const QColor &color) -> QPixmap {
+        QPixmap p(width, width);
+        p.fill(Qt::transparent);
+        QPainter painter(&p);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        QPen pen(color);
+        pen.setWidth(1);
+        painter.setPen(pen);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawEllipse(0, 0, width, width);
+        double radius = width * 1.0 / 2;
+        double margin = radius - sqrt((radius * radius) / 2);
+        double x = margin + pen.width()*1.0 / 2;
+        double y = width - margin - pen.width()*1.0 / 2;
+        painter.drawLine(QLineF(x, x, y, y));
+        return p;
+    };
+```
+这个图形比上面的要难点：
+* 这个图形使用画笔不是用画刷来绘制，这里固定将pen的宽度设置为1，当然也可以从参数传过来  
+* 关键是计算中间斜线x,y轴的位置，通过圆的半径radius就可以计算出来，这里的x,y考虑到画笔的宽度，所以从画笔宽度的中间位置开始绘制  
+
+下拉框的使用代码如下：
+```
+    ui->comboBox->addItem(CreateBlankPixmap(10, Qt::gray), QStringLiteral("无"));
+    ui->comboBox->addItem(CreateRoundPixmap(10, Qt::red), QStringLiteral("红"));
+    ui->comboBox->addItem(CreateRoundPixmap(10, Qt::blue), QStringLiteral("蓝"));
+```

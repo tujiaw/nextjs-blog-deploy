@@ -1,0 +1,147 @@
+---
+title: 'sqlite3 安装、开发'
+date: '2020-08-25'
+tags: ['Database']
+draft: false
+summary: SQLite 是世界常用数据库引擎，提供下载链接及可视化工具。可通过命令生成 lib，还给出 sqlite3 开发包目录结构及相关编码，包括类 Sqlite 的各种操作函数，如打开、关闭、查询、执行等。 
+---
+
+SQLite is a C-language library that implements a small, fast, self-contained, high-reliability, full-featured, SQL database engine. SQLite is the most used database engine in the world. SQLite is built into all mobile phones and most computers and comes bundled inside countless other applications that people use every day
+
+SQLite是一个c语言库，它实现了一个小型、快速、自包含、高可靠性、功能齐全的SQL数据库引擎。SQLite是世界上使用最多的数据库引擎。SQLite内置在所有移动电话和大多数计算机中，并绑定在人们每天使用的无数其他应用程序中
+
+# 下载
+https://www.sqlite.org/2020/sqlite-amalgamation-3330000.zip  
+https://www.sqlite.org/2020/sqlite-dll-win32-x86-3330000.zip    
+https://www.sqlite.org/2020/sqlite-tools-win32-x86-3330000.zip  
+
+可选：可视化工具SQLite Expert  
+
+# def生成lib
+打开VS2013 x86本机工具命令提示，转到sqlite-dll-win32-x86-3330000目录，执行如下命令：
+```
+lib /def:sqlite3.def /machine:ix86
+```
+
+# sqlite3开发包
+将上面文件打包供后续开发使用，目录结构
+```
+sqlite3  
+    include
+        sqlite3.h
+    lib
+        sqlite3.lib
+    bin
+        sqlite3.dll
+```
+
+# 编码
+```
+class sqlite3;
+class Sqlite {
+public:
+    Sqlite();
+    ~Sqlite();
+    bool open(const std::string &path);
+    void close();
+    std::string errmsg();
+    void query(const std::string &sql, const std::function<void(const std::string &name, const std::string &value)> &fn);
+    void query2(const std::string &sql, const std::function<void(int row, int col, char **result)> &fn);
+    bool execute(const std::string &sql);
+    bool execute(const std::string &sql, const std::vector<std::vector<std::string>> &bindText);
+
+private:
+    sqlite3 *db_;
+};
+////////////////////////////////////
+Sqlite::Sqlite() 
+    : db_(nullptr)
+{
+}
+Sqlite::~Sqlite()
+{
+    close();
+}
+
+bool Sqlite::open(const std::string &path)
+{
+    return SQLITE_OK == sqlite3_open(path.c_str(), &db_);
+}
+
+void Sqlite::close()
+{
+    if (db_) {
+        sqlite3_close(db_);
+        db_ = nullptr;
+    }
+}
+
+std::string Sqlite::errmsg()
+{
+    if (!db_) {
+        return "db is null";
+    }
+    return sqlite3_errmsg(db_);
+}
+
+void Sqlite::query(const std::string &sql, const std::function<void(const std::string &name, const std::string &value)> &fn)
+{
+    if (!db_) return;
+    char **dbResult;
+    int row = 0;
+    int col = 0;
+    sqlite3_get_table(db_, sql.c_str(), &dbResult, &row, &col, NULL);
+    int index = col;
+    for (int i = 0; i < row; i++) {
+        for (int j = 0; j < col; j++) {
+            fn(dbResult[j], dbResult[index]);
+            index++;
+        }
+    }
+    sqlite3_free_table(dbResult);
+}
+
+void Sqlite::query2(const std::string &sql, const std::function<void(int row, int col, char **result)> &fn)
+{
+    if (!db_) return;
+    char **dbResult;
+    int row = 0;
+    int col = 0;
+    sqlite3_get_table(db_, sql.c_str(), &dbResult, &row, &col, NULL);
+    fn(row, col, dbResult);
+    sqlite3_free_table(dbResult);
+}
+
+bool Sqlite::execute(const std::string &sql)
+{
+    if (!db_) return false;
+    return SQLITE_OK == sqlite3_exec(db_, sql.c_str(), NULL, NULL, NULL);
+}
+
+bool Sqlite::execute(const std::string &sql, const std::vector<std::vector<std::string>> &bindText)
+{
+    if (!db_) return false;
+    sqlite3_exec(db_, "begin;", NULL, NULL, NULL);
+    sqlite3_stmt *stmt;
+    int errcode = sqlite3_prepare_v2(db_, sql.c_str(), sql.size(), &stmt, nullptr);
+    if (errcode != SQLITE_OK) {
+        return false;
+    }
+
+    for (std::size_t i = 0; i < bindText.size(); i++) {
+        for (std::size_t j = 0; j < bindText[i].size(); j++) {
+            sqlite3_bind_text(stmt, j + 1, bindText[i][j].c_str(), -1, nullptr);
+        }
+        errcode = sqlite3_step(stmt);
+        if (errcode != SQLITE_DONE) {
+            sqlite3_finalize(stmt);
+            return false;
+        }
+        sqlite3_reset(stmt);
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_exec(db_, "commit;", NULL, NULL, NULL);
+    return true;
+}
+```

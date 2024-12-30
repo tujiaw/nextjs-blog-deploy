@@ -1,0 +1,363 @@
+---
+title: 'STL进阶'
+date: '2017-10-24'
+tags: ['C/C++']
+draft: false
+summary: 总结 STL 进阶内容：包含多种容器及操作，如打印容器元素、排序、查找等，还涉及迭代器、仿函数等，多种容器特性及适用场景不同，如 vector、deque、list 等，同时介绍了类似 shared_ptr 的智能指针等。 
+---
+
+STL组件
+# 打印容器内的所有元素
+```
+std::copy(vi1.begin(),vi1.end(), std::ostream_iterator<int>(std::cout, ", "));
+```
+
+# sort排序
+```
+struct comp
+{
+    bool operator()(int x, int y) const // 由大到小
+        {
+            return x>y;
+        }
+};
+std::sort(vi1.begin(), vi1.end(), comp());
+```
+
+# find、find_if
+find成功返回指向查找到的元素的位置，失败返回end();容器区间[     ), 左边闭区间右边开区间
+```
+    std::vector<int>::iterator iter = std::find(vi1.begin(), vi1.end(), 9);
+    if (iter == vi1.end())
+    {
+        std::cout << "fail" << std::endl;
+    }
+    else
+    {
+        std::cout << "success" << std::endl;
+    }
+```
+
+find_if如果容器中的元素可以让pred返回值为真则找到了，否则没有找到
+```
+bool pred(int x)
+{
+    return (x % 3 == 0);
+}
+std::vector<int>::iterator iter = std::find_if(vi1.begin(), vi1.end(), pred);
+```
+
+# stack
+push, pop, top, size, empty
+
+初始化，默认用deque
+```
+    std::deque<int> que(5, 200);
+    const int xx[] = {3, 56, 45, 234};
+    const int len = sizeof(xx) / sizeof(xx[0]);
+    std::vector<int> vec(xx, xx+len);
+
+    std::stack<int> sta1(que);
+    std::stack<int, std::vector<int> > sta2(vec);
+    std::cout << sta1.top() << std::endl;
+```
+
+# equal
+通常处理这种有多个区间的算法，你必须设定第一个区间的起点和终点，至于至于其它区间，你只需设定起点即可，终点是由第一区间的元素数量推导出来的。所以要注意两个区间的实际元素个数!
+```
+    int x[5] = {3, 5, 2, 5, 3};
+    int y[5] = {3, 5, 2, 4, 3};
+    std::vector<int> vi1(x, x+5);
+    std::vector<int> vi2(y, y+5);
+    bool isEqual = std::equal(vi1.begin(), vi1.end(), vi2.begin());
+```
+
+# 迭代器
+Insert iterators（安插型迭代器）
+它可以解决算法的“目标空间不足”问题，它可以促使目标区间的大小按需要成长；
+
+Stream iterators（流迭代器）
+
+Reverse Iterators（逆向迭代器）
+
+# remove
+注意remove后容器中的元素个数是不变的
+```
+    int num[6] = {3, 5, 56, 2, 5, 1};
+    vector<int> coll(num, num+6);
+
+    copy(coll.begin(), coll.end(), ostream_iterator<int>(cout, " "));
+    cout << endl;
+
+    vector<int>::iterator reEnd = remove(coll.begin(), coll.end(), 5);
+    coll.erase(reEnd, coll.end()); // ！！！
+    copy(coll.begin(), coll.end(), ostream_iterator<int>(cout, " "));
+    cout << endl;
+或者合成一条语句：
+    coll.erase(remove(coll.begin(), coll.end(), 5), coll.end());
+```
+
+# set
+```
+struct Greater
+{
+    bool operator()(const int &x, const int &y) const
+    {
+        return x > y;
+    }
+};
+
+int main(void)
+{
+    int xx[] = {43, 54, 2, 6, 34};
+    const int num = sizeof(xx) / sizeof(xx[0]);
+    
+    std::cout << "小到大" << std::endl;
+    typedef std::set<int> IntSet;
+    IntSet intSet(xx, xx+num);
+    std::copy(intSet.begin(), intSet.end(), std::ostream_iterator<int>(cout, "\n"));
+    
+    std::cout << "大到小" << std::endl;
+    typedef std::set<int, Greater > IntSet2;
+    IntSet2 intSet2(xx, xx+num);
+    std::copy(intSet2.begin(), intSet2.end(), std::ostream_iterator<int>(cout, "\n"));
+        
+    system("pause");
+}
+```
+
+# multimap
+```
+void PrintMap(std::pair<int, std::string> pr)
+{
+    std::cout << pr.first << ", " << pr.second << std::endl;
+}
+
+int main(void)
+{    
+    typedef std::multimap<int, std::string> IntStrMap;
+    IntStrMap intStrMap;
+    intStrMap.insert(make_pair(3, "third"));
+    intStrMap.insert(make_pair(2, "second"));
+    intStrMap.insert(make_pair(4, "fourth"));
+    
+    for_each(intStrMap.begin(), intStrMap.end(), PrintMap);
+    
+    system("pause");
+}
+```
+
+# ostream_iterator自定义输出，在类型里面重载不行？
+```
+typedef struct
+{
+int x, y;
+}T;
+
+std::ostream& operator<<(std::ostream &os, const T &t)
+{
+os << t.x << ", " << t.y;
+return os;
+}
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+T x[3] = {{1, 2}, {3, 4}, {5, 6}};
+std::vector<T> vec(x, x+3);
+
+std::copy(vec.begin(), vec.end(), std::ostream_iterator<T>(std::cout, "\n"));
+
+system("pause");
+return 0;
+}
+```
+
+# 自定义泛型函数
+```
+template<class T>
+inline void PrintElems(const T &coll, const char *str = "")
+{
+    typename T::const_iterator pos;
+    std::cout << str;
+    for (pos=coll.begin(); pos!=coll.end(); ++pos)
+    {
+        std::cout << *pos << ' ';
+    }
+    std::cout << std::endl;
+}
+```
+其中pos被声明为“传入之容器型别”内的迭代器型别，关键词typename在此不可或缺，用以表明const_iterator是型别T所定义的一个型别，而不是一个型别为T的值（类似如类里面的某个public成员值）。
+
+# for_each
+```
+void print(int elem)
+{
+    std::cout << elem << ' ';
+}
+int main()
+{
+    int arr[5] = {1, 4, 6, 3, 2};
+    std::vector<int> coll(arr, arr+5);
+    std::for_each(coll.begin(),coll.end(), print);
+    return 0;
+}
+```
+
+# 仿函数，行为类似如函数的对象
+```
+class AddValue
+{
+public:
+    AddValue(int value)
+        : _value(value)
+        {
+        }
+    
+    void operator()(int &elem) const
+        {
+            elem += _value;
+        }
+
+private:
+    int _value;
+};
+
+int main()
+{
+    int arr[5] = {1, 4, 6, 3, 2};
+    std::vector<int> coll(arr, arr+5);
+    std::copy(coll.begin(), coll.end(), std::ostream_iterator<int>(std::cout, " "));
+    std::cout << std::endl;
+
+    AddValue addten(10);
+    AddValue addone(1);
+    std::for_each(coll.begin(), coll.end(), AddValue(100));
+    std::copy(coll.begin(), coll.end(), std::ostream_iterator<int>(std::cout, " "));
+    
+    return 0;
+}
+```
+
+# 容器元素的条件：必须能进行copy构造、assignment操作符、析构函数
+序列式容器元素的default构造函数必须可用；
+
+对于某些动作，必须定义operator==以执行相等测试。如果你有搜寻需求这一点特别重要；
+
+在关联式容器中，元素必须定义出排序准则。缺省情况下是```operator<```，透过仿函数```less<>```被调用；
+
+千万不要将auto_ptr当做容器元素；
+
+# vector 动态数组
+支持随机存取，可以在常数时间内存取任何一个元素，在末端附加或删除元素时性能相当好，可是如果在前端或者中端安插或删除元素，性能就不怎么样了，因为操作点之后的每一个元素都必须移到另一位置，而每一次移动都得调用assignment操作符。
+
+capacity()函数会返回vector实际能够容纳的元素数量，如果超过这个数量，vector就有必要重新配置内部存储器，这里会造成两个问题：一旦内存重新配置，和vector元素相关的所有references、pointer、iterators都会失效（???）；内存重新配置很耗时间。
+
+所以如果vector中的元素是references、pointer、iterators一定要注意内存重新配置的问题。你可以用reserver()保留适当容量，避免一再重新配置内存，当然这个操作也是很费时间的。
+
+swap()方法也会带来references、pointer、iterators失效。
+
+# deque 双端队列
+内部结构类似如vector，只是在两端插入、删除元素很快。
+
+# list 双向链表
+不支持随机存取，遍历元素缓慢；安插、移除元素很快，可以在常数时间内完成。安插和删除动作并不会造成指向其他元素的各个pointers、references、iterators失效；
+
+list对于异常的处理方式是：要么操作成功，要么什么都不发生；
+
+# set和multiset，通常有平衡二叉树完成
+会根据特定的排序准则，自动将元素排序，两者不同处在于multiset允许元素重复而set不允许。
+
+由于自动排序所以你不能直接改变元素值，因为这样会打乱原本正确的顺序。因此，要改变元素值，必须先删除旧元素，再插入新元素。
+
+注意排序准则是型别的一部分，在要求型别一致的地方，即要求排序准则也要一致。
+
+# map和multimap，通常以平衡二叉树完成，将key/value pair（键值对）当做元素
+根据元素key自动对元素进行排序，用key来搜寻某个元素时有很好的性能，用value则性能很糟糕。你不可以直接改变元素的key，但可以改变value，如果要修改一个key，必须要移除该key的元素，然后再插入新的key/value元素。
+
+# 类似如shared_ptr智能指针
+```
+#include <iostream>
+#include <cstdlib>
+#include <cstring>
+
+template<class T>
+class CountedPtr
+{
+public:
+    explicit CountedPtr(T *p = 0)
+        : _ptr(p), _count(new long(1))
+        {
+        }
+
+    ~CountedPtr()
+        {
+            dispose();
+        }
+    
+    CountedPtr(const CountedPtr<T> &p)
+        : _ptr(p._ptr), _count(p._count)
+        {
+            ++*_count;
+        }
+
+    CountedPtr<T>& operator=(const CountedPtr<T> &p)
+        {
+            if (this != &p)
+            {
+                dispose();
+                _ptr = p._ptr;
+                _count = p._count;
+                ++*_count;
+            }
+            return *this;
+        }
+
+    T& operator*() const
+        {
+            return *_ptr;
+        }
+
+    T* operator->() const
+        {
+            return _ptr;
+        }
+
+private:
+    void dispose()
+        {
+            if (--*_count == 0)
+            {
+                delete _count;
+                delete _ptr;
+            }
+        }
+
+private:
+    T *_ptr;
+    long *_count;
+};
+
+int main(void)
+{
+    CountedPtr<char> p(new char);
+    CountedPtr<char> p2(p);
+    *p2 = 'A';
+    
+    std::cout <<  *p << std::endl;
+}
+```
+
+# std::map查找的时候不区分大小写
+```
+// 不区分大小写
+struct nocase_less : public std::binary_function<std::string, std::string, bool>
+{
+    bool operator() (const std::string& left,  const std::string& right) const
+    {
+        return _stricmp(left.c_str(), right.c_str()) < 0;
+    }
+};
+
+typedef string RowKey;
+typedef map<RowKey, RowValue, nocase_less> CodeFileContent;    // 每行的相对路径作为key，其他作为value
+```

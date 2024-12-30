@@ -1,0 +1,71 @@
+---
+title: 'Solution - Find your Unicorn Name - StudioX Project'
+date: '2021-06-01'
+tags: ['Others']
+draft: false
+summary: 
+---
+
+这是学习UiPath StudioX的第一个例子，官方也有详细的介绍，我这里只是记录一下我的操作过程，以及遇到的问题。
+
+# 安装
+我下载的是UiPathStudioSetup.exe安装包，大小有371MB，安装的过程中要登录，中间还要选择版本。注意一定要选择StudioX，选择稳定版本就可以了（下面过程中涉及到网址打不开的可能要科学上网了）。
+
+安装完成后要在HOME->Tools里安装Chrome（或者其他浏览器），Excel Add-in插件。安装Excel插件的时候我遇到过失败的情况，说我的Excel不是正版没有激活之类的，版本太低了可能也不行，经过一番折腾，网上找的激活工具，如下图版本就正常了。
+
+![image](https://ningto.com/upload/20210601-ntscreenshot-094736.png)
+
+# 准备
+需要chrome能打开[https://www.rpasamples.com/unicornname](https://www.rpasamples.com/unicornname)网址，准备一个[Unicorn Name.xlsx](http://f.ningto.com/home/doc/Unicorn%20Name.xlsx)文件
+
+网址：
+![image](https://ningto.com/upload/20210601-ntscreenshot-095429.png)
+
+Excel文件内容：
+![image](https://ningto.com/upload/20210601-ntscreenshot-095515.png)
+
+# 目的
+这个demo演示了从excel文件中读取Name和Birthday Month数据自动填写在网页上的两个输入框中，然后点击网页上Get Name按钮获取Your Unicon Name，最后将Unicon Name写入到excel中。
+
+只要你做好了，这个过程是完全自动化的。
+
+# 使用
+StudioX主要使用拖拽控件的方式来构建项目，注意控件之间的关系类似如变量的作用域，作用域之外的控件是不能互相通信的，如：Type Info控件想读取Excel的信息必须放在Excel Resource控件之下。
+
+## Use Excel File
+在左边列表框中选择Resources->Use Excel File，点击文件夹按钮，选择本地的Unicorn Name.xlsx文件，这样这个文件就是我们要读写的。
+
+所有的子控件的交互都在上面进行，因为我们信息的读取和写入都是通过Excel进行的。
+
+
+## Use Application/Browser
+在左边列表框中选择Use Application/Browser，打开Chrome浏览器打开网址[https://www.rpasamples.com/unicornname](https://www.rpasamples.com/unicornname)，点击Indicate Application按钮选中Chrome浏览器界面，此时Browser URL就会识别出要打开的网址。
+
+要想与Chrome交互，所有的子控件也必须放在Chrome控件里面。
+
+## Type Into
+增加一个Type Into控件到浏览器控件里面，它的作用是从Excel单元格中读取信息，然后填写到网页上。
+
+点击Indicate target on screen按钮，在网页上选择Enter your name输入框（选择UI Framework）,
+同时注意选中了输入框之后要把鼠标拖到左边的“What is your name”文字上作为Anchor，它们两个会形成一个关联，最后在回到输入框点击输入框下面出现的Confirm蓝色按钮。
+
+Type this，从Excel文件中选择Name下的单元格，也就是Sheet1的A2单元格。
+
+## Select Item
+这是一个下拉列表，网页上的Month看起来就是一个下拉框，我们可能会选择Select Item，但是经过实际操作下来是失败的，提示“The indicated target is not a valid UI element for the SelectItem action!”，用这句提示去百度搜是搜不到答案的，是时候用google了，果然google搜一下第一行就是我们要的答案，具体原因可以去相关网页查看，改用Type Into就可以了。
+
+同上，网页上指示“What month is your birthday”相关控件，excel选择Sheet1的B2单元格。
+
+## Click
+新增一个单击操作，单击网页上的"Get Name"按钮
+
+## Get Text
+与Type Into相反，Get Text将网页上的信息写入到excel文件中。
+
+target是网页上的[Unicorn Name]，Save to Excel中的Sheet1的C2单元格。
+
+## 运行
+点击菜单栏的“run”按钮运行，如果没问题的话，excel中就会写入网页上的Unicorn Name。如果有问题需要根据错误提示来分析，我遇到的是Chrome浏览器可以不打开，uipath会自动帮助你打开，但是Unicorn Name.xlsx文件必须先手动打开才行，不知道这个是不是问题。
+
+# 完整图
+![image](https://ningto.com/upload/unicornname_steps.jpg)

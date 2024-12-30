@@ -1,0 +1,146 @@
+---
+title: 'IE获取元素样式'
+date: '2022-07-22'
+tags: ['C/C++']
+draft: false
+summary: IE 浏览器获取元素样式时，常规方式获取不了。文中给出正确方法，包括一系列函数如 bstr2str、str2bstr 等，通过这些函数可获取元素的样式属性。先获取“style”属性的 DISPATCH 值，再获取“cssText”属性值并转换为字符串。 
+---
+
+IE浏览器获取元素样式，通过正常方式获取不了。
+
+这种方法获取不了：
+```
+				CComPtr<IHTMLStyle> pHtmlStyle;
+				if (!FAILED(m_pHtmlElement->get_style(&pHtmlStyle)) && pHtmlStyle != NULL) {
+					if (!FAILED(pHtmlStyle->get_cssText(&bstr))) {
+```
+正确的方法：
+```
+void bstr2str(std::string &str, BSTR bstr)
+{
+    if (bstr == NULL)
+    {
+        str.clear();
+    }
+    else
+    {
+        DWORD dwRequiredSize = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)bstr,
+            SysStringLen(bstr), NULL, 0,
+            NULL, NULL);
+        LPSTR lpszBuffer = (LPSTR)malloc(dwRequiredSize + 2);
+        dwRequiredSize = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)bstr,
+            SysStringLen(bstr), lpszBuffer, dwRequiredSize + 1,
+            NULL, NULL);
+        lpszBuffer[dwRequiredSize] = '\0';
+        str.assign(lpszBuffer);
+        free(lpszBuffer);
+        SysFreeString(bstr);
+    }
+}
+
+
+BSTR str2bstr(const char*lpsz)
+{
+    if (lpsz == NULL)
+        return NULL;
+    else
+    {
+        DWORD dwRequiredSize = MultiByteToWideChar(CP_UTF8, 0, lpsz,
+            -1, NULL, 0);
+        DWORD dwBytes = sizeof(wchar_t) * dwRequiredSize;
+        LPWSTR lpwszBuffer = (LPWSTR)malloc(dwBytes + 1);
+        MultiByteToWideChar(CP_UTF8, 0, lpsz,
+            -1, lpwszBuffer, dwBytes);
+        lpwszBuffer[dwRequiredSize] = L'\0';
+        BSTR bstr = SysAllocString(lpwszBuffer);
+        free(lpwszBuffer);
+        return bstr;
+    }
+
+}
+
+HRESULT getDispatchProperty(IDispatch *object, const char *property, VARIANT &value)
+{
+    BSTR bstr = str2bstr(property);
+    DISPID dispId;
+    IDispatchEx *pDispatchEx;
+    static IID IDispatchEx_CLSID = { 0xa6ef9860, 0xc720, 0x11d0, {0x93, 0x37, 0x00,0xa0,0xc9,0x0d,0xca,0xa9} };
+    HRESULT hr = object->QueryInterface(IDispatchEx_CLSID, reinterpret_cast<void**>(&pDispatchEx));
+    if (!FAILED(hr) && pDispatchEx != NULL)
+    {
+        hr = pDispatchEx->GetDispID(bstr, fdexNameEnsure, &dispId);
+        if (FAILED(hr))
+        {
+            //MZNSendDebugMessage("Unable to get property %ls", bstr);
+        }
+        else
+        {
+            DISPPARAMS dp;
+            dp.cArgs = 0;
+            dp.cNamedArgs = 0;
+            dp.rgvarg = NULL;
+            VARIANT result;
+            result.vt = VT_NULL;
+            UINT error;
+            EXCEPINFO ei;
+            ZeroMemory(&ei, sizeof ei);
+            hr = pDispatchEx->InvokeEx(dispId, LOCALE_SYSTEM_DEFAULT, DISPATCH_PROPERTYGET, &dp, &value, &ei, NULL);
+            if (FAILED(hr))
+            {
+#if 0
+                MZNSendDebugMessage("Cannot get property %s", property);
+                MZNSendDebugMessage("Error en InvokeEx");
+                MZNSendDebugMessage("Error en %lX en attributes %d", (long)hr, (int)error);
+                MZNSendDebugMessage("Error code %d ", (int)ei.wCode);
+                MZNSendDebugMessage("Source %ls", ei.bstrSource);
+                MZNSendDebugMessage("Description %ls", ei.bstrDescription);
+#endif
+            }
+
+        }
+        pDispatchEx->Release();
+    }
+    else
+    {
+        //MZNSendDebugMessage("Cannot get IDispatchEx");
+    }
+    SysFreeString(bstr);
+    return hr;
+}
+
+void getStyleAttribute(IDispatch *object, std::string &style)
+{
+    VARIANT v;
+    VariantInit(&v);
+    HRESULT hr = getDispatchProperty(object, "style", v);
+    if (FAILED(hr))
+        return;
+
+    if (!v.vt == VT_DISPATCH)
+    {
+        VariantClear(&v);
+        return;
+    }
+
+    VARIANT v2;
+    VariantInit(&v2);
+    hr = getDispatchProperty(v.pdispVal, "cssText", v2);
+    if (!FAILED(hr))
+    {
+        VARIANT result2;
+        VariantInit(&result2);
+        if (S_OK == VariantChangeType(&result2, &v2, 0, VT_BSTR))
+        {
+            bstr2str(style, result2.bstrVal);
+            VariantClear(&result2);
+        }
+        else {
+        }
+        VariantClear(&v2);
+    }
+
+
+    v.pdispVal->Release();
+    VariantClear(&v);
+}
+```

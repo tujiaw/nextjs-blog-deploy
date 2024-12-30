@@ -1,0 +1,215 @@
+---
+title: 'DLL注入和卸载'
+date: '2021-04-08'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 
+---
+
+dll本身是不能运行的，它可以被可执行文件调用来执行，这种是主动去调用dll，反过来也可以将dll注入到指定进程地址空间去执行。
+
+# 注入程序
+使用命令行的方式提供了注入dll和卸载dll两个方法
+```
+// inject.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
+//
+
+#include <iostream>
+#include <Windows.h>
+#include <TlHelp32.h>
+#include <Psapi.h>
+#include <tchar.h>
+#include <algorithm>
+#include <sstream>
+
+std::wstring NormalizePath(const std::wstring &path)
+{
+    const int BUFSIZE = 4096;
+    TCHAR buffer[BUFSIZE] = TEXT("");
+    TCHAR **lppPart = { NULL };
+    DWORD ret = GetFullPathName(path.c_str(), BUFSIZE, buffer, lppPart);
+    if (ret == 0) {
+        return L"";
+    }
+    return buffer;
+}
+
+bool PathEqual(const std::wstring &path1, const std::wstring &path2)
+{
+    std::wstring p1 = NormalizePath(path1);
+    std::wstring p2 = NormalizePath(path2);
+    if (p1.size() != p2.size()) {
+        return false;
+    }
+    std::transform(p1.begin(), p1.end(), p1.begin(), ::tolower);
+    std::transform(p2.begin(), p2.end(), p2.begin(), ::tolower);
+    return p1 == p2;
+}
+
+// 将指定路径的dll注入到进程
+DWORD Inject(DWORD processId, const std::wstring &injectDllPath)
+{
+    HANDLE handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, processId);
+    if (!handle) {
+        return GetLastError();
+    }
+
+    bool success = false;
+    do {
+        LPVOID alloc_address = VirtualAllocEx(handle, NULL, injectDllPath.length(), MEM_COMMIT, PAGE_READWRITE);
+        if (!alloc_address) {
+            break;
+        }
+
+        // 宽字符一定要乘以2
+        if (!WriteProcessMemory(handle, alloc_address, injectDllPath.c_str(), injectDllPath.length() * sizeof(TCHAR), NULL)) {
+            break;
+        }
+
+        HMODULE kernel_handle = GetModuleHandle(L"Kernel32.dll");
+        if (!kernel_handle) {
+            break;
+        }
+
+        // 注意，这里必须指定为宽字符函数
+        FARPROC loadLibrary = GetProcAddress(kernel_handle, "LoadLibraryW");
+        if (!loadLibrary) {
+            break;
+        }
+
+        if (CreateRemoteThread(handle, NULL, 0, (LPTHREAD_START_ROUTINE)loadLibrary, alloc_address, 0, NULL) != NULL) {
+            success = true;
+        }
+    } while (0);
+
+    CloseHandle(handle);
+    return success ? 0 : GetLastError();
+}
+
+DWORD Uninject(DWORD processId, const std::wstring &injectDllPath)
+{
+    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, processId);
+    if (hSnap == INVALID_HANDLE_VALUE) {
+        return GetLastError();
+    }
+
+    MODULEENTRY32 me32;
+    me32.dwSize = sizeof(me32);
+
+    BOOL dllFound = FALSE;
+    //查找匹配的进程名称
+    BOOL bRet = Module32First(hSnap, &me32);
+    while (bRet) {
+        std::wstring exePath(me32.szExePath);
+        if (PathEqual(injectDllPath, exePath)) {
+            dllFound = TRUE;
+            break;
+        }
+        
+        bRet = Module32Next(hSnap, &me32);
+    }
+    CloseHandle(hSnap);
+    if (!dllFound) {
+        return 1;
+    }
+
+    HMODULE kernel_handle = GetModuleHandle(L"Kernel32.dll");
+    if (!kernel_handle) {
+        return 2;
+    }
+
+    FARPROC freeLibrary = GetProcAddress(kernel_handle, "FreeLibrary");
+    if (!freeLibrary) {
+        return 3;
+    }
+
+    HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, processId);
+    if (hProcess == NULL) {
+        return 4;
+    }
+
+    HANDLE hThread = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)freeLibrary, me32.hModule, 0, NULL);
+    WaitForSingleObject(hThread, INFINITE);
+    CloseHandle(hThread);
+    CloseHandle(hProcess);
+    return 0;
+}
+
+
+int wmain(int argc, wchar_t* argv[])
+{
+    std::wstring method;
+    DWORD processId = 0;
+    std::wstring dllPath;
+    bool ready = false;
+    if (argc >= 4) {
+        method = argv[1];
+        processId = _wtoi(argv[2]);
+        dllPath = argv[3];
+        if ((method == L"inject" || method == L"uninject") && processId > 0 && !dllPath.empty()) {
+            ready = true;
+        }
+    }
+
+    if (!ready) {
+        std::cout << "Params Error!" << std::endl;
+        std::cout << "Usage:" << std::endl;
+        std::cout << "my.exe inject processId dllAbsolutePath" << std::endl;
+        std::cout << "my.exe uninject processId dllAbsolutePath" << std::endl;
+        return 1;
+    }
+
+    DWORD result = -1;
+    if (method == L"inject") {
+        Uninject(processId, dllPath);
+        result = Inject(processId, dllPath);
+    } else if (method == L"uninject") {
+        result = Uninject(processId, dllPath);
+    }
+
+    if (result == 0) {
+        std::wcout << method << L" success\n";
+    } else {
+        std::wcout << method << L" failed, errcode:" << result << std::endl;
+    }
+
+    std::cout << "Exit\n";
+}
+```
+
+# 使用方法
+my.exe inject processId dllAbsolutePath  
+my.exe uninject processId dllAbsolutePath  
+
+* processId：被注入到的进程ID
+* dllAbsolutePath：注入的dll绝对路径！！！
+
+# dll测试代码
+注入后会显示一个hello的弹框，当然如果你要做些复杂的事情可以创建一个线程来长期运行。
+```
+void work()
+{
+    MessageBox(NULL, L"hello", L"dll inject test", MB_OK);
+}
+
+BOOL APIENTRY DllMain( HMODULE hModule,
+                       DWORD  ul_reason_for_call,
+                       LPVOID lpReserved
+                     )
+{
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH: {
+        //CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)work, NULL, NULL, 0);
+        work();
+        break;
+    }
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
+    return TRUE;
+}
+
+```

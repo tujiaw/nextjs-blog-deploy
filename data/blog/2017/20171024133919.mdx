@@ -1,0 +1,380 @@
+---
+title: '模拟glib中双链表的部分实现'
+date: '2017-10-24'
+tags: ['C/C++']
+draft: false
+summary: 实现了模拟 glib 中双链表的部分功能。包含头文件`GList.h`定义双链表结构及相关函数声明，`GList.c`实现各函数，如`g_list_alloc`分配内存等，`main.c`进行测试，展示添加、遍历等操作及链表长度等信息。 
+---
+
+```
+
+// GList.h
+#ifndef GLIST_H_INCLUDED
+#define GLIST_H_INCLUDED
+
+#ifdef _cplusplus
+extern "C" {
+#endif
+
+typedef struct _GList GList;
+
+struct _GList
+{
+    void* data;
+    GList *next;
+    GList *prev;
+};
+
+typedef void (*GFunc)(void* data, void* user_data);
+typedef void (*GDestroyNodify)(void* data);
+typedef int (*GCompareFunc)(void* a, void* b);
+
+GList* g_list_alloc(void);
+void g_list_free(GList *list);
+void g_list_free_full(GList *list, GDestroyNodify free_func);
+
+GList* g_list_append(GList *list, void* data);
+GList* g_list_prepend(GList *list, void* data);
+GList* g_list_insert(GList *list, void* data, int position);
+GList* g_list_remove(GList *list, const void* data);
+GList* g_list_find(GList *list, const void* data);
+int g_list_index(GList *list, const void* data);
+GList* g_list_nth(GList *list, unsigned int n);
+void g_list_foreach(GList *list, GFunc func, void* user_data);
+GList* g_list_first(GList *list);
+GList* g_list_last(GList *list);
+unsigned int g_list_length(GList *list);
+GList* g_list_copy(GList *list);
+
+#ifdef _cplusplus
+}
+#endif
+
+#endif // GLIST_H_INCLUDED
+
+
+```
+
+```
+
+// GList.c
+#include "GList.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+GList* g_list_alloc(void)
+{
+    GList *list = (GList*)malloc(sizeof(GList));
+    if (list)
+    {
+        memset(list, 0, sizeof(GList));
+    }
+    return list;
+}
+
+void g_list_free(GList *list)
+{
+    if (list)
+    {
+        free(list);
+        list = NULL;
+    }
+}
+
+void g_list_free_full(GList *list, GDestroyNodify free_func)
+{
+    g_list_foreach(list, (GFunc)free_func, NULL);
+    g_list_free(list);
+}
+
+// Adds a new element on to the end of the list.
+GList* g_list_append(GList *list, void* data)
+{
+    GList *new_list;
+    GList *last;
+
+    new_list = g_list_alloc();
+    new_list->data = data;
+    new_list->next = NULL;
+
+    if (list)
+    {
+        last = g_list_last(list);
+        last->next = new_list;
+        new_list->prev = last;
+
+        return list;
+    }
+    else
+    {
+        new_list->prev = NULL;
+
+        return new_list;
+    }
+}
+
+// Adds a new element on to the start of the list.
+GList* g_list_prepend(GList *list, void* data)
+{
+    GList *new_list;
+
+    new_list = g_list_alloc();
+    new_list->data = data;
+    new_list->next = list;
+
+    if (list)
+    {
+        new_list->prev = list->prev;
+        if (list->prev)
+        {
+            list->prev->next = new_list;
+        }
+        list->prev = new_list;
+    }
+    else
+    {
+        new_list->prev = NULL;
+    }
+
+    return new_list;
+}
+
+GList* g_list_insert(GList *list, void* data, int position)
+{
+    GList *new_list;
+    GList *tmp_list;
+
+    if (position < 0)
+    {
+        return g_list_append(list, data);
+    }
+    else if (position == 0)
+    {
+        return g_list_prepend(list, data);
+    }
+
+    tmp_list = g_list_nth(list, position);
+    if (!tmp_list)
+    {
+        g_list_append(list, data);
+    }
+
+    new_list = g_list_alloc();
+    new_list->data = data;
+    new_list->prev = tmp_list->prev;
+    if (tmp_list->prev)
+    {
+        tmp_list->prev->next = new_list;
+    }
+    new_list->next = tmp_list;
+    tmp_list->prev = new_list;
+
+    if (tmp_list == list)
+    {
+        return new_list;
+    }
+    else
+    {
+        return list;
+    }
+}
+
+GList* g_list_remove(GList *list, const void* data)
+{
+    GList *tmp;
+
+    tmp = list;
+    while (tmp)
+    {
+        if (tmp->data != data)
+        {
+            tmp = tmp->next;
+        }
+        else
+        {
+            if (tmp->prev)
+            {
+                tmp->prev->next = tmp->next;
+            }
+
+            if (tmp->next)
+            {
+                tmp->next->prev = tmp->prev;
+            }
+
+            if (list == tmp)
+            {
+                list = list->next;
+            }
+
+            g_list_free(tmp);
+            break;
+        }
+    }
+
+    return list;
+}
+
+GList* g_list_find(GList *list, const void* data)
+{
+    while (list)
+    {
+        if (list->data == data)
+        {
+            break;
+        }
+        list = list->next;
+    }
+
+    return list;
+}
+
+int g_list_index(GList *list, const void* data)
+{
+    int i = 0;
+
+    while (list)
+    {
+        if (list->data == data)
+        {
+            return i;
+        }
+        i++;
+        list = list->next;
+    }
+
+    return -1;
+}
+
+GList* g_list_nth(GList *list, unsigned int n)
+{
+    while ((n-- > 0) && list)
+    {
+        list = list->next;
+    }
+
+    return list;
+}
+
+void g_list_foreach(GList *list, GFunc func, void* user_data)
+{
+    while (list)
+    {
+        GList *next = list->next;
+        (*func)(list->data, user_data);
+        list = next; // list = list->next;
+    }
+}
+
+GList* g_list_first(GList *list)
+{
+    if (list)
+    {
+        while (list->prev)
+        {
+            list = list->prev;
+        }
+    }
+
+    return list;
+}
+
+GList* g_list_last(GList *list)
+{
+    if (list)
+    {
+        while (list->next)
+        {
+            list = list->next;
+        }
+    }
+
+    return list;
+}
+
+unsigned int g_list_length(GList *list)
+{
+    unsigned int length = 0;
+
+    while (list)
+    {
+        length++;
+        list = list->next;
+    }
+
+    return length;
+}
+
+GList* g_list_copy(GList *list)
+{
+    GList *new_list = NULL;
+
+    if (list)
+    {
+        GList *last;
+
+        new_list = g_list_alloc();
+        new_list->data = list->data;
+        new_list->prev = NULL;
+        last = new_list;
+        list = list->next;
+        while (list)
+        {
+            last->next = g_list_alloc();
+            last->next->prev = last;
+            last = last->next;
+            last->data = list->data;
+            list = list->next;
+        }
+        last->next = NULL;
+    }
+
+    return new_list;
+}
+
+
+```
+```
+
+// main.c
+#include <stdio.h>
+#include <stdlib.h>
+#include "GList.h"
+
+void ShowList(void* data, void* user_data);
+
+/// test
+int main()
+{
+    GList *list = NULL;
+    list = g_list_append(list, "one");
+    list = g_list_append(list, "two");
+    list = g_list_append(list, "three");
+    list = g_list_prepend(list, "four");
+    list = g_list_insert(list, "five", 3);
+
+    GList *first = g_list_first(list);
+    g_list_foreach(first, ShowList, NULL);
+
+    int num = g_list_length(first);
+    printf("num = %d\n", num);
+
+    GList *last = g_list_last(list);
+    printf("last = %s\n", (char*)last->data);
+
+    printf("---------------copy---------------\n");
+    first = g_list_first(list);
+    GList *cpy = g_list_copy(first);
+    g_list_foreach(cpy, ShowList, NULL);
+
+    return 0;
+}
+
+void ShowList(void* data, void* user_data)
+{
+    printf("%s\n", (char*)data);
+}
+
+
+```

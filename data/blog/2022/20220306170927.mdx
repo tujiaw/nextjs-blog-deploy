@@ -1,0 +1,228 @@
+---
+title: 'beast websocket demo'
+date: '2022-03-06'
+tags: ['C/C++']
+draft: false
+summary: 这是一个 C++ 的 beast websocket 示例，包含客户端和服务器代码。客户端发送随机生成的文本消息并接收服务器响应，服务器接收客户端消息并回显。客户端通过连接本地主机的 2236 端口进行通信，服务器在 127.0.0.1 的 2236 端口监听新连接。 
+---
+
+client:
+```
+// client.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
+//
+
+#include <boost/beast/core.hpp>
+#include <boost/beast/websocket.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <cstdlib>
+#include <iostream>
+#include <string>
+
+namespace beast = boost::beast;         // from <boost/beast.hpp>
+namespace http = beast::http;           // from <boost/beast/http.hpp>
+namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
+namespace net = boost::asio;            // from <boost/asio.hpp>
+using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+
+int getRandNumber(int low, int up, int multiple)
+{
+    return ((rand() % (up - low + 1)) + low) * multiple;
+}
+
+std::string getRandText(int low, int up, int multiple)
+{
+    auto n = getRandNumber(low, up, multiple);
+    std::string str;
+    str.reserve(n);
+    for (int i = 0; i < n; i++) {
+        char c = 'A' + rand() % 26;
+        str.push_back(c);
+    }
+    return str;
+}
+
+std::string readableSize(int n)
+{
+    static const int MB = 1024 * 1024;
+    std::stringstream ss;
+    ss.precision(2);
+    ss.setf(std::ios::fixed);
+    if (n < 1024) {
+        ss << n << "B";
+    } else if (n < MB) {
+        ss << (n*1.0 / 1024) << "KB";
+    } else {
+        ss << (n*1.0 / MB) << "MB";
+    }
+    return ss.str();
+}
+
+// Sends a WebSocket message and prints the response
+int main(int argc, char** argv)
+{
+    srand((int)time(0));
+    try {
+        std::string host = "127.0.0.1";
+        auto const  port = "2236";
+
+        // The io_context is required for all I/O
+        net::io_context ioc;
+
+        // These objects perform our I/O
+        tcp::resolver resolver{ ioc };
+        websocket::stream<tcp::socket> ws{ ioc };
+
+        // Look up the domain name
+        auto const results = resolver.resolve(host, port);
+
+        // Make the connection on the IP address we get from a lookup
+        auto ep = net::connect(ws.next_layer(), results);
+
+        // Update the host_ string. This will provide the value of the
+        // Host HTTP header during the WebSocket handshake.
+        // See https://tools.ietf.org/html/rfc7230#section-5.4
+        host += ':' + std::to_string(ep.port());
+
+        // Set a decorator to change the User-Agent of the handshake
+        ws.set_option(websocket::stream_base::decorator(
+            [](websocket::request_type& req) {
+            req.set(http::field::user_agent,
+                std::string(BOOST_BEAST_VERSION_STRING) +
+                " websocket-client-coro");
+        }));
+
+        // Perform the websocket handshake
+        ws.handshake(host, "/");
+
+        int index = 0;
+        while (1) {
+            ++index;
+            // Send the message
+            int min = 5;
+            int max = 5 * 1024;
+            int multiple = index % 10 == 0 ? 1024 : 1;
+            std::string text = getRandText(min, max, multiple);
+            std::cout << "write text, size:" << readableSize(text.size()) << std::endl;
+            ws.write(net::buffer(text));
+
+            // This buffer will hold the incoming message
+            beast::flat_buffer buffer;
+
+            // Read a message into our buffer
+            ws.read(buffer);
+            std::cout << "read text, size:" << readableSize(text.size()) << std::endl;
+        }
+
+        // Close the WebSocket connection
+        ws.close(websocket::close_code::normal);
+
+        // If we get here then the connection is closed gracefully
+
+        // The make_printable() function helps print a ConstBufferSequence
+        //std::cout << beast::make_printable(buffer.data()) << std::endl;
+    } catch (std::exception const& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+```
+server:
+```
+// server.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
+//
+#include <boost/beast/core.hpp>
+#include <boost/beast/websocket.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <cstdlib>
+#include <functional>
+#include <iostream>
+#include <string>
+#include <thread>
+
+namespace beast = boost::beast;         // from <boost/beast.hpp>
+namespace http = beast::http;           // from <boost/beast/http.hpp>
+namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
+namespace net = boost::asio;            // from <boost/asio.hpp>
+using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+
+//------------------------------------------------------------------------------
+
+// Echoes back all received WebSocket messages
+void
+do_session(tcp::socket socket)
+{
+    try {
+        // Construct the stream by moving in the socket
+        websocket::stream<tcp::socket> ws{ std::move(socket) };
+
+        // Set a decorator to change the Server of the handshake
+        ws.set_option(websocket::stream_base::decorator(
+            [](websocket::response_type& res) {
+            res.set(http::field::server,
+                std::string(BOOST_BEAST_VERSION_STRING) +
+                " websocket-server-sync");
+        }));
+
+        // Accept the websocket handshake
+        ws.accept();
+
+        for (;;) {
+            // This buffer will hold the incoming message
+            beast::flat_buffer buffer;
+
+            // Read a message
+            ws.read(buffer);
+            std::cout << "receive buffer size:" << buffer.size() << std::endl;
+
+            // Echo the message back
+            ws.text(ws.got_text());
+            ws.write(buffer.data());
+        }
+    } catch (beast::system_error const& se) {
+        // This indicates that the session was closed
+        if (se.code() != websocket::error::closed)
+            std::cerr << "Error: " << se.code().message() << std::endl;
+    } catch (std::exception const& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+int main(int argc, char* argv[])
+{
+    try {
+        auto const address = net::ip::make_address("127.0.0.1");
+        auto const port = static_cast<unsigned short>(2236);
+
+        // The io_context is required for all I/O
+        net::io_context ioc{ 1 };
+
+        // The acceptor receives incoming connections
+        tcp::acceptor acceptor{ ioc, {address, port} };
+        std::cout << "server listen port:" << port << std::endl;
+        for (;;) {
+            // This will receive the new connection
+            tcp::socket socket{ ioc };
+
+            // Block until we get a connection
+            acceptor.accept(socket);
+            std::cout << "new session coming, address:"
+                << socket.remote_endpoint().address().to_string()
+                << ", port:" << socket.remote_endpoint().port() << std::endl;
+
+            // Launch the session, transferring ownership of the socket
+            std::thread(
+                &do_session,
+                std::move(socket)).detach();
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+}
+
+```

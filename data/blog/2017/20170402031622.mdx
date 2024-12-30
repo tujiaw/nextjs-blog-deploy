@@ -1,0 +1,34 @@
+---
+title: 'QtCharts源码编译安装'
+date: '2017-04-02'
+tags: ['Windows', 'C/C++', 'Qt']
+draft: false
+summary: QtCharts 提供易使用的图表组件，用 Qt Graphics View Framework 可轻松集成。需自行编译安装，步骤包括获取源代码、用 vs2015 x64 编译安装、安装帮助文档及编译运行 demo 程序，各步骤详细且可成功展示图表。 
+---
+
+Qt Charts module provides a set of easy to use chart components. It uses the Qt Graphics View Framework, therefore charts can be easily integrated to modern user interfaces. Qt Charts can be used as QWidgets, QGraphicsWidget, or QML types. Users can easily create impressive graphs by selecting one of the charts themes. 
+
+Qt5.7本身是没有带这个模块的需要自己去编译安装
+## 获取源代码，我用的git工具是TortoiseGit，如目录：C:/project/qtcharts
+* git clone http://code.qt.io/qt/qtcharts.git  
+* Switch/Checkout到5.7分支
+
+## 使用vs2015 x64编译安装（根据自己实际情况）
+* 打开VS2015 x64本机工具命令提示符（最好使用管理员权限打开）
+* cb C:/project/qtcharts (到指定目录)
+* qmake qtcharts.pro （配置工程）
+* nmake （编译）
+* nmake install （安装到Qt5.7bin目录下）
+* 你可以看到Qt bin目录下有这三个文件：Qt5Chartsd.dll，Qt5Charts.dll，Qt5Chartsd.pdb
+
+## 安装帮助文档
+实际编码过程中我们经常使用到Qt Creator中的帮助查询类，函数，所以这一步是很有必要的 
+* nmake docs （编译产生文档）
+* 拷贝qtcharts/doc目录下的qtcharts目录和qtcharts.qch文件到C:/Qt/Qt5.7.1/Docs/Qt-5.7(根据自身实际Qt安装目录)，你可以看到这个目录下有很多.qch文件
+* 重新打开Qt Creator，帮助，输入QtCharts,点击进去显示的Qt Charts QML Types，这个我们对qml可能不太关心，点击导航行的上级目录Qt Charts就可以看到很多demo了
+* 搜索QLineSeries类如果能找到相关的页面就说明安装成功了
+
+## 编译运行qtcharts demo程序
+打开C:/project/qtcharts/examples/examples.pro直接编译运行就可以了，如第一个demo截图： 
+
+![areachart](/upload/o_1bcmai9131io5s4pa0f2u01fn0f.png)

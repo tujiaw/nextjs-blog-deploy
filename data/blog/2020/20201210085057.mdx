@@ -1,0 +1,45 @@
+---
+title: 'golang 单例模式'
+date: '2020-12-10'
+tags: ['Go', 'Design']
+draft: false
+summary: 总结：文章介绍 golang 单例模式，属创建型模式，提供创建对象最佳方式，通过 sync.Once 保证线程安全，示例代码展示获取单例及打印地址，多个 goroutine 打印结果相同。 
+---
+
+单例模式（Singleton Pattern）是最简单的设计模式之一。这种类型的设计模式属于创建型模式，它提供了一种创建对象的最佳方式。
+
+要保证线程安全
+```
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+type Singleton struct {
+}
+
+var singleton *Singleton
+var singletonOnce sync.Once
+
+func Instance() *Singleton {
+	singletonOnce.Do(func() {
+		singleton = &Singleton{}
+	})
+	return singleton
+}
+
+func (s *Singleton) print() {
+	fmt.Printf("address: %p\n", s)
+}
+
+func main() {
+	Instance().print()
+	Instance().print()
+	go Instance().print()
+	go Instance().print()
+	time.Sleep(100 * time.Millisecond)
+}
+```

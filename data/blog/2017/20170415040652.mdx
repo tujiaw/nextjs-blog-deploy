@@ -1,0 +1,36 @@
+---
+title: '遍历文件夹下的所有文件'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 此代码为获取指定文件夹下所有.txt 文件的名称及创建时间。通过`FindFirstFile`和`FindNextFile`函数遍历文件夹，将文件名存储在数组中并返回文件数量，最后关闭查找句柄。 
+---
+
+```
+ int GetCustomerName(LPCTSTR szCustomerPath, CString strFileName[])
+	{
+		int nFileCount = 0;
+		WIN32_FIND_DATA finder;
+		CString strCustomerFile(szCustomerPath);
+		strCustomerFile += L"//*.txt";
+		HANDLE hFind = ::FindFirstFile(strCustomerFile, &finder);
+		if (INVALID_HANDLE_VALUE == hFind)
+		{
+			nFileCount = 0;
+		}
+		else
+		{
+			do
+			{
+				strFileName[nFileCount] = finder.cFileName;
+				FILETIME fileTime = finder.ftCreationTime;
+				
+				nFileCount++;
+			}while(::FindNextFile(hFind, &finder) != 0);
+		}
+		::FindClose(hFind);
+		return nFileCount;
+	}
+
+    ```
+> （迁移2011-05-08）

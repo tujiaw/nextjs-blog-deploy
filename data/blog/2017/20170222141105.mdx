@@ -1,0 +1,141 @@
+---
+title: 'Can only update a mounted or mounting component.'
+date: '2017-02-22'
+tags: ['Mobile']
+draft: false
+summary: react native 中出现“Can only update a mounted or mounting component.”警告，因_countdown 方法中每秒递减秒数，组件 unmounted 后 timer 未停止。解决办法是在 componentWillUnmount 中 clearTimeout，修改后的代码片段如上。 
+---
+
+react native Warning: setState(...): Can only update a mounted or mounting component.
+
+碰到这个问题根据给的提示大概意思是：setState方法仅适用于一个安装好的或者正在安装的组件，出现这个提示通常意味着你在组件卸载之后调用了这个方法。  
+代码如下，这是一个倒计时组件：
+```
+/**
+ * Created by tujiaw on 2017/2/19.
+ */
+
+import React, { Component } from 'react';
+import {
+  Text,
+  View,
+  StyleSheet,
+  TouchableHighlight,
+} from 'react-native';
+
+export default class CountDown extends Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      time: this.props.time ? this.props.time : 60,
+      disabled: true
+    }
+    this._countdown = this._countdown.bind(this)
+    this._onPress = this._onPress.bind(this)
+  }
+
+  componentDidMount() {
+    this._countdown();
+  }
+
+  _onPress(){
+    if (this.state.disabled) {
+      //nothing
+    } else {
+      this.setState({disabled: true});
+      this._countdown();
+      if(this.props.onPress){
+        this.props.onPress();
+      }
+    }
+  }
+
+  _countdown(){
+    var that = this
+    var timer = function () {
+      var time = that.state.time - 1;
+      that.setState({time: time});
+      if (time > 0) {
+        setTimeout(timer, 1000)
+      } else {
+        that.setState({disabled: false});
+        that.setState({time: that.props.time ? that.props.time : 60});
+      }
+    };
+
+    setTimeout(timer, 1000)
+  }
+
+  render() {
+    var style = [styles.text];
+    var component;
+    if (this.state.disabled) {
+      component =
+        <View style={styles.container}>
+          <TouchableHighlight>
+            <Text style={styles.disabledText}>{this.props.text}({this.state.time})</Text>
+          </TouchableHighlight>
+        </View>
+    } else {
+      component =
+        <View>
+          <TouchableHighlight
+            style={styles.container}
+            onPress={this._onPress.bind(this)}>
+            <Text style={styles.enableText}>{this.props.endText || '重新获取'}</Text>
+          </TouchableHighlight>
+        </View>
+    }
+    return (
+      component
+    )
+  }
+}
+
+var styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    width: 100,
+    height: 40,
+    backgroundColor: '#ed7b66',
+    margin: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 4,
+  },
+  disabledText: {
+    color: '#fff',
+  },
+  enableText: {
+    color: '#fff',
+  }
+});
+```
+> 可以看到在 _countdown方法中每秒中调用一次timer方法去递减秒数，当组件unmounted之后这个timer并没有停止，所以出现了上面的问题。  
+
+
+**解决办法：**
+> 将每次setTimeout返回的ID保存起来，在componentWillUnmount方法中clearTimeout  
+
+修改后的代码片段如下：  
+```
+  componentWillUnmount() {
+    clearTimeout(this.state.timeid)
+  }
+
+  _countdown(){
+    var that = this
+    var timer = function () {
+      var time = that.state.time - 1;
+      that.setState({time: time});
+      if (time > 0) {
+        that.setState({ timeid: setTimeout(timer, 1000) })
+      } else {
+        that.setState({disabled: false});
+        that.setState({time: that.props.time ? that.props.time : 60});
+      }
+    };
+
+    this.setState({ timeid: setTimeout(timer, 1000) })
+  }
+```

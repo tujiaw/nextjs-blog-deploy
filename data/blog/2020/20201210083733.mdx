@@ -1,0 +1,162 @@
+---
+title: 'golang 中介者模式'
+date: '2020-12-10'
+tags: ['Go', 'Design']
+draft: false
+summary: 中介者模式通过创建中介对象避免对象间直接交互。以铁路系统为例，站长充当调停者，旅客列车和货物列车通过站长交互。代码中展示了旅客列车和货物列车实现列车接口，站长实现中介者接口，通过互斥锁控制站台使用。 
+---
+
+中介者模式是一种行为设计模式。此模式是创建一个中介对象，以防止对象之间的直接交互，从而避免它们之间的直接依赖关系。
+
+一个很好的中介模式的例子是铁路系统平台，两列火车之间是相互独立的，站长充当调停者，使站台仅对其中一列列车可用。列车通过站长交互，站长维持着等候火车的队列，当任何一辆列车离开站台时，通知下一辆列车可以进入了。
+
+注意在下面的代码中，站长是如何充当火车和站台之间的中间人。
+
+* 旅客列车（passengerTrain）和货物列表（goodsTrain）实现了列车接口
+* 站长（stationManger）实现了中介者（mediator ）接口
+
+代码：
+```
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	stationManager := newStationManger()
+	passengerTrain := &passengerTrain{
+		name:     fmt.Sprintf("passengerTrain%d", 1),
+		mediator: stationManager,
+	}
+
+	goodsTrain := &goodsTrain{
+		name:     fmt.Sprintf("goodsTrain%d", 1),
+		mediator: stationManager,
+	}
+
+	passengerTrain.requestArrival()
+	goodsTrain.requestArrival()
+	passengerTrain.departure()
+
+	fmt.Println("exit")
+}
+
+type mediator interface {
+	canLand(train) bool
+	isLanded(train) bool
+	notifyFree()
+}
+
+// 列车接口
+type train interface {
+	requestArrival() // 请求到达
+	departure()      // 离开
+	permitArrival()  // 批准进入
+}
+
+// 旅客列车
+type passengerTrain struct {
+	name     string
+	mediator mediator
+}
+
+func (g *passengerTrain) requestArrival() {
+	if g.mediator.canLand(g) {
+		fmt.Println(g.name + ": Landing")
+	} else {
+		fmt.Println(g.name + ": Waiting")
+	}
+}
+
+func (g *passengerTrain) departure() {
+	fmt.Println(g.name + ": Leaving")
+	g.mediator.notifyFree()
+}
+
+func (g *passengerTrain) permitArrival() {
+	fmt.Println(g.name + ": Arrival Permitted. Landing")
+}
+
+// 货物列车
+type goodsTrain struct {
+	name     string
+	mediator mediator
+}
+
+func (g *goodsTrain) requestArrival() {
+	if g.mediator.canLand(g) {
+		fmt.Println(g.name + ": Landing")
+	} else {
+		fmt.Println(g.name + ": Waiting")
+	}
+}
+
+func (g *goodsTrain) departure() {
+	g.mediator.notifyFree()
+	fmt.Println(g.name + ": Leaving")
+}
+
+func (g *goodsTrain) permitArrival() {
+	fmt.Println(g.name + ": Arrival Permitted. Landing")
+}
+
+// 站长
+type stationManager struct {
+	isPlatformFree bool
+	lock           *sync.Mutex
+	trainQueue     []train
+}
+
+func newStationManger() *stationManager {
+	return &stationManager{
+		isPlatformFree: true,
+		lock:           &sync.Mutex{},
+	}
+}
+
+func (s *stationManager) canLand(t train) bool {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.isPlatformFree {
+		s.isPlatformFree = false
+		return true
+	}
+	s.trainQueue = append(s.trainQueue, t)
+	return false
+}
+
+func (s *stationManager) isLanded(t train) bool {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	for _, item := range s.trainQueue {
+		if t == item {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *stationManager) notifyFree() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if !s.isPlatformFree {
+		s.isPlatformFree = true
+	}
+	if len(s.trainQueue) > 0 {
+		firstTrainInQueue := s.trainQueue[0]
+		s.trainQueue = s.trainQueue[1:]
+		firstTrainInQueue.permitArrival()
+	}
+}
+
+```
+输出：
+```
+passengerTrain1: Landing
+goodsTrain1: Waiting
+passengerTrain1: Leaving
+goodsTrain1: Arrival Permitted. Landing
+exit
+```

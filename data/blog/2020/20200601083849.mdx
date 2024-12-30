@@ -1,0 +1,93 @@
+---
+title: 'golang调用Windows API'
+date: '2020-06-01'
+tags: ['Go']
+draft: false
+summary: 文章介绍 golang 可调用 Windows API 及换壁纸 demo。准备两张 bmp 图片，每 3 秒换一次。先通过 dll 获取 api 并缓存，注意参数写法及释放句柄。代码展示了相关函数调用，如显示消息和设置壁纸等，在 main 函数中循环设置壁纸。 
+---
+
+golang还能调用Windows API非常有意思，下面写了一个golang换壁纸的demo。
+准备了两张bmp格式的图片，没三秒钟换一下壁纸。
+
+主要是先通过dll获取里面api，要注意api参数的写法，dll用完了要释放句柄，这里我用缓存把api缓存起来不必每次调用都去dll里加载。
+
+代码：
+```
+package main
+
+import (
+	"log"
+	"syscall"
+	"time"
+	"unsafe"
+)
+
+var ApiList = map[string][]string {
+	"user32.dll": []string {
+		"MessageBoxW",
+		"SystemParametersInfoW",
+	},
+	"kernel32.dll": []string {
+
+	},
+}
+
+var ProcCache map[string]*syscall.Proc
+
+func init() {
+	ProcCache = make(map[string]*syscall.Proc)
+	for dllName, apiList := range ApiList {
+		d, err := syscall.LoadDLL(dllName)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, name := range apiList {
+			api, err := d.FindProc(name)
+			if err != nil {
+				syscall.FreeLibrary(d.Handle)
+				panic(err)
+			}
+			ProcCache[name] = api
+		}
+		syscall.FreeLibrary(d.Handle)
+	}
+}
+
+func WinCall(name string, a ...uintptr) {
+	if api, ok := ProcCache[name]; ok {
+		_, _, err := api.Call(a...)
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+		log.Println("api not found, name:", name)
+	}
+}
+
+func IntPtr(n int) uintptr {
+	return uintptr(n)
+}
+
+func StrPtr(s string) uintptr {
+	p, _ := syscall.UTF16PtrFromString(s)
+	return uintptr(unsafe.Pointer(p))
+}
+
+func ShowMessage(title, text string) {
+	WinCall("MessageBoxW", IntPtr(0), StrPtr(text), StrPtr(title), IntPtr(0))
+}
+
+func SetWallpaper(bmpPath string) {
+	WinCall("SystemParametersInfoW", IntPtr(20), IntPtr(0), StrPtr(bmpPath), IntPtr(3))
+}
+
+func main() {
+	for i := 0; i < 10; i++ {
+		SetWallpaper("E:\\CppProject\\WindowsProject1\\test.bmp")
+		time.Sleep(3 * time.Second)
+		SetWallpaper("E:\\CppProject\\WindowsProject1\\test2.bmp")
+		time.Sleep(3 * time.Second)
+	}
+}
+```

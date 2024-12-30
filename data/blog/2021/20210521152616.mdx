@@ -1,0 +1,54 @@
+---
+title: 'ntscreenshot截图工具开源了'
+date: '2021-05-21'
+tags: ['Windows', 'Qt']
+draft: false
+summary: 
+---
+
+# ntscreenshot介绍
+Windows截图工具，基本功能都实现了，还有一些细节上的优化。支持截图、贴图，基本的绘制，马赛克，字体颜色设置等等，日常使用的也比较多，运行稳定。开发陆陆续续也花了不少时间，[源码地址](https://gitee.com/tujiaw/ntscreenshot)有兴趣的Star一下吧。
+
+![ntscreenshot](https://gitee.com/tujiaw/ntscreenshot/raw/master/ntscreenshot_demo.png)
+![ntscreenshot](https://gitee.com/tujiaw/ntscreenshot/raw/master/ntscreenshot_demo2.png)
+
+[已编译好的绿色包下载](https://gitee.com/tujiaw/ntscreenshot/tree/master/release)
+
+# 开发环境
+使用VS2017安装Qt Visual Studio Tools插件来编译开发的。
+当然这是我的开发环境，如果是其他版本的VS和Qt只要不是太老我相信都是可以的。
+
+* 平台：windows7
+* IDE：VS2017
+* Qt版本：Qt5.12.9
+
+# 基本的截图功能  
+* 托盘菜单
+* 全局快捷键设置，默认F5截图，F6贴图
+* 开机自启动设置
+* 移动鼠标自动感知选区
+* 放大器，放大当前鼠标所在像素点周围区域
+* 显示选区大小，鼠标光标坐标，光标所在位置像素的颜色
+* c键复制当前颜色
+* 移动鼠标选择选区
+* 方向键进行像素级移动
+* 截图背景透明度设置
+* 保存截图到剪切板
+* 保存截图到文件目录
+
+# 贴图
+* 贴图管理
+* 贴图边框
+
+# 标注
+* 基本图形文字标注
+* 支持改颜色，画笔、字体大小
+* 支持马赛克
+* 支持撤销
+
+# 上传图床
+需要配置服务器
+
+
+# 设置
+托盘右键菜单打开设置窗口

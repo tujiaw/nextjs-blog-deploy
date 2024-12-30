@@ -1,0 +1,24 @@
+---
+title: 'MacBook突然没网'
+date: '2021-02-06'
+tags: ['Mac']
+draft: false
+summary: 
+---
+
+MacBook一段时间没用了，之前升级过系统今天用的时候没网了。我是用以下方法解决的：
+
+1. 打开终端，进入
+```
+cd /Library/Preferences/SystemConfiguration
+```
+
+2. 删除如下文件，不放心的请先备份一下
+```
+com.apple.airport.preferences.plist
+com.apple.wifi.message-tracer.plist
+NetworkInterfaces.plist
+preferences.plist
+```
+
+3. 重启电脑就可以了，我的系统版本是：macOS Big Sur (版本11.1)

@@ -1,0 +1,67 @@
+---
+title: 'sync.WaitGroup增加timeout'
+date: '2020-04-29'
+tags: ['Go']
+draft: false
+summary: 文章介绍了使用 sync.WaitGroup 增加 timeout 的方法。通过封装 WaitGroup 实现超时机制，给出代码示例，测试时若超时时间大于任务时间则任务正常完成退出，小于则未执行完就退出。 
+---
+
+要等待多个goroutine完成，我们可以使用sync.WaitGroup，但是它会一直等待，这里简单封装下增加超时机制。
+
+
+直接上代码：
+```
+type WaitGroupTimeout struct {
+	wg sync.WaitGroup
+	done chan struct{}
+	timeout time.Duration
+}
+
+func NewWaitGroupTimeout(timeout time.Duration)*WaitGroupTimeout {
+	return &WaitGroupTimeout{
+		done: make(chan struct{}),
+		timeout: timeout,
+	}
+}
+
+func(tw *WaitGroupTimeout)Add(delta int) {
+	tw.wg.Add(delta)
+}
+
+func(tw *WaitGroupTimeout)Done() {
+	tw.wg.Done()
+}
+
+func(tw *WaitGroupTimeout)Wait() {
+	go func() {
+		tw.wg.Wait()
+		close(tw.done)
+	}()
+	select {
+	case <- tw.done:
+	case <-time.After(tw.timeout):
+	}
+}
+```
+
+测试代码如下：
+```
+func main() {
+	const TIMEOUT = 5 * time.Second
+	const TASK_EXECUTE_TIME = 3 * time.Second
+
+	tw := NewWaitGroupTimeout(TIMEOUT)
+	go func() {
+		tw.Add(1)
+		defer tw.Done()
+		fmt.Println("start")
+		time.Sleep(TASK_EXECUTE_TIME)
+		fmt.Println("end")
+	}()
+	fmt.Println("wait exit")
+	tw.Wait()
+	fmt.Println("exit")
+}
+```
+当超时时间大于任务时间时，任务可以正常完成然后退出，   
+当超时时间小于任务时间时，任务没有执行完成就退出了。

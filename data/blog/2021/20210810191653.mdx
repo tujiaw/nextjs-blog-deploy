@@ -1,0 +1,63 @@
+---
+title: '卸载程序——自删除'
+date: '2021-08-10'
+tags: ['C/C++']
+draft: false
+summary: 
+---
+
+# 问题
+卸载程序在卸载的时候怎么把自己给删掉
+
+# 分析
+我们知道在删除文件的时候，这个文件不能被打开，如果是程序那程序不能在运行中。
+通常卸载之前我们要求用户先关闭运行中的程序，或者强制杀掉进程，否则删除文件不彻底。
+但由于卸载程序必须是在运行状态，所以我们没办法在运行中删除它。
+
+# 解决方法
+卸载程序在退出前生成delme.bat脚本文件，然后开启新进程执行脚本，执行脚本的时候要等待卸载程序退出。
+
+## 生成delme.bat文件
+其中mypath就是卸载程序的路径  
+sleep 2是在等待卸载进程退出  
+```
+void Controller::writeDelMeBat(const QString &mypath)
+{
+	delmePath_ = mypath;
+	delmePath_ = delmePath_.replace("/", "\\");
+
+	qDebug() << "writeDelMeBat, path:" << delmePath_;
+	QString dir = mypath.mid(0, mypath.lastIndexOf("\\"));
+	QFile f(dir + "\\delme.bat");
+	if (f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+		QTextStream ts(&f);
+		ts << "@ECHO OFF" << "\n";
+		ts << "SETLOCAL" << "\n";
+		ts << "powershell -nop -c \"& {sleep 2}\"" << "\n";
+		ts << QString("DEL \"%1\"").arg(delmePath_) << "\n";
+		ts << "DEL \"%~f0\"" << "\n";
+	}
+}
+```
+
+## 在退出的前一刻执行delme.bat
+```
+void Controller::executeDelMeBat()
+{
+	qInfo() << "delmepath:" << delmePath_;
+	if (!delmePath_.isEmpty()) {
+		QString dir = delmePath_.mid(0, delmePath_.lastIndexOf("\\"));
+		QFile f(dir + "\\delme.bat");
+		if (f.exists()) {
+			QProcess process;
+			process.setProgram("cmd.exe");
+			process.setArguments({ "/C", R"(delme.bat)" });
+			process.setWorkingDirectory(dir);
+			process.setStandardOutputFile(QProcess::nullDevice());
+			process.setStandardErrorFile(QProcess::nullDevice());
+			bool ok = process.startDetached();
+			qInfo() << "execute delme.bat, result:" << ok;
+		}
+	}
+}
+```

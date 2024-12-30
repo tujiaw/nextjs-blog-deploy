@@ -1,0 +1,15 @@
+---
+title: '存储git账号信息不用每次都输入'
+date: '2017-01-01'
+tags: ['Tools']
+draft: false
+summary: 2017 年 1 月 1 日的文章《存储 git 账号信息不用每次都输入》，可在.git 目录下 config 文件中添加“[credential]\n    helper = store”来存储账号密码，无需每次输入。  
+---
+
+存储账号密码
+
+在.git目录下的config文件中增加如下：
+```
+[credential]
+    helper = store
+```

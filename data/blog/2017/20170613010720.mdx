@@ -1,0 +1,110 @@
+---
+title: 'QLabel文本超出显示区域显示...'
+date: '2017-06-13'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 介绍了能让 QLabel 文本超出显示区域显示为“...”并带 tooltip 的 ElidedLabel 类。通过 paintEvent 处理文本绘制，超出则截断显示，且更新 elided 状态和 tooltip，代码包含类定义及实现。 
+---
+
+这个功能很有用，默认情况下文本超出长度会被直接截断的，给用户体验很不好。这里截断后会显示...，并且鼠标划上去有tooltip。
+
+```
+#ifndef ELIDEDLABEL_H
+#define ELIDEDLABEL_H
+
+#include <QtWidgets/QFrame>
+#include <QtCore/QRect>
+#include <QtGui/QResizeEvent>
+#include <QtCore/QString>
+#include <QtWidgets/QWidget>
+
+class ElidedLabel : public QFrame
+{
+	Q_OBJECT
+		Q_PROPERTY(QString text READ text WRITE setText)
+		Q_PROPERTY(bool isElided READ isElided)
+
+public:
+	explicit ElidedLabel(const QString &text, QWidget *parent = 0);
+
+	void setText(const QString &text);
+	const QString & text() const { return content; }
+	bool isElided() const { return elided; }
+
+protected:
+	void paintEvent(QPaintEvent *event) override;
+
+private:
+	bool elided;
+	QString content;
+};
+
+#endif // TEXTWRAPPINGWIDGET_H
+
+
+```
+```
+#include "elidedlabel.h"
+
+#include <QPainter>
+#include <QTextLayout>
+#include <QDebug>
+
+ElidedLabel::ElidedLabel(const QString &text, QWidget *parent)
+	: QFrame(parent)
+	, elided(false)
+	, content(text)
+{
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+}
+
+void ElidedLabel::setText(const QString &newText)
+{
+	content = newText;
+	update();
+}
+
+void ElidedLabel::paintEvent(QPaintEvent *event)
+{
+	QFrame::paintEvent(event);
+
+	QPainter painter(this);
+	QFontMetrics fontMetrics = painter.fontMetrics();
+
+	bool didElide = false;
+	int lineSpacing = fontMetrics.lineSpacing();
+	int y = 3;
+
+	QTextLayout textLayout(content, painter.font());
+	textLayout.beginLayout();
+	forever{
+		QTextLine line = textLayout.createLine();
+
+		if (!line.isValid())
+			break;
+
+		line.setLineWidth(width());
+		int nextLineY = y + lineSpacing;
+
+		// 只处理单行
+		if (0 && height() >= nextLineY + lineSpacing) {
+			line.draw(&painter, QPoint(0, y));
+			y = nextLineY;
+		} else {
+			QString lastLine = content.mid(line.textStart());
+			QString elidedLastLine = fontMetrics.elidedText(lastLine, Qt::ElideRight, width());
+			painter.drawText(QPoint(0, y + fontMetrics.ascent()), elidedLastLine);
+			line = textLayout.createLine();
+			didElide = (lastLine != elidedLastLine);
+			break;
+		}
+	}
+	textLayout.endLayout();
+
+	if (didElide) {
+		elided = didElide;
+	}
+	this->setToolTip(didElide ? content : "");
+}
+
+```

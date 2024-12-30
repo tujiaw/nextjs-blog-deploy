@@ -1,0 +1,217 @@
+---
+title: 'golang设计模式-命令模式'
+date: '2021-02-26'
+tags: ['Go', 'Design']
+draft: false
+summary: 
+---
+
+# 介绍
+命令（Command）模式是一种对象的行为型模式，类似于传统程序设计方法中的回调机制，它将一个请求封装为一个对象，从而使得可用不同的请求对客户进行参数化；对请求排队或者记录请求日志，以及支持可撤销的操作。命令模式是对命令的封装，将发出命令的责任和执行命令的责任分割开，委派给不同的对象，以实现发送者和接收者完全解耦，提供更大的灵活性和可扩展性。
+
+
+命令设计模式中使用的基本组件包括：
+* Receiver - 接受者，它是包含业务逻辑，处理最终的业务
+* Command - 命令，被调用者所调用，包含了基本的执行命令
+* Invoker - 调用者，调用命令
+* Client - 用户，组装命令和接受者对象
+
+看UML图最直观了
+
+![](https://ningto.com/upload/20210226-ntscreenshot-090717.png)
+
+简单的UML图
+![](https://ningto.com/upload/20210226-ntscreenshot-091834.png)
+
+# 例子
+假设电视机上有两个按钮，每个按钮的功能是打开和关闭电视，对应于Command模式中的组件关系是：
+Receiver - 电视机，电视机的开启和关闭  
+Command - 开关命令  
+Invoker - 按钮，有按钮发起开关命令  
+Client - 用户，看电视的人  
+
+对应代码关系如下：
+
+| 组件 | 代码 |
+| --- | --- |
+|Invoker	| button.go |
+|Command Interface	|command.go |
+|Concrete Command 1	| onCommand.go|
+|Concrete Command 2	| offCommand.go |
+|Receiver Interface	| device.go |
+|Concrete Receiver	| tv.go |
+| Client	| main.go |
+
+# 代码
+button.go
+```
+package main
+
+type button struct {
+    command command
+}
+
+func (b *button) press() {
+    b.command.execute()
+}
+```
+command.go
+```
+package main
+
+type command interface {
+    execute()
+}
+```
+onCommand.go
+```
+package main
+
+type onCommand struct {
+    device device
+}
+
+func (c *onCommand) execute() {
+    c.device.on()
+}
+```
+offCommand.go
+```
+package main
+
+type offCommand struct {
+    device device
+}
+
+func (c *offCommand) execute() {
+    c.device.off()
+}
+```
+device.go
+```
+package main
+
+type device interface {
+    on()
+    off()
+}
+```
+tv.go
+```
+package main
+
+import "fmt"
+
+type tv struct {
+    isRunning bool
+}
+
+func (t *tv) on() {
+    t.isRunning = true
+    fmt.Println("Turning tv on")
+}
+
+func (t *tv) off() {
+    t.isRunning = false
+    fmt.Println("Turning tv off")
+}
+```
+main.go
+```
+package main
+
+func main() {
+    tv := &tv{}
+    onCommand := &onCommand{
+        device: tv,
+    }
+    offCommand := &offCommand{
+        device: tv,
+    }
+    onButton := &button{
+        command: onCommand,
+    }
+    onButton.press()
+    offButton := &button{
+        command: offCommand,
+    }
+    offButton.press()
+}
+```
+Output:
+```
+Turning tv on
+Turning tv off
+```
+
+完整代码：
+```
+package main
+
+import "fmt"
+
+type button struct {
+    command command
+}
+
+func (b *button) press() {
+    b.command.execute()
+}
+
+type command interface {
+    execute()
+}
+
+type offCommand struct {
+    device device
+}
+
+func (c *offCommand) execute() {
+    c.device.off()
+}
+
+type onCommand struct {
+    device device
+}
+
+func (c *onCommand) execute() {
+    c.device.on()
+}
+
+type device interface {
+    on()
+    off()
+}
+
+type tv struct {
+    isRunning bool
+}
+
+func (t *tv) on() {
+    t.isRunning = true
+    fmt.Println("Turning tv on")
+}
+
+func (t *tv) off() {
+    t.isRunning = false
+    fmt.Println("Turning tv off")
+}
+
+func main() {
+    tv := &tv{}
+    onCommand := &onCommand{
+        device: tv,
+    }
+    offCommand := &offCommand{
+        device: tv,
+    }
+    onButton := &button{
+        command: onCommand,
+    }
+    onButton.press()
+    offButton := &button{
+        command: offCommand,
+    }
+    offButton.press()
+}
+```

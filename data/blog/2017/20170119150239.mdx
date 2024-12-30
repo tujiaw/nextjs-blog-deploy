@@ -1,0 +1,194 @@
+---
+title: '可变参数（迁移2011-01-18）'
+date: '2017-01-19'
+tags: ['C/C++']
+draft: false
+summary: 介绍了可变参数，C 编译器提供宏处理，有 ANSI 标准形式和与 UNIX System V 兼容形式，通过 va_start、va_arg、va_end 处理参数，还给出具体代码示例，如 demo 函数和 CLogger 类的 Write 函数等。 
+---
+
+那天无意中发现这个帖子，感觉写的不错，转到这里来，给大家共享一下（非常抱歉原地址忘记了）！ 
+某些情况下希望函数的参数个数可以根据需要确定。典型的例子有大家熟悉的函数printf()、scanf()
+和系统调用execl()等。那么它们是怎样实现的呢？C编译器通常提供了一系列处理这种情况的宏，以屏蔽不同的硬件平台造成的差异，增加程序的可移植性。这些宏包括va_start、va_arg和va_end等。  
+
+* 采用ANSI标准形式时，参数个数可变的函数的原型声明是：
+```
+type funcname(type para1, type para2, ...)   
+```  
+* 这种形式至少需要一个普通的形式参数，后面的省略号不表示省略，而是函数原型的一部分。  
+> type是函数返回值和形式参数的类型。
+* 采用与UNIX System V兼容的声明方式时，参数个数可变的函数原型是：
+```
+type funcname(va_alist) 
+va_dcl 
+```
+* 这种形式不需要提供任何普通的形式参数。type是函数返回值的类型。va_dcl是对函数原型声明
+中参数va_alist的详细声明，实际是一个宏定义，对不同的硬件平台采用不同的类型来定义，但在最后都包括了一个分号。因此va_dcl后不再需要加上分号了。va_dcl在代码中必须原样给出。va_alist在VC中可以原样给出，也可以略去。
+* 此外，采用头文件stdarg.h编写的程序是符合ANSI标准的，可以在各种操作系统和硬件上运行；而采用头文件varargs.h的方式仅仅是为了与以前的程序兼容。所以建议大家使用前者。以下主要就前一种方式对参数的处理做出说明。两种方式的基本原理是一致的，只是在语法形式上有一些细微的区别。
+* va_start使argp指向第一个可选参数。va_arg返回参数列表中的当前参数并使argp指向参数列表中的下一个参数。va_end把argp指针清为NULL。函数体内可以多次遍历这些参数，但是都必须以va_start开始，并以va_end结尾。  
+* 调用者在实际调用参数个数可变的函数时，要通过一定的方法指明实际参数的个数，例如把最后一个参数置为空字符串（系统调用execl()就是这样的）、-1或其他的方式（函数printf()就是通过第一个参数，即输出格式的定义来确定实际参数的个数的）。
+* 下面给出一个具体的例子。是采用了符合ANSI标准的形式的代码。代码中加了一些注释，这里就不再解释了。该例子已经在VC/Windows XP、CC/AIX4.3.2.0、GCC/SUSE7.3环境下编译并正常运行。
+
+演示如何使用参数个数可变的函数，采用ANSI标准形式   
+```
+#include < stdio.h >
+#include < string.h >
+#include < stdarg.h >
+
+/* 函数原型声明，至少需要一个确定的参数， 
+注意括号内的省略号 */ 
+int demo( char *, ... ); 
+
+void main( void ) 
+{ 
+demo("DEMO", "This", "is", "a", "demo!", "/0"); 
+} 
+
+/* ANSI标准形式的声明方式，括号内的省略号表示可选参数 */ 
+int demo( char *msg, ... ) 
+{ 
+va_list argp; /* 定义保存函数参数的结构 */ 
+int argno = 0; /* 纪录参数个数 */ 
+char *para; /* 存放取出的字符串参数 */ 
+
+/* argp指向传入的第一个可选参数， 
+msg是最后一个确定的参数 */ 
+va_start( argp, msg ); 
+
+while (1) { 
+para = va_arg( argp, char *); 
+/* 取出当前的参数，类型为char *. */ 
+if ( strcmp( para, "/0" == 0 ) 
+/* 采用空串指示参数输入结束 */ 
+break; 
+printf("arameter #%d is: %s/n", argno, para); 
+argno++; 
+} 
+va_end( argp ); /* 将argp置为NULL */ 
+return 0; 
+}
+```
+完整实例：
+```
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+int demo(char *,...);
+void main(void)
+{
+	demo("demo","this","is","a","arg","/0");
+}
+int demo(char *msg,...)
+{
+	va_list argp;
+	int argnum=0;
+	char *para;
+	va_start(argp,msg);
+	while(1)
+	{
+		para=va_arg(argp,char *);
+		if(strcmp(para,"/0")==0)
+		{
+			break;
+		}
+		printf("paramter %d is:%s/n",argnum,para);
+		argnum++;
+	}
+	va_end(argp);
+	return 0;
+}
+
+```
+```
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+
+class CLogger
+{
+public:
+	CLogger();
+	CLogger(const char* szPath);
+	~CLogger();
+
+	bool Open(const char* szPath);
+	int Write(const char* str, ...);
+
+public:
+	FILE *m_fp;
+	static int m_num;
+};
+
+int CLogger::m_num = 0;
+
+CLogger::CLogger()
+: m_fp(NULL)
+{
+}
+
+CLogger::CLogger(const char* szPath)
+: m_fp(NULL)
+{
+	Open(szPath);
+}
+
+CLogger::~CLogger()
+{
+	if (m_fp)
+	{
+		fclose(m_fp);
+		m_fp = NULL;
+	}
+}
+
+bool CLogger::Open(const char* szPath)
+{
+	bool bret = false;
+
+	if (NULL==m_fp && szPath)
+	{
+		m_fp = fopen(szPath, "a+");
+		if (m_fp)
+		{
+			bret = true;
+		}
+	}
+
+	return bret;
+}
+
+int CLogger::Write(const char* str, ...)
+{
+	m_num++;
+	if (m_num >= 100000)
+	{
+		m_num = 0;
+	}
+
+	char szNum[8] = {0};
+	sprintf(szNum, "[%05d]", m_num);
+
+	va_list valist;
+	va_start(valist, str);
+
+	char buffer[512] = {0};
+	_vsnprintf(buffer, 512, str, valist);
+	
+	va_end(valist);
+
+	int num1 = fwrite(szNum, strlen(szNum), 1, m_fp);
+	int num2 = fwrite(buffer, strlen(buffer), 1, m_fp);
+
+	return (num1+num2);
+}
+
+void main(void)
+{
+	CLogger log;
+	log.Open("1.txt");
+	
+	char *name = "tujiaw";
+	int num = 412212;
+
+	log.Write("name=%s, num=%d\n", name, num);
+}
+```

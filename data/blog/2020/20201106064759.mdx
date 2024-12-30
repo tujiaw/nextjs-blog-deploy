@@ -1,0 +1,43 @@
+---
+title: 'Qt 正确的显示窗口'
+date: '2020-11-06'
+tags: ['Windows', 'Qt']
+draft: false
+summary: 文章主要讲 Qt 正确显示窗口，有多种展示情况及常见做法，如`widget->show(); widget->raise();`但存在窗口最小化后出不来等问题，给出`GraceShowWidget`函数代码可解决，测试无问题。 
+---
+
+显示窗口看起来很简单，但是有一些细节要注意的。通常有下面几种情况需要展示一个窗口：
+1. 第一次创建后展示  
+2. 窗口最小化    
+3. 窗口不在最前面  
+4. 窗口销毁后再次创建（同第1种）
+
+注意： 这里说的不是通过任务栏来激活窗口，而是通过用户设计的按钮或者菜单来打开窗口
+
+通常的做法如下：
+```
+widget->show();
+widget->raise();
+```
+这里有两个问题：
+1. 窗口最小化后出不来  
+2. 窗口从非激活状态显示出来后点击主界面，主界面还是被遮挡了，只有在子窗口上点击一下激活子窗口再去主窗口上点击才有效  
+
+下面代码的实现方式，测试下来是没问题的：
+```
+void GraceShowWidget(QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+
+    if (widget->isMinimized()) {
+        widget->showNormal();
+    } else {
+        widget->show();
+    }
+	
+    widget->raise();
+    widget->activateWindow();
+}
+```

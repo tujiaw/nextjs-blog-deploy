@@ -1,0 +1,127 @@
+---
+title: 'C++保证函数能在超时时间内返回'
+date: '2019-01-24'
+tags: ['C/C++']
+draft: false
+summary: 介绍 C++保证函数在超时时间内返回的方法。通过两个接口 execTimeout 实现，利用 shared_from_this 避免智能指针释放，启动新线程执行函数，demo 展示正常返回和超时返回，代码包含 TimeoutGuard 类的实现。 
+---
+
+使用这两个接口就可以了  
+
+ 功能：保证某个操作能在超时时间内返回  
+
+ 说明：shared_from_this保证在退出作用域的时候智能指针不被释放，在线程退出的时候再自动销毁。  
+
+ 每执行一次execTimeout都会启动一个新线程，在线程退出后自动回收所有资源，注意T类型需要能被拷贝赋值  
+
+ 解决问题：某些操作会导致当前线程被阻塞（特别是网络操作），而这些接口又是第三方库提供的我们没办法修改  
+
+ 不适用：操作非常频繁的接口；可能会被永久阻塞的接口
+
+ demo:
+```
+ // 执行正常返回
+int result1 = execTimeout<int>(3000, []() -> int {
+    return 1 + 2;
+});
+std::cout << "result1:" << result1 << std::endl;
+
+// 执行超时（执行函数需要花费4s而超时时间是3s），返回默认值
+int result2 = execTimeout<int>(3000, 0, []() -> int {
+    std::this_thread::sleep_for(std::chrono::seconds(4));
+    return 3 + 4;
+});
+std::cout << "result2:" << result2 << std::endl;
+```
+```
+#pragma once
+
+#include <condition_variable>
+#include <mutex>
+#include <memory>
+#include <thread>
+
+template<typename T>
+T execTimeout(int msTimeout, const std::function<T()> &cb)
+{
+    std::shared_ptr<TimeoutGuard<T>> a(new TimeoutGuard<T>(msTimeout));
+    return a->exec(cb);
+}
+
+template<typename T>
+T execTimeout(int msTimeout, const T &defaultValue, const std::function<T()> &cb)
+{
+    std::shared_ptr<TimeoutGuard<T>> a(new TimeoutGuard<T>(msTimeout, defaultValue));
+    return a->exec(cb);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+class TimeoutGuard : public std::enable_shared_from_this<TimeoutGuard<T>>
+{
+public:
+    TimeoutGuard(int msTimeout)
+        : msTimeout_(msTimeout), isOk_(false)
+    {
+    }
+
+    TimeoutGuard(int msTimeout, const T &defaultValue)
+        : msTimeout_(msTimeout), result_(defaultValue), isOk_(false)
+    {
+    }
+
+    TimeoutGuard(const TimeoutGuard&) = delete;
+    TimeoutGuard& operator=(const TimeoutGuard&) = delete;
+
+    T exec(const std::function<T()> &cb)
+    {
+        if (s_threadCount > 300) {
+            std::cerr << "[TimeoutGuard] thread count overload:" << s_threadCount << std::endl;
+            return result_;
+        }
+
+        cb_ = cb;
+        long long startTime = getCurrentMillisecond();
+        auto self(shared_from_this());
+        thread_.reset(new std::thread([self]() {
+            ++s_threadCount;
+            std::cout << "[TimeoutGuard] thread start id:" << std::this_thread::get_id() << ", count:" << s_threadCount << std::endl;;
+            T t = self->cb_();
+            std::unique_lock<std::mutex> lock(self->mutex_);
+            self->isOk_ = true;
+            self->result_ = t;
+            self->cond_.notify_one();
+            --s_threadCount;
+            std::cout << "[TimeoutGuard] thread end id:" << std::this_thread::get_id() << ", count:" << s_threadCount << std::endl;
+        }));
+        thread_->detach();
+
+        std::unique_lock<std::mutex> lock(mutex_);
+        while (!isOk_ && startTime + msTimeout_ > getCurrentMillisecond()) {
+            cond_.wait_for(lock, std::chrono::milliseconds(100));
+        }
+        return result_;
+    }
+
+    long long getCurrentMillisecond()
+    {
+        auto duration = std::chrono::system_clock::now().time_since_epoch();
+        auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        return millis;
+    }
+
+private:
+    std::mutex mutex_;
+    std::condition_variable cond_;
+    std::unique_ptr<std::thread> thread_;
+    std::function<T()> cb_;
+    T result_;
+    bool isOk_;
+    long long msTimeout_;
+    static int s_threadCount;
+};
+
+template<typename T>
+int TimeoutGuard<T>::s_threadCount = 0;
+
+```

@@ -1,0 +1,65 @@
+---
+title: 'http升级到https'
+date: '2018-06-23'
+tags: ['Web', 'Node.js', 'Linux']
+draft: false
+summary: 文章介绍 http 升级到 https 的过程，环境为腾讯云服务、nodejs 服务和 nginx 反向代理。包括获取免费 DVSSL 证书、上传证书到 nginx 目录、修改 conf 文件（改 80 服务为 443 并新增 80 强制跳转到 https 服务）及 nginx reload 等步骤。 
+---
+
+环境：腾讯云服务，nodejs服务，nginx反向代理
+
+# 获取证书
+获取证书有多重途径，我是在腾讯云申请免费版DVSSL证书（一年期限）  
+* 登录腾讯云
+* 选择云产品->域名与网站->SSL证书管理->申请证书
+
+# 上传证书
+根据不同服务器选择相应的证书文件，我用的是nginx。  
+如将1_ningto.com_bundle.crt和2_ningto.com.key这两个文件上传到nginx所在目录（我的是：/etc/nginx/）。
+
+# 修改conf文件
+* 将原来的80服务改为443，同时增加ssl相关的配置
+* 再新增一个80服务作为将http强制跳转到https
+
+```
+#设置非安全连接永久跳转到安全连接
+server{
+    listen 80;
+    server_name www.ningto.com ningto.com;
+    #告诉浏览器有效期内只准用 https 访问
+    add_header Strict-Transport-Security max-age=15768000;
+    #永久重定向到 https 站点
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name www.ningto.com ningto.com;
+
+    ssl on;
+    ssl_certificate 1_ningto.com_bundle.crt;
+    ssl_certificate_key 2_ningto.com.key;
+    ssl_session_timeout 5m;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2; #按照这个协议配置
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;#按照这个套件配置
+    ssl_prefer_server_ciphers on;
+
+
+     location / {
+            client_max_body_size 35m;
+            add_header X-Cache-Status $upstream_cache_status;
+            proxy_set_header   X-Real-IP $remote_addr;
+            proxy_set_header   Host      $http_host;
+            proxy_pass         http://127.0.0.1:3000; # 指向本机服务
+            proxy_cache my_cache;
+            proxy_cache_revalidate on;
+            proxy_cache_min_uses 1;
+            proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+            proxy_cache_lock on;
+        }
+}
+
+```
+
+# nginx reload
+最后执行：nginx -s reload

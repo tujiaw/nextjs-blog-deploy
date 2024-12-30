@@ -1,0 +1,47 @@
+---
+title: '用内存映射的方式在文件末尾追加一个hello'
+date: '2017-04-17'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 此 C++代码通过 Windows API 在文件末尾追加“hello”。先创建文件句柄，获取文件大小，创建文件映射对象，获取映射视图，将“hello”复制到文件末尾，最后解除映射和关闭句柄，实现了在文件末尾追加内容的功能。 
+---
+
+```
+#include <windows.h>
+#include <iostream>
+using namespace std;
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+	HANDLE hFile = CreateFile("one.dat", GENERIC_READ | GENERIC_WRITE,
+		FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, NULL, NULL);
+
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		cout << "CreateFile is fail" << endl;
+		return 0;
+	}
+	DWORD dwFileSize = GetFileSize(hFile, NULL);
+
+	HANDLE hFileMap = CreateFileMapping(hFile, NULL, PAGE_READWRITE, 0,
+		dwFileSize + 5 * sizeof(char), "wsTest");
+
+	LPVOID lpView = NULL;
+	if (hFileMap)
+	{
+		lpView = MapViewOfFile(hFileMap, FILE_MAP_WRITE, 0, 0, 0);
+	}
+
+	char *lpContent = (char*)lpView;
+	strcpy(lpContent + dwFileSize / sizeof(char), "hello");
+
+	UnmapViewOfFile(lpView);
+	CloseHandle(hFileMap);
+	CloseHandle(hFile);
+
+	cin.get();
+	return 0;
+}
+```
+
+> 2011-08-10

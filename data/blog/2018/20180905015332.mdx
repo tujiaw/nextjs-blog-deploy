@@ -1,0 +1,173 @@
+---
+title: 'Javascript小技巧'
+date: '2018-09-05'
+tags: ['Javascript']
+draft: false
+summary: 总结：介绍了多种 Javascript 技巧，如删除数组尾部元素、使用对象解构模拟命名参数等，还涵盖了在 Switch 语句中用范围值、await 多个 async 函数等内容，涵盖全面且实用。 
+---
+
+# 删除数组尾部元素
+一个简单方法就是改变数组的length值
+```
+const arr = [1, 2, 3, 4, 5, 6]
+arr.length = 3
+console.log(arr) // [ 1, 2, 3 ]
+
+arr.length = 0
+console.log(arr) // []
+console.log(arr[2]) // undefiend
+```
+
+# 使用对象解构（object destructuring）来模拟命名参数
+如果需要将一系列可选项作为参数传入函数，你很可能会使用对象（Object）来定义配置（Config）
+```
+function doSomething(config) {
+    const foo = config.foo || 'Hi'
+    const bar = config.bar || 'Yo'
+    const baz = config.baz || 13
+    console.log(foo, bar, baz)
+}
+
+doSomething({ foo: 'Hello', bar: 'Hey', baz: 32}) // Hello Hey 32
+doSomething({ foo: 'hello'}) // hello Yo 13
+```
+不过这是一个比较老的方法了，它模拟了 JavaScript 中的命名参数。
+
+在 ES 2015 中，你可以直接使用对象解构：
+```
+function doSomething({foo = 'Hi', bar = 'Yo', baz = 13}) {
+    console.log(foo, bar, baz)
+}
+doSomething({ foo: 'Hello', bar: 'Hey', baz: 32}) // Hello Hey 32
+doSomething({ foo: 'hello'}) // hello Yo 13
+```
+让参数可选也很简单：
+```
+function doSomething({foo = 'Hi', bar = 'Yo', baz = 13} = {}) {
+    console.log(foo, bar, baz)
+}
+doSomething() // Hi Yo 13
+```
+
+# 使用对象解构来处理数组
+可以使用对象解构的语法来获取数组的元素
+```
+const csvFileLine = '1997,John Doe,US,john@doe.com,New York'
+const { 2: country, 4: state } = csvFileLine.split(',')
+console.log(country, state) // US New York
+```
+
+# 在 Switch 语句中使用范围值
+可以这样写满足范围值的语句
+```
+function getWaterState(tempInCelsius) {
+    let state;
+    switch (true) {
+      case (tempInCelsius <= 0): 
+        state = 'Solid';
+        break;
+      case (tempInCelsius > 0 && tempInCelsius < 100): 
+        state = 'Liquid';
+        break;
+      default: 
+        state = 'Gas';
+    }
+    return state;
+  }
+
+  console.log(getWaterState(-1)) // Solid
+  console.log(getWaterState(34)) // Liquid
+  console.log(getWaterState(34535)) // Gas
+```
+
+# await多个async函数
+在使用async/await 的时候，可以使用 Promise.all 来await 多个async 函数
+```
+function asyncRequest(second) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            resolve(second)
+        }, second * 1000)
+    })
+}
+
+// await必须放在async函数中执行
+(async function() {
+    // 串行执行，总共需要6秒
+    const result1 = await asyncRequest(1)
+    const result2 = await asyncRequest(2)
+    const result3 = await asyncRequest(3)
+
+    // 并行执行，总共需要3秒
+    const result4 = await Promise.all([asyncRequest(1), asyncRequest(2), asyncRequest(3)])
+    console.log(result4)  // [ 1, 2, 3 ]
+})()
+
+```
+
+# 创建Pure objects
+你可以创建一个100% pure object，它不从Object中继承任何属性或则方法（比如constructor, toString()等）
+```
+const pureObject = Object.create(null);
+console.log(pureObject); //=> {}
+console.log(pureObject.constructor); //=> undefined
+console.log(pureObject.toString); //=> undefined
+console.log(pureObject.hasOwnProperty); //=> undefined
+```
+
+# 格式化JSON代码
+JSON.stringify除了可以将一个对象字符化，还可以格式化输出 JSON 对象
+```
+const obj = {
+    foo: { bar: [11, 22, 33, 44], baz: { bing: true, boom: 'Hello' } } 
+}
+
+console.log(JSON.stringify(obj))
+// {"foo":{"bar":[11,22,33,44],"baz":{"bing":true,"boom":"Hello"}}}
+
+console.log(JSON.stringify(obj, null, 2)) // 2个空格
+//   {
+//     "foo": {
+//       "bar": [
+//         11,
+//         22,
+//         33,
+//         44
+//       ],
+//       "baz": {
+//         "bing": true,
+//         "boom": "Hello"
+//       }
+//     }
+//   }
+```
+
+# 从数组中移除重复元素
+通过使用集合语法和 Spread 操作，可以很容易将重复的元素移除
+```
+const removeDuplicateItems = arr => [...new Set(arr)];
+const result = removeDuplicateItems([42, 'foo', 42, 'foo', true, true]);
+console.log(result) // [ 42, 'foo', true ]
+```
+
+# 平铺多维数组
+使用 Spread 操作平铺嵌套多维数组
+```
+const arr = [11, [22, 33], [44, 55], 66];
+const flatArr = [].concat(...arr); //=> [11, 22, 33, 44, 55, 66]
+```
+
+不过上面的方法仅适用于二维数组，但是通过递归，就可以平铺任意维度的嵌套数组了
+```
+function flattenArray(arr) {
+    const flattened = [].concat(...arr);
+    return flattened.some(item => Array.isArray(item)) ? 
+      flattenArray(flattened) : flattened;
+  }
+  
+  const arr = [11, [22, 33], [44, [55, 66, [77, [88]], 99]]];
+  const flatArr = flattenArray(arr); 
+  console.log(flatArr) // [ 11, 22, 33, 44, 55, 66, 77, 88, 99 ]
+```
+
+希望这些小技巧能帮助你写好 JavaScript ~

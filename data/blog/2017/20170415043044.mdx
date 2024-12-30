@@ -1,0 +1,91 @@
+---
+title: 'WTL IWebBrowser2调用网页中javascript函数'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 文章介绍通过 WTL 的 IWebBrowser2 调用网页中 javascript 函数。给出简单含 js 网页代码，及相关 WebBrowser ActiveX 控件成员变量等操作，在 OnInitDialog 中导航到网页，OnOk 函数中测试执行 js 函数，还给出 WtlCallJavascript 函数，运行后可实现相应功能。 
+---
+
+# 简单的含有js的网页
+```
+<html>
+	<head>
+	<mce:script type = "text/<a href="http://lib.csdn.net/base/javascript" class='replace_word' title="JavaScript知识库" target='_blank' style='color:#df3434; font-weight:bold;'>JavaScript</a>"><!--
+	function test(){
+	document.write("hello world!");
+	}
+	function test2(){
+	alert("hello, world");
+	}
+	function link(){
+	window.location.href = "http://www.baidu.com";
+	}
+	test();
+	
+// --></mce:script>
+	</head>
+	<body>
+		<p><a href = "javascript:link()">this is js link</a></p>
+	</body>
+</html>
+```
+
+# WebBrowser ActiveX控件成员变量
+```
+CComPtr<IWebBrowser2> m_pWb2; 
+```
+# 在OnInitDialog中
+```
+CAxWindow wndIE = GetDlgItem(IDC_IE);   
+HRESULT hr;   
+hr = wndIE.QueryControl(&m_pWb2);   
+if (m_pWb2)   
+{   
+    CComVariant v;   
+    m_pWb2->Navigate(CComBSTR(_T("...//test.html")), &v, &v, &v, &v);   // 这里地址省略了，注意要用//
+} 
+```
+
+# 在OnOk函数里测试
+```
+LRESULT OnOK(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+{
+    // TODO: Add validation code 
+    HRESULT hr;
+    CComPtr<IDispatch> spdispDoc;   
+    hr = m_pWb2->get_Document(&spdispDoc);
+    if (FAILED(hr))   
+    {   
+        return hr;   
+    }   
+    CComQIPtr<IHTMLDocument2> spDoc = spdispDoc;
+    
+    VARIANT ret;
+    ret.vt = VT_EMPTY;
+    return WtlCallJavascript(spDoc, CComBSTR("test2()"), &ret);
+    //CloseDialog(wID); // 屏蔽掉回车关闭对话框
+}
+```
+
+# 上面需要的函数
+```
+LRESULT WtlCallJavascript(CComQIPtr<IHTMLDocument2> htmlDoc, BSTR strCode, VARIANT *pvarRet)
+{
+    HRESULT hr = -1;
+    if (!(htmlDoc && strCode))
+    {
+        return hr;
+    }
+    IHTMLWindow2 *pHtmlWnd;
+    hr = htmlDoc->get_parentWindow(&pHtmlWnd);
+    if (SUCCEEDED(hr))
+    {
+        hr = pHtmlWnd->execScript(strCode, CComBSTR(_T("javascript")), pvarRet);
+    }
+    return hr;
+}
+```
+运行程序后它会打开我们的html网页， 然后按Enter键会弹出hello, world小的提示窗口说明js里的那个函数执行了。
+插入WebBrowser控件的方法可以看这里：[WTL 通过IWebBrowser2接口使WebBrowser控件在自己的窗口打开网页](http://blog.csdn.net/tujiaw/article/details/6554994)
+
+> 2011-06-19

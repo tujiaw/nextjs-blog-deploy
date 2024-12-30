@@ -1,0 +1,33 @@
+---
+title: 'One of the sources for assign has an enumerable key on the prototype chain'
+date: '2018-02-25'
+tags: ['React']
+draft: false
+summary: 在 react native 中拷贝对象遇“One of the sources for assign has an enumerable key on the prototype chain”错误。for 循环给 obj 赋值放入数组，使用 _.clone 后正常，之前用 {...obj} 或 Object.assign({}, obj) 会报错，改用 lodash 的 clone 就没问题。 
+---
+
+react native中当我拷贝一个对象的时候遇到上述错误，我有一个obj（有些特殊），for循环给它赋不同的值放入Array中，如下代码：
+```
+      const objList = []
+      for (let i = 0, count = protoList.length; i < count; i++) {
+        const cmd = getCommandFromProto(protoList[i])
+        if (cmd) {
+          const newObj = _.clone(obj) // 注意这里
+          newObj.subid = self._subIdStart++
+          newObj.topic = cmd
+          objList.push(newObj)
+        }
+      }
+```
+
+_.clone的这行代码，之前使用下面方式都报上面的错误
+```
+const newObj = {...obj}
+或者
+const newObj = Object.assign({}, obj)
+```
+
+后来改用lodash的clone就没问题了
+```
+import * as _ from 'lodash/core'
+```

@@ -1,0 +1,64 @@
+---
+title: 'golang Options可变参数接口设计'
+date: '2019-11-05'
+tags: ['Go']
+draft: false
+summary: 文章介绍 golang 中使用...Options 作为接口参数，以新建 exchange 为例，说明其优点是参数灵活、意义清晰，缺点是每个可选参数需提供函数，第一眼难明白怎么填，适合参数多的接口。 
+---
+
+golang中发现不少第三方库使用...Options作为接口参数，说不上这种方式有多好但是了解下也是不错的。
+
+如下代码新建一个exchange，一个必填参数其他的是可选参数。
+```cassandraql
+package main
+
+import "fmt"
+
+type Options struct {
+	Name string
+	Kind string
+	Durable bool
+	AutoDelete bool
+	Internal bool
+	NoWait bool
+}
+
+type Option func(*Options)
+
+type Exchange struct {
+	opts Options
+}
+
+func NewExchange(name string, opts ...Option) *Exchange {
+	exchange := new(Exchange)
+	exchange.opts = Options{
+		Name: name,
+	}
+	for _, o := range opts {
+		o(&exchange.opts)
+	}
+	return exchange
+}
+
+func (exchange *Exchange) Publish(content string) error {
+	fmt.Println(exchange.opts, content)
+	return nil
+}
+
+func Kind(val string) Option {
+	return func(o *Options) { o.Kind = val }
+}
+
+func Durable(val bool) Option {
+	return func(o *Options) { o.Durable = val }
+}
+
+func main() {
+	conn := NewExchange("***:8080", Kind("hello"), Durable(true))
+	conn.Publish("ping")
+}
+```
+这种接口的优点是参数比较灵活，参数的意义清晰明白。  
+缺点是每个可选参数都要提供一个函数，第一眼看上去不明白...Options可变参数怎么填，还要看源码提供的方法。  
+
+> 这种方式比较适合参数多的接口

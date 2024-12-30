@@ -1,0 +1,141 @@
+---
+title: 'Qt简单截屏'
+date: '2017-09-18'
+tags: ['Qt', 'C/C++']
+draft: false
+summary: 介绍 Qt 简单截屏，通过鼠标操作实现。定义 GrabWidget 类，包含多种鼠标事件处理函数，如移动、按下、释放等，可保存截取的图片。主函数创建并显示 GrabWidget 实例。 
+---
+
+鼠标左键按下拉取截取范围，中间确认截图，右键取消截图。
+
+```
+#ifndef GRABWIDGET_H
+#define GRABWIDGET_H
+
+#include <QWidget>
+#include <QMouseEvent>
+
+class GrabWidget : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit GrabWidget(QWidget *parent = 0);
+
+signals:
+
+public slots:
+
+public:
+    void savePixmap();
+
+protected:
+    void mouseMoveEvent(QMouseEvent *ev);
+    void paintEvent(QPaintEvent *);
+    void mousePressEvent(QMouseEvent *ev);
+    void mouseReleaseEvent(QMouseEvent *ev);
+
+private:
+    QPoint ptCur_;
+    QPoint ptStart_;
+    QPoint ptEnd_;
+    bool isDrawing_;
+};
+
+#endif // GRABWIDGET_H
+
+```
+
+```
+#include "grabwidget.h"
+#include <QApplication>
+#include <QtGui>
+#include <QDesktopWidget>
+
+GrabWidget::GrabWidget(QWidget *parent) :
+    QWidget(parent)
+{
+    setWindowFlags(Qt::Widget | Qt::FramelessWindowHint);
+    setWindowOpacity(0.1);
+    resize(QApplication::desktop()->width(), QApplication::desktop()->height());
+    setCursor(Qt::CrossCursor);
+    isDrawing_ = false;
+}
+
+void GrabWidget::savePixmap()
+{
+
+}
+
+void GrabWidget::mouseMoveEvent(QMouseEvent *ev)
+{
+    ptCur_.setX(ev->x());
+    ptCur_.setY(ev->y());
+    update();
+}
+
+void GrabWidget::paintEvent(QPaintEvent *e)
+{
+    QWidget::paintEvent(e);
+
+    int width, height;
+    QPainter painter(this);
+    painter.setPen(Qt::red);
+    if (isDrawing_) {
+        width = ptCur_.x() - ptStart_.x();
+        height = ptCur_.y() - ptStart_.y();
+        painter.drawRect(ptStart_.x(), ptStart_.y(), width, height);
+    } else {
+        if (ptEnd_ != ptStart_) {
+            width = ptEnd_.x() - ptStart_.x();
+            height = ptEnd_.y() - ptStart_.y();
+            painter.drawRect(ptStart_.x(), ptStart_.y(), width, height);
+        }
+    }
+}
+
+void GrabWidget::mousePressEvent(QMouseEvent *ev)
+{
+    if (ev->button() == Qt::MiddleButton) {
+        hide();
+        int width = ptEnd_.x() - ptStart_.x();
+        int height = ptEnd_.y() - ptStart_.y();
+        QPixmap tmpPixmap = QPixmap::grabWindow(QApplication::desktop()->winId(),
+                                                ptStart_.x(), ptStart_.y(), width, height);
+        QDateTime dt = QDateTime::currentDateTime();
+        QString filename = dt.toString("yyyyMMddhhmmss") + ".jpg";
+        tmpPixmap.save(filename, 0, 100);
+        exit(1);
+    } else if (ev->button() == Qt::RightButton) {
+        exit(1);
+    } else if (ev->button() == Qt::LeftButton) {
+        ptStart_ = ev->pos();
+        isDrawing_ = true;
+    }
+    update();
+}
+
+void GrabWidget::mouseReleaseEvent(QMouseEvent *ev)
+{
+    if (ev->button() == Qt::LeftButton) {
+        ptEnd_ = ev->pos();
+        isDrawing_ = false;
+    }
+}
+
+```
+```
+#include <QApplication>
+#include "grabwidget.h"
+
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+
+    GrabWidget grabWidget;
+    grabWidget.setMouseTracking(true);
+    grabWidget.show();
+
+    return a.exec();
+}
+
+```

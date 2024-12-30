@@ -1,0 +1,152 @@
+---
+title: '给marked增加TOC(Table of content)'
+date: '2017-10-22'
+tags: ['Web', 'Javascript']
+draft: false
+summary: 介绍给 marked 库增加 TOC 功能，先初始化 marked 引入库并重写 renderer.heading，设置参数后保存解析后的 header 信息，再用特定代码将数据转换成 html 形式的 toc，最后通过 post2html 函数实现并添加锚点定位偏移 css。 
+---
+
+一直使用marked库解析Markdown，现在想给它增加TOC功能  
+使用marked解析markdown文本是很简单的，如：marked(markdownText)就可以得到解析后的html内容
+# 初始化marked
+## 引入库
+```
+var marked = require('marked');
+```
+## 重写renderer.heading
+
+tocObj后面再介绍，返回的header中包含了用于定位的锚点。当然你也可以直接将锚点写在h标签中，我这里单独用一个a标签是为了解决，网站有固定的导航头的时候，定位锚点的时候标题被遮盖的问题，如：[点击带锚点的网址后，如何让网页位置向下偏移一小段距离](https://segmentfault.com/q/1010000000124208)
+```
+var renderer = new marked.Renderer();
+renderer.heading = function(text, level, raw) {
+  var anchor = tocObj.add(text, level);
+  return `<a id=${anchor} class="anchor-fix"></a><h${level}>${text}</h${level}>\n`;
+};
+```
+
+## 设置参数
+
+highlight是我用来处理代码高亮的，这里不考虑。
+```
+marked.setOptions({
+    renderer: renderer,
+    highlight: function(code) {
+      return require("highlight.js").highlightAuto(code).value;
+    },
+});
+```
+
+# 保存marked解析后的header信息
+在renderer.heading使用tocObj保存h标签的text和level并且返回一个生产的锚点，text即标签的内容，level是几级标题，如：h1,h2,h3等
+
+# 产生toc的html代码
+有了header信息就可以生成toc了，toc是根据h标签的等级层次来生成的，跟目录树是一样的，并不是一个单纯的列表平铺下来的。
+
+我们目前拿到的数据是这样的，数字是level，标题是text，它们按顺序存放在数组中
+```
+h1一级标题
+h1一级标题
+  h2二级标题
+  h2二级标题
+    h3三级标题
+  h2二级标题
+h1一级标题
+```
+
+现在要把这些数据转换成html标签的形式
+
+用ul和li标签来表示，就存在ul中嵌套ul的情况，如下：
+```
+<ul>
+  <li>一级标题</li>
+  <li>一级标题</li>
+  <ul>
+    <li>二级标题</li>
+    <li>二级标题</li>
+    <ul>
+      <li>三级标题</li>
+    </ul>
+    <li>二级标题</li>
+  </ul>
+  <li>一级标题</li>
+</ul>
+```
+
+转换代码
+```
+const tocObj = { 
+  add: function(text, level) {
+    var anchor = `#toc${level}${++this.index}`;
+    this.toc.push({ anchor: anchor, level: level, text: text });
+    return anchor;
+  },
+  // 使用堆栈的方式处理嵌套的ul,li，level即ul的嵌套层次，1是最外层
+  // <ul>
+  //   <li></li>
+  //   <ul>
+  //     <li></li>
+  //   </ul>
+  //   <li></li>
+  // </ul>
+  toHTML: function() {
+    let levelStack = [];
+    let result = '';
+    const addStartUL = () => { result += '<ul>'; };
+    const addEndUL = () => { result += '</ul>\n'; };
+    const addLI = (anchor, text) => { result += '<li><a href="#'+anchor+'">'+text+'<a></li>\n'; };
+
+    this.toc.forEach(function (item) {
+      let levelIndex = levelStack.indexOf(item.level);
+      // 没有找到相应level的ul标签，则将li放入新增的ul中
+      if (levelIndex === -1) {
+        levelStack.unshift(item.level);
+        addStartUL();
+        addLI(item.anchor, item.text);
+      } // 找到了相应level的ul标签，并且在栈顶的位置则直接将li放在此ul下
+      else if (levelIndex === 0) {
+        addLI(item.anchor, item.text);
+      } // 找到了相应level的ul标签，但是不在栈顶位置，需要将之前的所有level出栈并且打上闭合标签，最后新增li
+      else {
+        while (levelIndex--) {
+          levelStack.shift();
+          addEndUL();
+        }
+        addLI(item.anchor, item.text);
+      }
+    });
+    // 如果栈中还有level，全部出栈打上闭合标签
+    while(levelStack.length) {
+      levelStack.shift();
+      addEndUL();
+    }
+    // 清理先前数据供下次使用
+    this.toc = [];
+    this.index = 0;
+    return result;
+  },
+  toc: [], 
+  index: 0
+};
+```
+
+# 最后的代码实现
+post表示文章对象，content是markdown内容，调用marked的时候renderer.heading中就已经往tocObj中写入文章的标题信息了，最后只需要调用一下toHTML就可以产生toc的html代码了。
+```
+post2html: function(post) {
+  if (post) {
+    post.content = marked(post.content);
+    post.toc = tocObj.toHTML();
+  }
+}
+```
+
+# 锚点定位偏移css
+20px是被导航条遮住的高度
+```
+.anchor-fix {
+    display: block;
+    height: 20px; /*same height as header*/
+    margin-top: -20px; /*same height as header*/
+    visibility: hidden;
+}
+```

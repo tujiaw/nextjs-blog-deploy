@@ -1,0 +1,124 @@
+---
+title: 'QComboBox+QCompleter实现搜索自动匹配'
+date: '2017-03-23'
+tags: ['Qt']
+draft: false
+summary: 通过 QComboBox 和 QCompleter 实现搜索自动匹配。按 Ctrl+F 打开搜索框，初始化数据并设置匹配规则为 contains，打开后清空显示并设焦点，点击弹出按钮列表框有数据，可通过信号槽实现相关功能。 
+---
+
+搜索框默认隐藏起来，在界面上按Ctrl+F的时候打开搜索匹配输入框
+```
+	m_speedSearch = new SpeedSearch(this);
+    m_speedSearch->initData(QStringList() << "123" << "124" << "110" << "111");
+    m_speedSearch->hide();
+
+    QShortcut *shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_F), this);
+    connect(shortcut, SIGNAL(activated()), this, SLOT(slotSpeedSearch()));
+
+	void MainWindow::slotSpeedSearch()
+	{
+		m_speedSearch->move(100, 50);
+		m_speedSearch->show();
+	}
+```
+
+打开后清空之前的显示并且将焦点设置到编辑框
+```
+void SpeedSearch::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    m_comboBox->setCurrentText("");
+    m_comboBox->setFocus();
+}
+```
+
+数据初始化
+```
+void SpeedSearch::initData(const QStringList &strList)
+{
+    if (m_completer) {
+        delete m_completer;
+    }
+    m_completer = new QCompleter(strList, this);
+    m_completer->setFilterMode(Qt::MatchContains);
+    m_comboBox->setCompleter(m_completer);
+    m_comboBox->clear();
+    m_comboBox->addItems(strList);
+}
+```
+> 匹配规则设置为contains否则从第一个字符开始匹配，中间的匹配不了。给ComboBox也初始化数据这样点击弹出按钮后列表框也有数据
+
+speed_search.h
+```
+#pragma once
+
+#include <QWidget>
+
+class QComboBox;
+class QCompleter;
+class SpeedSearch : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit SpeedSearch(QWidget *parent = 0);
+    void initData(const QStringList &strList);
+
+public slots:
+    void slotCurrentIndexChanged(const QString &str);
+
+protected:
+    void showEvent(QShowEvent *event);
+
+private:
+    QComboBox *m_comboBox;
+    QCompleter *m_completer;
+};
+
+```
+speed_search.cpp
+```
+#include "speed_search.h"
+#include <QtWidgets>
+
+SpeedSearch::SpeedSearch(QWidget *parent)
+    : QWidget(parent)
+    , m_completer(nullptr)
+{
+    m_comboBox = new QComboBox(this);
+    m_comboBox->setEditable(true);
+    connect(m_comboBox, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotCurrentIndexChanged(QString)));
+
+    QVBoxLayout *vLayout = new QVBoxLayout(this);
+    vLayout->setContentsMargins(0, 0, 0, 0);
+    vLayout->setSpacing(0);
+    vLayout->addWidget(m_comboBox);
+
+    this->setFixedSize(150, 24);
+}
+
+void SpeedSearch::initData(const QStringList &strList)
+{
+    if (m_completer) {
+        delete m_completer;
+    }
+    m_completer = new QCompleter(strList, this);
+    m_completer->setFilterMode(Qt::MatchContains);
+    m_comboBox->setCompleter(m_completer);
+    m_comboBox->clear();
+    m_comboBox->addItems(strList);
+}
+
+void SpeedSearch::slotCurrentIndexChanged(const QString &str)
+{
+    qDebug() << str;
+    hide();
+}
+
+void SpeedSearch::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    m_comboBox->setCurrentText("");
+    m_comboBox->setFocus();
+}
+
+```

@@ -1,0 +1,60 @@
+---
+title: '怎样在对话框上做一个“应用”按钮'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 文章介绍在对话框上做“应用”按钮的方法。定义 WM_APPLY_TRUE 和 WM_APPLY_FALSE 消息，在 Main 对话框中实现消息映射和响应，还捕获全局消息，根据不同情况使“应用”按钮可用或不可用，用的是 WTL 且基本方法一致。 
+---
+
+描述：
+当用户打开对话框的时候“应用”按钮处于不可用状态（变灰）；
+当用户点击了对话框中的某个控件的时候让其处于可用状态；
+当用户点击了“应用”按钮后让其变灰；
+
+### 定义两个消息：
+```
+#define WM_APPLY_TRUE		WM_USER + 10	// 使应用按钮处于可用状态
+#define WM_APPLY_FALSE		WM_USER + 11	// 使应用按钮处于不可用状态（变灰）
+```
+
+### 在Main对话框中实现这两个消息：
+#### 消息映射
+```
+MESSAGE_HANDLER(WM_APPLY_TRUE, OnApplyTrue)
+MESSAGE_HANDLER(WM_APPLY_FALSE, OnApplyFalse)
+```
+#### 消息响应
+```
+LRESULT OnApplyTrue(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+{
+	m_applyBtn.EnableWindow(TRUE);
+	return 0;
+}
+
+LRESULT OnApplyFalse(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+{
+	m_applyBtn.EnableWindow(FALSE);
+	return 0;
+}
+```
+
+### 在Main对话框中捕获全局消息：
+```
+virtual BOOL PreTranslateMessage(MSG* pMsg)
+{
+	// 恢复应用按钮处于可用状态
+	if (pMsg->message == WM_LBUTTONDOWN)
+	{
+		HWND pageWnd = WindowFromPoint(pMsg->pt);
+		int ctrlID = ::GetDlgCtrlID(pageWnd);
+		if ((::GetParent(pageWnd) != m_hWnd) && ctrlID)
+		{
+			SendMessage(m_hWnd, WM_APPLY_TRUE, 0, 0);
+		}
+	}
+	return CWindow::IsDialogMessage(pMsg);
+}
+```
+我用的是WTL， 不过基本方法是一致的。
+
+> 2011-08-30

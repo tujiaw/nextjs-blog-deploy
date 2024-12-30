@@ -1,0 +1,312 @@
+---
+title: 'C++惯用法'
+date: '2018-05-19'
+tags: ['C/C++']
+draft: false
+summary: 总结 C++ 相关内容：虚基类需 virtual 析构，std::auto_ptr 有风险用 unique_ptr 替代，重载 operator&()用 std::addressof，不支持重载函数模板及名称空间问题，基类派生类成员变量初始化顺序等，还提到一些其他用法及注意事项。 
+---
+
+# 虚基类中要实现virtual析构函数
+否则，在下面的例子中子类Dog得不到释放
+```
+#include <iostream>
+#include <memory>
+
+class Animals {
+public:
+	Animals()
+	{
+		std::cout << "Animals" << std::endl;
+	}
+
+	virtual ~Animals() // 一定要是virtual析构
+	{
+		std::cout << "~Animals" << std::endl;
+	}
+
+	virtual void eat()
+	{
+		std::cout << "animals eat" << std::endl;
+	}
+};
+
+class Dog : public Animals
+{
+public:
+	Dog()
+	{
+		std::cout << "Dog" << std::endl;
+	}
+	~Dog()
+	{
+		std::cout << "~Dog" << std::endl;
+	}
+
+	virtual void eat()
+	{
+		std::cout << "dog eat" << std::endl;
+	}
+};
+
+int main()
+{
+	{
+		std::unique_ptr<Animals> x(new Dog());
+	}
+
+	getchar();
+	return 0;
+}
+```
+
+# std::auto_ptr和std::unique_ptr区别
+你应该用unique_ptr替代auto_ptr，auto_ptr存在一个潜在的风险。由于auto_ptr支持赋值拷贝会导致先前的指针指向为空，而unique_ptr则不支持赋值拷贝（编译阶段就通不过）避免了这个风险。
+```
+	std::auto_ptr<Animals> x(new Dog());
+	auto y = x;
+	y->eat();
+	x->eat(); // ERROR：x为空指针，会崩溃
+
+	std::unique_ptr<Animals> a(new Dog());
+	auto b = a; // 禁止，编译器通过不过
+```
+
+# 当某个类重载了operator&()操作符的时候应该怎样获取对象的地址
+如下常规的获取地址的方式是错误的，在C++11中使用std::addressof获取。
+```
+class nonaddressable
+{
+public:
+	typedef double useless_type;
+private:
+	useless_type operator&() const;
+};
+
+int main()
+{
+	nonaddressable na;
+	nonaddressable *naptr = &na; // 编译错误
+	nonaddressable *naptr = std::addressof(na); // 正确
+	
+	getchar();
+	return 0;
+}
+```
+
+# C++不支持重载函数模板，许多实现仍然不支持名称空间
+```
+template<typename T>
+class List
+{
+public:
+	bool operator==(const List<T> &l, const List<T> &r)
+	{
+		// do something
+		return false;
+	}
+};
+```
+上面代码编译不过，需要将它申明为友元函数
+```
+friend bool operator==(const List<T> &l, const List<T> &r)
+```
+
+# 基类，派生类，成员变量初始化顺序
+```
+#include <iostream>
+#include <memory>
+
+class Master {
+public:
+	Master() { std::cout << "Master" << std::endl; }
+	~Master() { std::cout << "~Master" << std::endl; }
+};
+
+class Animals {
+public:
+	Animals() { std::cout << "Animals" << std::endl; }
+	virtual ~Animals() { std::cout << "~Animals" << std::endl; }
+	virtual void eat() { std::cout << "animals eat" << std::endl; }
+};
+
+class Dog : public Animals
+{
+public:
+	Dog() { std::cout << "Dog" << std::endl; }
+	~Dog() { std::cout << "~Dog" << std::endl; }
+	virtual void eat() { std::cout << "dog eat" << std::endl; }
+
+private:
+	Master master_;
+};
+
+
+int main()
+{
+	{
+		std::unique_ptr<Animals> p(new Dog());
+	}
+	
+	getchar();
+	return 0;
+}
+```
+执行后：
+```
+Animals
+Master
+Dog
+~Dog
+~Master
+~Animals
+```
+构造顺序：基类构造函数->派生类成员变量构造函数->子类构造函数  
+析构顺序：与构造顺序相反  
+有成员的时候先构造成员  
+
+# 成员变量之间的初始化顺序
+注意，故意调整了成员初始化列表中的顺序
+```
+class Member
+{
+public:
+	Member(const std::string &name) : name_(name) 
+	{ 
+		std::cout << name_.c_str() << std::endl; 
+	}
+private:
+	std::string name_;
+};
+
+class Widget
+{
+public:
+	Widget()
+		: m2("member2")
+		, m1("member1")
+		, m3("member3")
+	{
+	}
+
+private:
+	Member m1;
+	Member m2;
+	Member m3;
+};
+```
+执行后输出：
+```
+member1
+member2
+member3
+```
+结论：成员变量的初始化跟定义的顺序有关，跟在成员变量初始化列表中顺序没关。
+
+# 派生类构造函数中不能调用虚函数
+语言规则明确禁止这种情况发生，因为在派生对象的派生部分被初始化之前调用派生对象的成员函数是危险的。如果虚拟函数不访问正在构建的对象的数据成员，则不是问题。但是没有确保它的一般方法。
+```
+class Base {
+ public:
+   Base();
+   ...
+   virtual void foo(int n) const; // often pure virtual
+   virtual double bar() const;    // often pure virtual
+ };
+ 
+ Base::Base()
+ {
+   ... foo(42) ... bar() ...
+   // these will not use dynamic binding
+   // goal: simulate dynamic binding in those calls
+ }
+ 
+ class Derived : public Base {
+ public:
+   ...
+   virtual void foo(int n) const;
+   virtual double bar() const;
+ };
+```
+解决办法是：  
+单独定义一个init函数，将要调用的虚函数放到init中，在对象构造完成之后主动去调用一下。
+```
+class Base {
+ public:
+   void init();  // may or may not be virtual
+   ...
+   virtual void foo(int n) const; // often pure virtual
+   virtual double bar() const;    // often pure virtual
+ };
+ 
+ void Base::init()
+ {
+   ... foo(42) ... bar() ...
+   // most of this is copied from the original Base::Base()
+ }
+ 
+ class Derived : public Base {
+ public:
+   Derived (const char *);
+   virtual void foo(int n) const;
+   virtual double bar() const;
+ };
+
+ // std::unique_ptr<Base> p(new Derived("hello"))
+ // p->init();
+```
+
+# 未定义对象的删除
+对一个未定义对象进行删除，后果是未知的。
+```
+// testdelete.h
+struct Object;
+void delete_object(Object* p);
+
+// testdelete.cpp
+#include "testdelete.h"
+
+// Deletes an Object without knowing its definition
+void delete_object(Object* p) { delete p; }
+
+// testobject.h
+struct Object
+{
+	// this user-defined destructor won't be called when delete
+	// is called on a partially-defined (i.e., predeclared) Object
+	~Object() {
+		std::cout << "~Object" << std::endl;
+	}
+};
+
+// main.cpp
+#include "testdelete.h"
+#include "testobject.h"
+
+Object* p = new Object;
+delete_object(p);
+```
+testdelete.cpp中并没有Object的定义，只是有个申明。定义只是在main中引入进来的，调用上述代码后Object对象的析构函数没有得到执行。
+
+解决办法：   
+将delete_object方法改为
+```
+template<class T>
+inline void checked_delete(T * x)
+{
+	typedef char type_must_be_complete[sizeof(T) ? 1 : -1];
+	(void) sizeof(type_must_be_complete);
+	delete x;
+}
+```
+
+# shrink_to_fit用法
+当vector中的元素很多时，必然要分配的内存也会变大，当我们删除大部分元素后，其实vector所占用的内存并没有减少，它只是将内存空起来当下次要使用的时候就不必要重新分配，这样虽然会提高效率，但是如果我们以后真的并不会用到这些内存的话，这样就会造成内存浪费。shrink_to_fit函数就是来解决这个问题的。
+```
+std::vector<int> x(1024 * 1024 * 10);
+std::cout << "初始化 capacity:" << x.capacity() << ", size:" << x.size() << std::endl;
+x.erase(x.begin(), x.begin() + 1024 * 1024 * 5);
+std::cout << "删除后 capacity:" << x.capacity() << ", size:" << x.size() << std::endl;
+x.shrink_to_fit();
+std::cout << "整理后 capacity:" << x.capacity() << ", size:" << x.size() << std::endl;
+```
+通过任务管理器也可以很容易看到，初始化是40M，删除后还是40M，整理后就变成20M了。

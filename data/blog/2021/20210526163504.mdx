@@ -1,0 +1,87 @@
+---
+title: 'ZMQ DEMO 发布订阅模式'
+date: '2021-05-26'
+tags: ['MQ']
+draft: false
+summary: ZMQ DEMO 发布订阅模式，一端发布多端接收。发布者每秒推送气象信息，订阅者可接收所有或特定开头信息。示例代码展示了发布者和订阅者的实现，包括绑定和连接等操作。 
+---
+
+发布订阅模式
+
+# 简介
+一端发布，多端接收，如果没有订阅者就直接丢弃。
+
+# 发布者
+推送方，每秒推送一次气象信息：
+```
+#include <iostream>
+#include <zmq.hpp>
+
+#define randof(num)  (int) ((float) (num) * rand () / (RAND_MAX + 1.0))
+
+int main()
+{
+    zmq::context_t ctx;
+    zmq::socket_t sock(ctx, zmq::socket_type::pub);
+    try {
+        sock.bind("tcp://127.0.0.1:7733");
+        srand((unsigned int)time(NULL));
+        while (1) {
+            int zipcode = randof(100000);
+            int temperature = randof(215) - 80;
+            int relhumidity = randof(50) + 10;
+            char buffer[20];
+            int count = snprintf(buffer, sizeof buffer, "%05d %d %d", zipcode, temperature, relhumidity);
+            if (count > 0) {
+                std::cout << "send:" << buffer << std::endl;
+                sock.send(zmq::const_buffer(buffer, count));
+            }
+            zmq_sleep(1);
+        }
+    } catch (zmq::error_t e) {
+        std::cout << e.what() << std::endl;
+    }
+
+
+    system("pause");
+    return 0;
+}
+```
+
+# 订阅者
+订阅方，打印出收到的气象信息：
+```
+#include "zmq.hpp"
+#include <string>
+#include <iostream>
+#include <algorithm>
+
+int main()
+{
+    zmq::context_t context(1);
+    zmq::socket_t socket(context, zmq::socket_type::sub);
+    socket.connect("tcp://127.0.0.1:7733");
+    socket.set(zmq::sockopt::subscribe, "");
+    while (1) {
+        try {
+            zmq::message_t msg;
+            socket.recv(msg);
+
+            std::string str_msg = msg.to_string();
+            std::cout << "recv:" << str_msg << std::endl;
+        } catch (zmq::error_t &e) {
+            std::cerr << "error:" << e.what() << std::endl;
+            break;
+        }
+    }
+
+}
+```
+这里是接收任何推送的信息，如果你只想接收1000开头的信息，可以这样订阅：
+```
+socket.set(zmq::sockopt::subscribe, "1000");
+```
+推送方需要先发一个sndmore，这样订阅方才能收到：
+```
+sock.send(zmq::str_buffer("1000"), zmq::send_flags::sndmore);
+```

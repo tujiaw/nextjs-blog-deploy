@@ -1,0 +1,143 @@
+---
+title: 'go showapi.com接口'
+date: '2019-06-17'
+tags: ['Go']
+draft: false
+summary: 介绍 go showapi.com 接口，用 go 封装其提供的三个接口，获取组装后的 url、http 请求返回字符串及 json。给出示例代码，如获取文本笑话的用法。 
+---
+
+showapi.com提供了很多有意思的api，现在用go语言简单的封装下就可以用了。url的组装规则见[文档](https://www.showapi.com/helpcenter/go/sign)
+
+目前提供了三个接口
+* 获取组装后的url  
+* http请求返回字符串
+* http请求返回json
+
+源码如下：
+```
+package showapi
+
+import (
+	"crypto/md5"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"sort"
+	"strings"
+	"time"
+)
+
+type Showapi struct {
+	Secret  string
+	MainUrl string
+	AppId   string
+	Method  string
+	Gzip    string
+}
+
+func New(secret string, mainurl string, appid string) *Showapi {
+	result := Showapi{}
+	result.Secret = secret
+	result.MainUrl = mainurl
+	result.AppId = appid
+	return &result
+}
+
+func (api *Showapi) Url(appParams map[string]string) string {
+	params := make(map[string]string)
+	params["showapi_appid"] = api.AppId
+	params["showapi_timestamp"] = time.Now().Format("20060102150405")
+	params["showapi_sign_method"] = "md5"
+	params["showapi_res_gzip"] = "1"
+
+	for k, v := range appParams {
+		params[k] = v
+	}
+
+	keys := []string{}
+	for k, _ := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	sortResult := []string{}
+	for _, key := range keys {
+		sortResult = append(sortResult, key, params[key])
+	}
+
+	urlResult := []string{api.MainUrl, "?"}
+	sign := fmt.Sprintf("%x", md5.Sum([]byte(strings.Join(sortResult, "")+api.Secret)))
+	for _, key := range keys {
+		urlResult = append(urlResult, key, "=", params[key], "&")
+	}
+	urlResult = append(urlResult, "showapi_sign=", sign)
+	return strings.Join(urlResult, "")
+}
+
+func (api *Showapi) GetString(appParams map[string]string) (string, error) {
+	url := api.Url(appParams)
+	r, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer r.Body.Close()
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func (api *Showapi) GetJson(appParams map[string]string, result interface{}) error {
+	url := api.Url(appParams)
+	r, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+	return json.NewDecoder(r.Body).Decode(result)
+}
+```
+
+用法，如获取文本笑话：
+```
+package showapi
+
+import (
+	"fmt"
+)
+
+type (
+	Content struct {
+		Id    string `json:"id"`
+		Title string `json:"title"`
+		Text  string `json:"text"`
+		Type  int    `json:"type"`
+		Ct    string `json:"ct"`
+	}
+
+	Body struct {
+		AllPages    int       `json:"allPages"`
+		Contentlist []Content `json:"contentlist"`
+	}
+
+	TextJoke struct {
+		Showapi_res_error string `json:"showapi_res_error"`
+		Showapi_res_id    string `json:"showapi_res_id"`
+		Showapi_res_code  int    `json:"showapi_res_code"`
+		Showapi_res_body  Body   `json:"showapi_res_body"`
+	}
+)
+
+func GetTextJoke(page, maxResult int) (*TextJoke, error) {
+	appParams := make(map[string]string)
+	appParams["page"] = fmt.Sprintf("%d", page)
+	appParams["maxResult"] = fmt.Sprintf("%d", maxResult)
+
+	api := New("21b693f98bd64e71a9bdbbxxxxxxxxx", "http://route.showapi.com/341-1", "17262")
+	jsonResult := TextJoke{}
+	err := api.GetJson(appParams, &jsonResult)
+	return &jsonResult, err
+}
+```

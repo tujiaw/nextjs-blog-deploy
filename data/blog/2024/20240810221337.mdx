@@ -1,0 +1,42 @@
+---
+title: 'debian使用记录'
+date: '2024-08-10'
+tags: ['Linux']
+draft: false
+summary: 本文记录了在 Debian 系统中重置 XFCE 面板为默认设置及关闭系统提示音的方法。通过删除配置文件和重启面板，轻松恢复 XFCE 面板，默认设置，并介绍如何永久禁用系统蜂鸣声。
+---
+
+# 将Xfce面板重置为默认设置
+XFCE在xfconfd存储运行会话的配置。 您可以先备份要删除的文件。
+
+首先关闭面板
+```
+xfce4-panel --quit
+```
+杀死xfce4配置守护进程
+```
+pkill xfconfd
+```
+首先删除面板的设置
+```
+rm -rf ~/.config/xfce4/panel
+```
+清除xfconfd
+```
+rm -rf ~/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+```
+重启面板，运行xfce4-panel 。 这将自动重新xfconfd 。 请注意，如果您需要或想要手动重新启动xfconfd，请知道在我的安装中，它位于$PATH之外的/usr/lib/x86_64-linux-gnu/xfce4/xfconf/xfconfd中。
+这将为运行会话清除它，重新生成文件，并为将来的会话设置默认值。
+
+# 关闭beep系统提示音
+```
+sudo rmmod pcspkr
+```
+永久生效：
+```
+sudo vim /etc/modprobe.d/pcspkr-blacklist.conf
+```
+写入内容，保存：
+```
+blacklist pcspkr
+```

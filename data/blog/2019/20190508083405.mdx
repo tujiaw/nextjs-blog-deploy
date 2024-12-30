@@ -1,0 +1,386 @@
+---
+title: 'go学习代码片段'
+date: '2019-05-08'
+tags: ['Go']
+draft: false
+summary: 本文包含多个 Go 学习代码片段，如斐波那契数列的闭包、非闭包和递归实现，IP 地址格式输出，简单 HTTP 服务器及路由，go chan defer 组合、超时任务处理和访问 MySQL 等，展示了 Go 语言的多种特性和用法。 
+---
+
+## 斐波纳契闭包、非闭包、递归三种实现方法
+```
+package main
+
+import (
+	"fmt"
+)
+
+func finImpl() func() int {
+	i, j := 0, 0
+	return func() int {
+		if j == 0 {
+			j = 1
+			return 1
+		}
+		i, j = j, i+j
+		return j
+	}
+}
+
+func fibonacci(n int) []int {
+	impl := finImpl()
+	arr := []int{}
+	for i := 0; i < n; i++ {
+		arr = append(arr, impl())
+	}
+	return arr
+}
+
+func fibonacci2(n int) []int {
+	arr := []int{1, 1}
+	i, j := 1, 1
+	for k := 2; k < n; k++ {
+		i, j = j, i+j
+		arr = append(arr, j)
+	}
+	return arr
+}
+
+func fibImpl3(n int) int {
+	if n < 2 {
+		return 1
+	}
+	return fibImpl3(n-1) + fibImpl3(n-2)
+}
+
+func fibonacci3(n int) []int {
+	r := []int{}
+	for i := 0; i < n; i++ {
+		r = append(r, fibImpl3(i))
+	}
+	return r
+}
+
+func main() {
+	fmt.Println(fibonacci(10))
+	fmt.Println(fibonacci2(10))
+fmt.Println(fibonacci3(10))
+}
+
+// 斐波纳契闭包和非闭包实现
+// 输出：
+// [1 1 2 3 5 8 13 21 34 55]
+// [1 1 2 3 5 8 13 21 34 55]
+
+```
+
+## IP地址格式输出
+```
+package main
+
+import "fmt"
+
+type IPAddr [4]byte
+
+func (addr IPAddr) String() string {
+	return fmt.Sprintf("%v.%v.%v.%v", addr[0], addr[1], addr[2], addr[3])
+}
+
+func main() {
+	addrs := map[string]IPAddr{
+		"loopback":  {127, 0, 0, 1},
+		"googleDNS": {8, 8, 8, 8},
+	}
+
+	for n, a := range addrs {
+		fmt.Printf("%v: %v\n", n, a)
+	}
+}
+
+// 输出：
+// loopback: 127.0.0.1
+// googleDNS: 8.8.8.8
+
+```
+
+## 简单http服务器
+```
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"time"
+)
+
+type HttpHandler struct{}
+
+func (handler *HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, time.Now().Format("2006-01-02 15:04:05.000"))
+}
+
+func main() {
+	myHandler := &HttpHandler{}
+	err := http.ListenAndServe("localhost:4000", myHandler)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+```
+
+## http服务路由
+```
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+)
+
+type StringHandler string
+type StructHandler struct {
+	Greeting string
+	Punct    string
+	Who      string
+}
+
+func (handler StringHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, handler)
+}
+
+func (handler *StructHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, handler.Greeting+handler.Punct+handler.Who)
+}
+
+func main() {
+	http.Handle("/string", StringHandler("string"))
+	http.Handle("/struct", &StructHandler{"hello", ":", "john"})
+	err := http.ListenAndServe("localhost:4000", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+```
+
+## go chan defer组合
+50个任务10个工作者看谁处理的最快就是赢家
+```
+package main
+
+import "fmt"
+import "time"
+import "math/rand"
+import "sync"
+
+type Result struct {
+	index int
+	sum int
+}
+
+var (
+	wg sync.WaitGroup
+	workChan chan int
+	resultChan chan Result
+)
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+func work(index int) {
+	defer wg.Done()
+	sum := 0
+	for {
+		ms, ok := <- workChan
+		if !ok {
+			resultChan <- Result{index, sum}
+			break
+		}
+		fmt.Printf("index %d sleep %d millisecond\n", index, ms)
+		time.Sleep(time.Duration(ms) * time.Millisecond)
+		sum += ms
+	}
+}
+
+func main() {
+	const CHAN_COUNT = 10
+	const WORK_COUNT = 50
+	workChan = make(chan int)
+	resultChan = make(chan Result)
+
+	wg.Add(CHAN_COUNT)
+	for i := 0; i < CHAN_COUNT; i++ {
+		go work(i)
+	}
+	for i := 0; i < WORK_COUNT; i++ {
+		workChan <- int(rand.Int63n(1000))
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		min := Result{}
+		for i := 0; i < CHAN_COUNT; i++ {
+			a := <-resultChan
+			if min.sum == 0 {
+				min = a
+			} else if a.sum < min.sum {
+				min = a
+			}
+		}
+		fmt.Printf("winner index:%d, cost:%d\n", min.index, min.sum)
+	}()
+
+	close(workChan)
+	wg.Wait()
+
+	fmt.Println("byte byte...")
+}
+```
+
+## 在超时时间内完成任务
+```
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"os/signal"
+	"time"
+)
+
+type Runner struct {
+	interrupt chan os.Signal
+	complete  chan error
+	timeout   <-chan time.Time
+	duration  time.Duration
+	tasks     []func(int)
+}
+
+var ErrTimeout = errors.New("received timeout")
+var ErrInterrupt = errors.New("received interrupt")
+
+func New(d time.Duration) *Runner {
+	return &Runner{
+		interrupt: make(chan os.Signal, 1),
+		complete:  make(chan error),
+		duration:  d,
+	}
+}
+
+func (r *Runner) Add(task ...func(int)) {
+	r.tasks = append(r.tasks, task...)
+}
+
+func (r *Runner) Start() error {
+	signal.Notify(r.interrupt, os.Interrupt)
+	r.timeout = time.After(r.duration)
+
+	go func() {
+		r.complete <- r.run()
+	}()
+
+	select {
+	case err := <-r.complete:
+		return err
+	case <-r.timeout:
+		return ErrTimeout
+	}
+}
+
+func (r *Runner) run() error {
+	for i, task := range r.tasks {
+		if r.gotInterrupt() {
+			return ErrInterrupt
+		}
+		task(i)
+	}
+	return nil
+}
+
+func (r *Runner) gotInterrupt() bool {
+	select {
+	case <-r.interrupt:
+		signal.Stop(r.interrupt)
+		return true
+	default:
+		return false
+	}
+}
+
+func main() {
+	r := New(1000 * time.Millisecond)
+	r.Add(func(int) {
+		time.Sleep(800 * time.Millisecond)
+		fmt.Println("work 1")
+	})
+	if err := r.Start(); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("bye bye...")
+}
+
+```
+# 访问mysql
+```
+package main
+
+import (
+	"database/sql"
+	"flag"
+	"fmt"
+	"log"
+	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
+func main() {
+	addrPtr := flag.String("s", "user:password@tcp(172.16.97.23:3306)/idb_bond", "source")
+	countPtr := flag.Int("c", 10, "date count")
+	flag.Parse()
+
+	addr := fmt.Sprintf("%s?charset=utf8", *addrPtr)
+	count := *countPtr
+
+	db, err := sql.Open("mysql", addr)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Println("connect success")
+	t := time.Now()
+	for i := 0; i < count; i++ {
+		s := t.Format("2006-01-02")
+		query := fmt.Sprintf("select count(*) from customized_bond_goods_ls where modify_time like '%s'", s+"%")
+		t = t.Add(-24 * time.Hour)
+		rows, err := db.Query(query)
+		if err != nil {
+			log.Println(err)
+		}
+
+		var col1 int
+		for rows.Next() {
+			err := rows.Scan(&col1)
+			if err != nil {
+				panic(err)
+			}
+
+			if col1 > 0 {
+				fmt.Println(s, col1)
+			}
+		}
+	}
+}
+
+```

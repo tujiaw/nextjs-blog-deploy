@@ -1,0 +1,50 @@
+---
+title: 'Qt6中不能使用搜狗输入法'
+date: '2024-04-04'
+tags: ['Qt', 'Linux']
+draft: false
+summary: 本文解决了在 Ubuntu 上使用 Qt6 和 PySide6 时无法使用搜狗输入法的问题，通过拷贝并设置 libfcitxplatforminputcontextplugin-qt6.so 文件为可执行状态，修复了 QtCreator 和 PySide6 程序中的输入法问题。
+---
+
+在ubuntu上使用QtCreator以及pyside6编写的程序不能使用搜狗输入法
+
+# 原因
+因为缺少libfcitxplatforminputcontextplugin-qt6.so文件（注意这里是Qt6），拷贝到相应的目录后还要将其设置为可执行状态
+```
+chmod +x libfcitxplatforminputcontextplugin-qt6.so
+```
+
+# 解决QtCreator问题
+* 将上面文件拷贝到：~/Qt/6.6.2/gcc_64/plugins/platforminputcontexts
+* 再次将文件拷贝到：~/Qt/Tools/QtCreator/lib/Qt/plugins/platforminputcontexts
+
+# 解决PySide6编写的程序的问题
+* 拷贝到：你的项目/venv/lib64/python3.10/site-packages/PySide6/Qt/plugins/platforminputcontexts
+
+# 编译好的文件
+[https://github.com/tujiaw/files](https://github.com/tujiaw/files)
+如果不兼容需要你自己去编译
+
+# 编译
+编译libfcitxplatforminputcontextplugin-qt6.so文件
+## 安装依赖
+sudo apt install fcitx-libs-dev
+sudo apt install extra-cmake-modules 
+sudo apt install libxkbcommon-dev 
+## 设置编译环境
+```
+export CMAKE_PREFIX_PATH="~/Qt/6.6.2/gcc_64"
+```
+## 源码
+```
+git clone https://github.com/fcitx/fcitx-qt5
+cd fcixt-qt5
+修改CMakeLists.txt文件，将Qt6改为Qt5
+option(ENABLE_QT5 "Enable Qt5" Off)
+option(ENABLE_QT6 "Enable Qt6 im module" On)
+mkdir build && cd build
+cmake ../
+make -j8
+```
+在build目录下生成libfcitxplatforminputcontextplugin-qt6.so文件
+“~/fcitx-qt5/build/qt6/platforminputcontext”

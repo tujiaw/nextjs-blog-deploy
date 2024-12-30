@@ -1,0 +1,64 @@
+---
+title: '登录后自动跳转到登录前的页面'
+date: '2017-10-20'
+tags: ['Web']
+draft: false
+summary: 文章介绍登录后自动跳转到登录前页面的方法。在 signin.html 页面的表单中增加隐藏元素记录前页地址，后台验证登录成功后根据 referrer 判断是否跳转，若存在则跳转到 referrer 地址，不存在则跳转到主页，通过相关代码实现此功能。 
+---
+
+这个需求很常见，我们浏览自己写的博客文章的时候发现有些错误，此时想修改一下，所以必须得先登录才行。点击登录按钮后跳转到登录页面，登录成功后自动跳转到之前文章所在页面。
+
+实现方法就是在登录页面通过document.referrer获取进入到此页面前的地址，然后将地址写入到隐藏的表单元素中，提交表单后地址自然就传到后台了，后台判断登录成功后跳转到传过来的地址就可以了。
+
+# signin.html页面
+html代码，表单元素中增加
+```
+<form class="form-signin" action="/user/signin" method="post">
+  ...
+  <input id="referrer" type="text" name="referrer" class="form-control" style="display:none;">
+  <button id="signin" class="btn btn-lg btn-primary btn-block" type="submit">登录</button>
+  ...
+</form>
+```
+
+script中增加
+```
+$('#referrer').val(document.referrer);
+```
+
+# 路由
+```
+app.use(route.post('/user/signin', User.reqSignin))
+```
+
+# 后台处理登录
+用户名和密码验证通过后，如果referrer存在则redirect到referrer地址，不存在则跳转到主页
+```
+module.exports.reqSignin = async function(ctx) {
+  const req = ctx.request.body
+  if (req.username.length == 0 || req.password.length == 0) {
+    ctx.body = 'username or password error'
+  } else {
+    let result = await UsersModel.getUserByName(req.username)
+    if (!result) {
+      console.log('user not find')
+      ctx.redirect('back')
+      return
+    }
+    if (sha1(req.password) !== result.password) {
+      console.log('password error')
+      ctx.redirect('back')
+      return
+    }
+
+    delete result.password
+    ctx.session.user = result
+    
+    if (req.referrer) {
+      ctx.redirect(req.referrer);
+    } else {
+      ctx.redirect('/');
+    }
+  }
+}
+```

@@ -1,0 +1,87 @@
+---
+title: 'Qt回调到UI线程'
+date: '2018-01-05'
+tags: ['C/C++', 'Qt', 'Windows']
+draft: false
+summary: 桌面客户端主线程即 UI 线程，异步获取数据常在子线程，不能直接操作 UI。介绍两种将子线程数据抛到 UI 层处理的方法：一是调用和接收在一起，通过信号槽机制；二是调用和接收分开，用 signalDispatch 类以信号方式 emit 结果，可实现多个 UI 窗口数据同步。 
+---
+
+桌面客户端程序主线程就是UI线程，我们经常要将网络中获取到的数据展示到界面上，通常有同步和异步两种方式，同步方式会阻塞UI，所以这种方式可以忽略了（特殊情况下可以使用）。大多数异步方式请求后是在子线程中返回数据的，而在这里我们是不能直接操作UI的。
+
+下面介绍两种方法将子线程获取到的数据抛到UI层处理：
+# 调用和接收在一起
+UI层直接调用下面方法就可以在槽函数中处理应答了  
+
+通过网络请求后，子线程获得应答回调，然后将应答的结果通过信号发射出去。在这之前会以Qt::QueuedConnection形式连接信号槽，槽函数是UI传过来的，即使在我们请求数据后没有立即返回，直到调用的窗口已经销毁之后子线程才返回结果也不会造成崩溃，因为中间有个信号槽，窗口销毁后槽函数是不会执行的。
+```
+QuoteReq *req = new QuoteReq;
+req->set_quote(text.toStdString());
+req->set_date(QDate::currentDate().toString("yyyy-MM-dd").toStdString());
+ProtoRequest::instance()->post(MessagePtr(req), ProtoRequest::createReply(this, SLOT(onQuoteRsp(ReplyCallbackPtr, MessagePtr))));
+```
+实现：
+```
+// ProtoRequest.h
+class ReplyCallback;
+typedef std::shared_ptr<ReplyCallback> ReplyCallbackPtr;
+
+// 将总线的回调结果通过信号发给UI线程处理，同时解决调用方销毁后回调造成的崩溃
+class ReplyCallback : public QObject
+{
+	Q_OBJECT
+public:
+	ReplyCallback(QObject *receiver, const char *member);
+
+signals:
+	void sigFinished(ReplyCallbackPtr reply, MessagePtr msg);
+};
+
+class ProtoRequest : public QObject
+{
+	Q_OBJECT
+public:
+	static ProtoRequest* instance();
+	static ReplyCallbackPtr createReply(QObject *receiver, const char *member);
+	void post(MessagePtr &reqMsg, ReplyCallbackPtr reply);
+};
+
+```
+
+```
+#include "ProtoRequest.h"
+#include <QDebug>
+
+ReplyCallback::ReplyCallback(QObject *receiver, const char *member)
+{
+	static bool s_once = true;
+	if (s_once) {
+		s_once = false;
+		qRegisterMetaType<MessagePtr>("MessagePtr");
+		qRegisterMetaType<ReplyCallbackPtr>("ReplyCallbackPtr");
+	}
+	connect(this, SIGNAL(sigFinished(ReplyCallbackPtr, MessagePtr)), receiver, member, Qt::QueuedConnection);
+}
+
+ProtoRequest* ProtoRequest::instance()
+{
+	static ProtoRequest s_inst;
+	return &s_inst;
+}
+
+ReplyCallbackPtr ProtoRequest::createReply(QObject *receiver, const char *member)
+{
+	return ReplyCallbackPtr(new ReplyCallback(receiver, member));
+}
+
+void ProtoRequest::post(MessagePtr &reqMsg, ReplyCallbackPtr reply)
+{
+	ObserverManager::instance()->SendMsgAndPrintLogAsyn(reqMsg, [reply](const MsgParams &rsp) {
+		if (reply) {
+			emit reply->sigFinished(reply, rsp.resp->getMessage());
+		}
+	});
+}
+```
+
+# 调用和接收分开
+写一个signalDispatch信号分发类，所有子线程收到的应答都通过signalDispatch类使用信号的方式将结果emit出去，signalDispatch暴露一些信号供UI连接，如果某块UI窗口关注某个信号就可以连接它。这样可以做到多个UI窗口数据同步。

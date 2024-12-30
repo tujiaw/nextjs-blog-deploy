@@ -1,0 +1,627 @@
+---
+title: '如何在Ubuntu 14.04上使用Corosync Pacemaker和浮动IP构建高可用服务'
+date: '2020-06-03'
+tags: ['Linux']
+draft: false
+summary: 本文介绍在 Ubuntu 14.04 上用 Corosync、Pacemaker 和浮动 IP 构建高可用服务，包括创建 Droplets、配置 Corosync 和 Pacemaker、设置浮动 IP 重新分配等步骤，还可添加 Nginx 资源等，最终实现主动/被动高可用设置，可进一步用反向代理负载平衡器替换 Nginx 设置。 
+---
+
+### 介绍
+
+本教程将演示如何将Corosync和Pacemaker与浮动IP一起在DigitalOcean上创建高可用性（HA）服务器基础结构。
+
+Corosync是一个开源程序，它向客户端服务器提供群集成员身份和消息传递功能，通常称为**消息传递**层。Pacemaker是一个开放源代码群集资源管理器（CRM），该系统可协调由群集管理并使其高度可用的资源和服务。本质上，Corosync使服务器能够作为群集进行通信，而Pacemaker提供了控制群集行为的功能。
+
+目标
+--
+
+完成后，HA设置将由两台处于主动/被动配置的Ubuntu 14.04服务器组成。除非检测到故障，否则将通过指向浮动IP（您的用户将访问您的Web服务的方式）指向主（活动）服务器来实现此目的。如果Pacemaker检测到主服务器不可用，则辅助（被动）服务器将自动运行脚本，该脚本将通过DigitalOcean API将浮动IP重新分配给自己。因此，到浮动IP的后续网络流量将被定向到您的辅助服务器，该辅助服务器将充当活动服务器并处理传入的流量。
+
+下图演示了所描述设置的概念：
+
+![主动/被动图](https://assets.digitalocean.com/articles/high_availability/ha-diagram-animated.gif)
+
+**注意：**本教程仅涵盖在网关级别设置主动/被动高可用性。也就是说，它包括浮动IP和_负载平衡器_服务器-主服务器和辅助服务器。此外，出于演示目的，我们无需在每台服务器上配置反向代理负载均衡器，而是将它们配置为以其各自的主机名和公共IP地址进行响应。  
+
+为了实现这个目标，我们将遵循以下步骤：
+
+*   创建2个将接收流量的水滴
+*   创建浮动IP并将其分配给Droplet之一
+*   安装和配置Corosync
+*   安装和配置Pacemaker
+*   配置浮动IP重新分配群集资源
+*   测试故障转移
+*   配置Nginx集群资源
+
+先决条件
+----
+
+为了自动化浮动IP重新分配，我们必须使用DigitalOcean API。这意味着你需要生成一个个人访问令牌（PAT），这是令牌的API可用于验证您DigitalOcean帐户，以_读取_和_写入_按照接入[如何生成个人访问令牌](https://www.digitalocean.com/community/tutorials/how-to-use-the-digitalocean-api-v2#how-to-generate-a-personal-access-token) API的部分教程。您的PAT将在脚本中使用，该脚本将添加到群集中的两台服务器中，因此请确保将其保存在安全的位置（因为它可以完全访问DigitalOcean帐户）以供参考。
+
+除API之外，本教程还利用了以下DigitalOcean功能：
+
+*   [浮动IP](https://www.digitalocean.com/community/tutorials/how-to-use-floating-ips-on-digitalocean)
+*   [元数据](https://www.digitalocean.com/community/tutorials/an-introduction-to-droplet-metadata)
+*   [用户数据（Cloud-Config脚本）](https://www.digitalocean.com/community/tutorials/an-introduction-to-cloud-config-scripting)
+
+如果您想了解更多关于它们的信息，请阅读。
+
+创建Droplets
+----
+
+第一步是在同一数据中心中创建两个启用了专用网络的Ubuntu Droplet，它们将用作上述的主服务器和辅助服务器。在示例设置中，我们将其命名为“ primary”和“ secondary”，以方便参考。我们将在两个Droplet上都安装Nginx，并将其索引页面替换为唯一标识它们的信息。这将为我们提供一种简单的方法来证明HA设置正在运行。对于真实设置，您的服务器应运行您选择的Web服务器或负载平衡器，例如Nginx或HAProxy。
+
+创建两个Ubuntu 14.04 Droplet，**主要**和**次要**。如果要遵循示例设置，请使用以下bash脚本作为用户数据：
+
+用户数据示例
+
+    #!/bin/bash
+    
+    apt-get -y update
+    apt-get -y install nginx
+    export HOSTNAME=$(curl -s http://169.254.169.254/metadata/v1/hostname)
+    export PUBLIC_IPV4=$(curl -s http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address)
+    echo Droplet: $HOSTNAME, IP Address: $PUBLIC_IPV4 > /usr/share/nginx/html/index.html
+    
+
+该用户数据将安装Nginx并将其内容替换为`index.html`Droplet的主机名和IP地址（通过引用元数据服务）。通过其公共IP地址访问任何一个Droplet都会显示一个具有Droplet主机名和IP地址的基本网页，这对于在任何给定时刻测试浮动IP指向哪个Droplet都是有用的。
+
+创建浮动IP
+------
+
+在DigitalOcean控制面板中，单击顶部菜单中的“ **网络”**，然后单击侧面菜单中的“ **浮动IP** ”。
+
+![没有浮动IP](https://assets.digitalocean.com/site/ControlPanel/fip_no_floating_ips.png)
+
+为您的**主** Droplet 分配一个浮动IP ，然后单击“ **分配浮动IP”**按钮。
+
+分配浮动IP后，记下其IP地址。通过在网络浏览器中访问浮动IP地址，检查是否可以访问分配给它的Droplet。
+
+    http://your_floating_ip
+    
+
+您应该看到主要Droplet的索引页。
+
+配置DNS（可选）
+---------
+
+如果您希望能够通过域名访问HA设置，请继续在DNS中创建一个**A记录**，将您的域指向您的浮动IP地址。如果您的域使用的是DigitalOcean的域名服务器，请按照“如何使用DigitalOcean 设置主机名”教程的[第三步](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-host-name-with-digitalocean#step-three%E2%80%94configure-your-domain)进行操作。传播之后，您可以通过域名访问活动服务器。
+
+我们将使用的示例域名为`example.com`。如果您现在没有要使用的域名，则将使用浮动IP地址访问您的设置。
+
+配置时间同步
+------
+
+每当有多台服务器相互通信时，尤其是与群集软件通信时，确保它们的时钟同步非常重要。我们将使用NTP（网络时间协议）来同步服务器。
+
+在**两台服务器上**，使用以下命令打开时区选择器：
+
+    sudo dpkg-reconfigure tzdata
+    
+
+选择所需的时区。例如，我们将选择`America/New_York`。
+
+接下来，更新apt-get：
+
+    sudo apt-get update
+    
+
+然后`ntp`使用此命令安装软件包；
+
+    sudo apt-get -y install ntp
+    
+
+现在应该使用NTP同步服务器时钟。要了解有关NTP的更多信息，请查看本教程：[配置时区和网络时间协议同步](https://www.digitalocean.com/community/tutorials/additional-recommended-steps-for-new-ubuntu-14-04-servers#configure-timezones-and-network-time-protocol-synchronization)。
+
+配置防火墙
+-----
+
+Corosync在端口`5404`和之间使用UDP传输`5406`。如果您正在运行防火墙，请确保服务器之间允许这些端口上的通信。
+
+例如，如果您使用`iptables`，则可以`eth1`使用以下命令允许这些端口和（专用网络接口）上的流量：
+
+    sudo iptables -A INPUT  -i eth1 -p udp -m multiport --dports 5404,5405,5406 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+    sudo iptables -A OUTPUT  -o eth1 -p udp -m multiport --sports 5404,5405,5406 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+    
+
+建议使用比提供的示例更具限制性的防火墙规则。
+
+安装Corosync和Pacemaker
+--------------------
+
+在**两台服务器上**，使用apt-get安装Corosync和Pacemaker：
+
+    sudo apt-get install pacemaker
+    
+
+请注意，Corosync是作为Pacemaker软件包的依赖项安装的。
+
+现在已经安装了Corosync和Pacemaker，但是在进行任何有用的操作之前需要对其进行配置。
+
+配置Corosync
+----------
+
+必须配置Corosync，以便我们的服务器可以作为群集进行通信。
+
+### 创建集群授权密钥
+
+为了允许节点加入群集，Corosync要求每个节点拥有相同的群集授权密钥。
+
+在**主**服务器上，安装`haveged`软件包：
+
+    sudo apt-get install haveged
+    
+
+该软件包使我们能够轻松地增加`corosync-keygen`脚本所要求的服务器上的熵量。
+
+在**主**服务器上，运行`corosync-keygen`脚本：
+
+    sudo corosync-keygen
+    
+
+这将生成一个128字节的集群授权密钥，并将其写入`/etc/corosync/authkey`。
+
+现在我们不再需要该`haveged`软件包，让我们将其从**主**服务器中删除：
+
+    sudo apt-get remove --purge haveged
+    sudo apt-get clean
+    
+
+在**主**服务器上，将复制`authkey`到辅助服务器上：
+
+    sudo scp /etc/corosync/authkey username@secondary_ip:/tmp
+    
+
+在**辅助**服务器上，将`authkey`文件移动到正确的位置，并将其权限限制为root：
+
+    sudo mv /tmp/authkey /etc/corosync
+    sudo chown root: /etc/corosync/authkey
+    sudo chmod 400 /etc/corosync/authkey
+    
+
+现在，两个服务器在`/etc/corosync/authkey`文件中应具有相同的授权密钥。
+
+### 配置Corosync群集
+
+为了启动并运行所需的集群，我们必须设置这些
+
+在**两台服务器上**，打开`corosync.conf`文件以在您喜欢的编辑器中进行编辑（我们将使用`vi`）：
+
+    sudo vi /etc/corosync/corosync.conf
+    
+
+这是Corosync配置文件，它将使您的服务器作为群集进行通信。确保用适当的值替换突出显示的部分。`bindnetaddr`应该设置为您当前正在使用的服务器的专用IP地址。另外两个突出显示的项目应设置为指示服务器的专用IP地址。除了以外，`bindnetaddr`两个服务器上的文件应相同。
+
+`corosync.conf`使用此配置以及特定于您的环境的更改来替换的内容：
+
+/etc/corosync/corosync.conf
+```
+    totem {
+      version: 2
+      cluster_name: lbcluster
+      transport: udpu
+      interface {
+        ringnumber: 0
+        bindnetaddr: server_private_IP_address
+        broadcast: yes
+        mcastport: 5405
+      }
+    }
+    
+    quorum {
+      provider: corosync_votequorum
+      two_node: 1
+    }
+    
+    nodelist {
+      node {
+        ring0_addr: primary_private_IP_address
+        name: primary
+        nodeid: 1
+      }
+      node {
+        ring0_addr: secondary_private_IP_address
+        name: secondary
+        nodeid: 2
+      }
+    }
+    
+    logging {
+      to_logfile: yes
+      logfile: /var/log/corosync/corosync.log
+      to_syslog: yes
+      timestamp: on
+    }
+    
+```
+的**图腾**部分（线1-11），这指的是Corosync用来群集成员的图腾协议，规定了如何群集成员应该彼此通信。在我们的设置中，重要的设置包括`transport: udpu`（指定单播模式）和`bindnetaddr`（指定Corosync应该绑定到哪个网络地址）。
+
+所述**仲裁**部（线13-16）指定这是一个双节点群集，因此只有一个单一的节点需要仲裁（`two_node: 1`）。这是以下事实的一种变通方法：要达到法定人数，群集中至少需要三个节点。此设置将使我们的两节点群集可以选择一个协调器（DC），该节点是在任何给定时间控制群集的节点。
+
+该**节点列表**部分（线18-29）指定集群中的每个节点，并且每个节点可以如何到达。在这里，我们同时配置了主节点和辅助节点，并指定可以通过各自的专用IP地址访问它们。
+
+该**日志记录**部（线31-36）指定Corosync日志应写入`/var/log/corosync/corosync.log`。如果您在本教程的其余部分遇到任何问题，请在进行故障排除时一定要查看此处。
+
+保存并退出。
+
+接下来，我们需要配置Corosync以允许Pacemaker服务。
+
+在**两台服务器上**，`pcmk`使用编辑器在Corosync服务目录中创建文件。我们将使用`vi`：
+```
+    sudo vi /etc/corosync/service.d/pcmk
+ ```   
+
+然后添加Pacemaker服务：
+```
+    service {
+      name: pacemaker
+      ver: 1
+    }
+    
+```
+保存并退出。这将包含在Corosync配置中，并允许Pacemaker使用Corosync与我们的服务器进行通信。
+
+默认情况下，Corosync服务被禁用。在**两台服务器上**，通过编辑来更改它`/etc/default/corosync`：
+```
+    sudo vi /etc/default/corosync
+ ```   
+
+将值更改`START`为`yes`：
+```
+/ etc / default / corosync
+
+    START=yes
+ ```   
+
+保存并退出。现在，我们可以启动Corosync服务。
+
+在**两台**服务器上，使用以下命令启动Corosync：
+
+    sudo service corosync start
+    
+
+一旦Corosync在两台服务器上运行，就应该将它们群集在一起。我们可以通过运行以下命令来验证这一点：
+
+    sudo corosync-cmapctl | grep members
+    
+
+输出应如下所示，这表明主要节点（节点1）和辅助节点（节点2）已加入集群：
+
+    corosync-cmapctl output:runtime.totem.pg.mrp.srp.members.1.config_version (u64) = 0
+    runtime.totem.pg.mrp.srp.members.1.ip (str) = r(0) ip(primary_private_IP_address)
+    runtime.totem.pg.mrp.srp.members.1.join_count (u32) = 1
+    runtime.totem.pg.mrp.srp.members.1.status (str) = joined
+    runtime.totem.pg.mrp.srp.members.2.config_version (u64) = 0
+    runtime.totem.pg.mrp.srp.members.2.ip (str) = r(0) ip(secondary_private_IP_address)
+    runtime.totem.pg.mrp.srp.members.2.join_count (u32) = 1
+    runtime.totem.pg.mrp.srp.members.2.status (str) = joined
+    
+
+现在，您已经正确设置了Corosync，让我们继续配置Pacemaker。
+
+启动并配置Pacemaker
+--------------
+
+依靠Corosync消息传递功能的Pacemaker现在可以启动并配置其基本属性。
+
+### 启用并启动Pacemaker
+
+Pacemaker服务需要Corosync才能运行，因此默认情况下处于禁用状态。
+
+在**两台服务器上**，使用以下命令启用Pacemaker在系统启动时启动：
+
+    sudo update-rc.d pacemaker defaults 20 01
+    
+
+使用先前的命令，我们将Pacemaker的开始优先级设置为`20`。重要的是指定一个高于Corosync的启动优先级（`19`默认情况下），以便Pacemaker在Corosync之后启动。
+
+现在让我们开始起搏器：
+
+    sudo service pacemaker start
+    
+
+要与Pacemaker进行交互，我们将使用该`crm`实用程序。
+
+用以下方法检查起搏器`crm`：
+
+    sudo crm status
+    
+
+这应该输出如下内容（如果没有，请等待30秒，然后再次运行命令）：
+
+    crm status:Last updated: Fri Oct 16 14:38:36 2015
+    Last change: Fri Oct 16 14:36:01 2015 via crmd on primary
+    Stack: corosync
+    Current DC: primary (1) - partition with quorum
+    Version: 1.1.10-42f2063
+    2 Nodes configured
+    0 Resources configured
+    
+    
+    Online: [ primary secondary ]
+    
+
+关于此输出，需要注意几件事。首先，应将**Current DC**（指定的协调器）设置为`primary (1)`或`secondary (2)`。其次，应该**配置2个节点**和**0个资源**。第三，两个节点都应标记为**online**。如果它们被标记为**脱机**，请尝试等待30秒钟，然后再次检查状态以查看其是否自行纠正。
+
+从这一点开始，您可能希望在另一个SSH窗口（连接到任一群集节点）中运行交互式CRM监视器。这将使您实时更新每个节点的状态以及每个资源的运行位置：
+
+    sudo crm_mon
+    
+
+该命令的输出看起来与输出相同，`crm status`只是它连续运行。如果要退出，请按`Ctrl-C`。
+
+### 配置集群属性
+
+现在，我们准备配置Pacemaker的基本属性。请注意，所有Pacemaker（`crm`）命令都可以从任一节点服务器运行，因为它会自动同步所有成员节点上所有与群集相关的更改。
+
+对于我们所需的设置，我们要禁用STONITH（一种许多群集用来删除故障节点的模式），因为我们正在建立一个两节点群集。为此，请在任一服务器上运行以下命令：
+
+    sudo crm configure property stonith-enabled=false
+    
+
+我们还想在日志中禁用与仲裁有关的消息：
+
+    sudo crm configure property no-quorum-policy=ignore
+    
+
+同样，此设置仅适用于2节点群集。
+
+如果要验证您的Pacemaker配置，请运行以下命令：
+
+    sudo crm configure show
+    
+
+这将显示所有活动的Pacemaker设置。当前，这将仅包括两个节点，以及您刚刚设置的STONITH和quorum属性。
+
+创建浮动IP重新分配资源代理
+--------------
+
+现在，Pacemaker已在运行和配置，我们需要添加资源对其进行管理。如引言中所述，资源是集群负责使其高度可用的服务。在Pacemaker中，添加资源需要使用**资源代理**，该**代理**充当将要管理的服务的接口。Pacemaker附带了几种用于公共服务的资源代理，并允许添加自定义资源代理。
+
+在我们的设置中，我们要确保在主动/被动设置中由Web服务器（**主**服务器和**辅助**服务器）提供的服务高度可用，这意味着我们需要一种方法来确保浮动IP始终指向服务器可用。为此，我们需要设置一个**资源代理**，每个节点可以运行该**资源代理**以确定它是否拥有浮动IP，并在必要时运行脚本以将浮动IP指向其自身。我们将资源代理称为“ FloatIP OCF”，并将浮动IP重新分配脚本称为`assign-ip`。一旦安装了FloatIP OCF资源代理，就可以定义资源本身，我们将其称为`FloatIP`。
+
+### 下载assign-ip脚本
+
+如前所述，我们需要一个脚本，该脚本可以重新分配我们的浮动IP指向的Droplet，以防`FloatIP`需要将资源移动到其他节点。为此，我们将下载一个基本的Python脚本，该脚本使用DigitalOcean API将浮点IP分配给给定的Droplet ID。
+
+在**两台服务器上**，下载`assign-ip`Python脚本：
+
+    sudo curl -L -o /usr/local/bin/assign-ip http://do.co/assign-ip
+    
+
+在**两个服务器上**，使其可执行：
+
+    sudo chmod +x /usr/local/bin/assign-ip
+    
+
+使用`assign-ip`脚本需要以下详细信息：
+
+*   **浮动IP：**脚本的第一个参数，即正在分配的浮动IP
+*   **Droplet ID：**脚本的第二个参数，浮动IP应该分配给的Droplet ID
+*   **DigitalOcean PAT（API令牌）：**作为环境变量传递`DO_TOKEN`，您的读/写DigitalOcean PAT
+
+在继续之前，请随时检查脚本的内容。
+
+所以，如果你想手动运行该脚本来重新分配浮动IP，你可以运行它像这样：。但是，如果需要将资源移动到其他节点，则将从FloatIP OCF资源代理调用此脚本。`DO_TOKEN=your_digitalocean_pat /usr/local/bin/assign-ip your_floating_ip droplet_id``FloatIP`
+
+接下来让我们安装Float IP资源代理。
+
+### 下载FloatIP OCF资源代理
+
+Pacemaker可以通过将OCF资源代理放置在特定目录中来添加它们。
+
+在**两台服务器上**，`digitalocean`使用以下命令创建资源代理提供程序目录：
+
+    sudo mkdir /usr/lib/ocf/resource.d/digitalocean
+    
+
+在**两台服务器上**，下载FloatIP OCF资源代理：
+
+    sudo curl -o /usr/lib/ocf/resource.d/digitalocean/floatip https://gist.githubusercontent.com/thisismitch/b4c91438e56bfe6b7bfb/raw/2dffe2ae52ba2df575baae46338c155adbaef678/floatip-ocf
+    
+
+在**两个服务器上**，使其可执行：
+
+    sudo chmod +x /usr/lib/ocf/resource.d/digitalocean/floatip
+    
+
+在继续之前，请随时检查资源代理的内容。这是一个bash脚本，如果使用`start`命令调用，它将查找调用它的节点的Droplet ID（通过元数据），并将浮动IP分配给Droplet ID。而且，它通过返回主叫Droplet是否分配有浮动IP来响应`status`和`monitor`命令。
+
+它需要以下OCF参数：
+
+*   **do\_token ：：**用于浮动IP重新分配的DigitalOcean API令牌，即您的DigitalOcean个人访问令牌
+*   **float\_ip：：**您的浮动IP（地址），以防需要重新分配
+
+现在，我们可以使用FloatIP OCF资源代理来定义我们的`FloatIP`资源。
+
+添加FloatIP资源
+-----------
+
+安装了FloatIP OCF资源代理后，我们现在可以配置`FloatIP`资源。
+
+在任一服务器上，`FloatIP`使用此命令创建资源（确保使用您自己的信息指定两个突出显示的参数）：
+
+    sudo crm configure primitive FloatIP ocf:digitalocean:floatip \
+      params do_token=your_digitalocean_personal_access_token \
+      floating_ip=your_floating_ip
+    
+
+这使用我们之前创建的FloatIP OCF资源代理创建了一种原始资源，它是群集资源的一种通用类型，称为“ FloatIP” `ocf:digitalocean:floatip`。请注意，它需要`do_token`和`floating_ip`作为参数传递。如果需要重新分配浮动IP，则将使用它们。
+
+如果检查群集的状态（`sudo crm status`或`sudo crm_mon`），则应该看到该`FloatIP`资源已在其中一个节点上定义并启动：
+
+    crm_mon:...
+    2 Nodes configured
+    1 Resource configured
+    
+    Online: [ primary secondary ]
+    
+     FloatIP    (ocf::digitalocean:floatip):    Started primary
+    
+
+假设一切都已正确设置，那么您现在应该具有主动/被动HA设置！按`FloatIP`现状，如果启动该节点的节点脱机或进入`standby`模式，则浮动IP将重新分配给在线服务器。现在，如果活动节点（在我们的示例输出中为**primary）**变得不可用，集群将指示**辅助**节点启动`FloatIP`资源并为其本身声明浮动IP地址。一旦发生重新分配，浮动IP会将用户定向到新活动的**辅助**服务器。
+
+当前，仅当活动主机脱机或无法与群集通信时才触发故障转移（浮动IP重新分配）。此设置的更好版本将指定应由Pacemaker管理的其他资源。这将允许群集检测特定服务的故障，例如负载平衡器或Web服务器软件。但是，在进行设置之前，我们应确保基本的故障转移有效。
+
+测试高可用性
+------
+
+测试我们的高可用性设置是否有效很重要，所以现在就开始做吧。
+
+当前，浮动IP已分配给您的一个节点（假定为**primary**）。现在，通过IP地址或指向它的域名访问浮动IP，将仅显示**主**服务器的索引页。如果使用示例用户数据脚本，它将看起来像这样：
+
+    Floating IP is pointing to primary server:Droplet: primary, IP Address: primary_ip_address
+    
+
+这表明实际上已将浮动IP分配给了主Droplet。
+
+现在，让我们打开一个新的本地终端，并使用它`curl`以1秒的循环访问浮动IP。使用此命令来执行此操作，但是请确保将URL替换为您的域或浮动IP地址：
+
+    while true; do curl floating_IP_address; sleep 1; done
+    
+
+当前，这将输出与主服务器相同的Droplet名称和IP地址。如果我们导致主服务器发生故障，通过关闭电源或将主节点的群集状态更改为`standby`，我们将查看浮动IP是否重新分配给了辅助服务器。
+
+让我们现在重新启动**主**服务器。通过DigitalOcean控制面板或在主服务器上运行以下命令来执行此操作：
+
+    sudo reboot
+    
+
+片刻之后，主服务器将不可用。注意`curl`终端中运行的循环的输出。您应该注意到如下所示的输出：
+
+    curl loop output:Droplet: primary, IP Address: primary_IP_address
+    ...
+    curl: (7) Failed to connect to floating_IP_address port 80: Connection refused
+    Droplet: secondary, IP Address: secondary_IP_address
+    ...
+    
+
+也就是说，应重新分配浮动IP地址以指向**辅助**服务器的IP地址。这意味着您的HA设置正在运行，因为成功进行了自动故障转移。
+
+您可能会或可能不会看到该`Connection refused`错误，如果您尝试在主服务器故障和浮动IP重新分配完成之间访问浮动IP，则会发生该错误。
+
+如果检查Pacemaker的状态，则应该看到该`FloatIP`资源已在**辅助**服务器上启动。另外，应将**主**服务器临时标记为，`OFFLINE`但`Online`一旦完成重新启动并重新加入集群，它将加入列表。
+
+对故障转移进行故障排除（可选）
+---------------
+
+如果您的HA设置按预期工作，请跳过此部分。如果故障转移未按预期进行，则应在继续之前检查设置。特别是，请确保对您自己的设置的任何引用，例如节点IP地址，您的浮动IP和API令牌。
+
+### 疑难解答的有用命令
+
+以下是一些命令，可以帮助您解决设置问题。
+
+如前所述，该`crm_mon`工具在查看节点和资源的实时状态方面非常有用：
+
+    sudo crm_mon
+    
+
+另外，您可以使用以下命令查看集群配置：
+
+    sudo crm configure show
+    
+
+如果`crm`命令根本不起作用，则应查看Corosync日志以获取线索：
+
+    sudo tail -f /var/log/corosync/corosync.log
+    
+
+### 其他CRM命令
+
+这些命令在配置集群时很有用。
+
+您可以`standby`使用以下命令将节点设置为mode，该模式可用于模拟节点不可用：
+
+    sudo crm node standby NodeName
+    
+
+您可以更改节点的状态`standby`来`online`使用这个命令：
+
+    sudo crm node online NodeName
+    
+
+您可以使用以下命令编辑资源，以便重新配置该资源：
+
+    sudo crm configure edit ResourceName
+    
+
+您可以使用以下命令删除资源，该资源必须先停止才能删除。
+
+    sudo crm resource stop ResourceName
+    sudo crm configure delete ResourceName
+    
+
+最后，该`crm`命令可以单独运行以访问交互式`crm`提示：
+
+    crm
+    
+
+我们不会介绍交互式`crm`提示的用法，但是它可以用于`crm`完成到目前为止我们已经完成的所有配置。
+
+添加Nginx资源（可选）
+-------------
+
+现在，您可以确定浮动IP故障转移可以正常工作，让我们研究向群集中添加新资源。在示例设置中，Nginx是我们高度可用的主要服务，因此让我们将其添加为群集将管理的资源。
+
+Pacemaker带有Nginx资源代理，因此我们可以轻松地将Nginx添加为集群资源。
+
+使用以下命令创建一个名为“ Nginx”的新原始集群资源：
+
+    sudo crm configure primitive Nginx ocf:heartbeat:nginx \
+      params httpd="/usr/sbin/nginx" \
+      op start timeout="40s" interval="0" \
+      op monitor timeout="30s" interval="10s" on-fail="restart" \
+      op stop timeout="60s" interval="0"
+    
+
+指定的资源告诉群集每10秒监视Nginx，并在不可用时重新启动它。
+
+使用`sudo crm_mon`或检查群集资源的状态`sudo crm status`：
+
+    crm_mon:...
+    Online: [ primary secondary ]
+    
+     FloatIP    (ocf::digitalocean:floatip):    Started primary
+     Nginx  (ocf::heartbeat:nginx): Started secondary
+    
+
+不幸的是，由于我们尚未定义任何资源约束，因此Pacemaker将决定在单独的节点上启动`Nginx`和`FloatIP`资源。这是一个问题，因为这意味着浮动IP将指向一个Droplet，而Nginx服务将仅在另一个Droplet上运行。访问浮动IP将使您指向未运行应具有高可用性的服务的服务器。
+
+要解决此问题，我们将创建一个**克隆**资源，该资源指定应在多个节点上启动现有的原始资源。
+
+`Nginx`使用以下命令创建名为“ Nginx-clone” 的资源的克隆资源：
+
+    sudo crm configure clone Nginx-clone Nginx
+    
+
+现在，群集状态应如下所示：
+
+    crm_mon:Online: [ primary secondary ]
+    
+    FloatIP (ocf::digitalocean:floatip):    Started primary
+     Clone Set: Nginx-clone [Nginx]
+         Started: [ primary secondary ]
+    
+
+如您所见，克隆资源`Nginx-clone`现已在我们两个节点上启动。
+
+最后一步是配置**托管**约束，以指定`FloatIP`资源应在具有活动`Nginx-clone`资源的节点上运行。要创建一个称为“ FloatIP-Nginx”的托管约束，请使用以下命令：
+
+    sudo crm configure colocation FloatIP-Nginx inf: FloatIP Nginx-clone
+    
+
+您不会在`crm status`输出中看到任何差异，但是可以看到使用以下命令创建了托管资源：
+
+    sudo crm configure show
+    
+
+现在，您的两台服务器都应运行Nginx，而其中只有一台`FloatIP`资源正在运行。现在是通过停止Nginx服务并重新启动或关闭**活动**服务器来测试HA设置的好时机。
+
+结论
+--
+
+恭喜你！现在，您具有使用Corosync，Pacemaker和DigitalOcean浮动IP的基本HA服务器设置。
+
+下一步是用反向代理负载平衡器替换示例Nginx设置。为此，您可以使用Nginx或HAProxy。请记住，您将要将负载均衡器绑定到**锚IP地址**，以便您的用户只能通过浮动IP地址（而不是通过每个服务器的公共IP地址）访问服务器。[如何在Ubuntu 14.04上使用Corosync，Pacemaker和浮动IP创建高可用性HAProxy设置中](https://www.digitalocean.com/community/tutorials/how-to-create-a-high-availability-haproxy-setup-with-corosync-pacemaker-and-floating-ips-on-ubuntu-14-04)详细介绍了此过程。
+
+from :https://www.digitalocean.com/community/tutorials/how-to-create-a-high-availability-setup-with-corosync-pacemaker-and-floating-ips-on-ubuntu-14-04

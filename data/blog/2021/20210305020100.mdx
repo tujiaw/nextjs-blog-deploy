@@ -1,0 +1,303 @@
+---
+title: '博客文章增加TOC'
+date: '2021-03-05'
+tags: ['Web', 'Javascript', 'Go']
+draft: false
+summary: 
+---
+
+博客文章是使用Markdown写的，有了TOC(Table of Contents)阅读起来体验更好，TOC就是所有h1组成的标签目录，点击后调到相应的位置。
+
+# 获取所有h1标签
+我用的是github_markdown库，在renderer的Header方法中可以获取，存储在level1List 列表中
+```
+func (r *renderer) Header(out *bytes.Buffer, text func() bool, level int, _ string) {
+	marker := out.Len()
+	doubleSpace(out)
+
+	if !text() {
+		out.Truncate(marker)
+		return
+	}
+
+	textHTML := out.String()[marker:]
+	out.Truncate(marker)
+
+	// Extract text content of the heading.
+	var textContent string
+	if node, err := html.Parse(strings.NewReader(textHTML)); err == nil {
+		textContent = extractText(node)
+	} else {
+		// Failed to parse HTML (probably can never happen), so just use the whole thing.
+		textContent = html.UnescapeString(textHTML)
+	}
+	anchorName := sanitized_anchor_name.Create(textContent)
+
+	out.WriteString(fmt.Sprintf(`<h%d><a name="%s" class="anchor" href="#%s" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>`, level, anchorName, anchorName))
+	out.WriteString(textHTML)
+	out.WriteString(fmt.Sprintf("</h%d>\n", level))
+
+	if level == 1 {
+		r.level1List = append(r.level1List, anchorName)
+	}
+}
+```
+# 拼装成html文本
+tocTemplate就是拼装后的html将其放在文章内容前面就可以了
+```
+func Markdown(text []byte) []byte {
+	var htmlFlags = 0
+	renderer := &renderer{Html: blackfriday.HtmlRenderer(htmlFlags, "", "").(*blackfriday.Html)}
+	unsanitized := blackfriday.Markdown(text, renderer, extensions)
+	sanitized := policy.SanitizeBytes(unsanitized)
+
+	if len(renderer.level1List) > 0 {
+		var headerNameList []string
+		for i, v := range renderer.level1List {
+			headerNameList = append(headerNameList, fmt.Sprintf(`<li><a class="ez-toc-link" href="#%s">%d. %s</a></li>`, v, i+1, v))
+		}
+		var tocTemplate = fmt.Sprintf(
+			`<div id="ez-toc-container" class="ez-toc-light-blue">
+				<div class="ez-toc-title-container">
+					<p class="ez-toc-title">Table of Contents</p>
+					<span class="ez-toc-title-toggle">
+						<a class="ez-toc-pull-right ez-toc-btn ez-toc-btn-xs ez-toc-btn-default ez-toc-toggle">
+							<i class="fa fa-dedent"></i>
+						</a>
+					</span>
+				</div>
+				<nav><ul>%s</ul></nav>
+			</div>`, strings.Join(headerNameList, ""))
+		b := []byte(tocTemplate)
+		b = append(b, sanitized...)
+		return b
+	}
+
+	return sanitized
+}
+```
+# 引入CSS
+将css文件引入到html中
+```
+#ez-toc-container {
+	background:#f9f9f9;
+	border:1px solid #aaa;
+	border-radius:4px;
+	box-shadow:0 1px 1px rgba(0,0,0,.05);
+	display:table;
+	margin-bottom:1em;
+	padding:10px;
+	position:relative;
+	width:auto
+}
+div.ez-toc-widget-container {
+	padding:0;
+	position:relative
+}
+#ez-toc-container.ez-toc-light-blue {
+	background:#edf6ff
+}
+#ez-toc-container.ez-toc-white {
+	background:#fff
+}
+#ez-toc-container.ez-toc-black {
+	background:#000
+}
+#ez-toc-container.ez-toc-transparent {
+	background:none transparent
+}
+div.ez-toc-widget-container ul {
+	display:block
+}
+div.ez-toc-widget-container li {
+	border:none;
+	padding:0
+}
+div.ez-toc-widget-container ul.ez-toc-list {
+	padding:10px
+}
+#ez-toc-container ul ul,.ez-toc div.ez-toc-widget-container ul ul {
+	margin-left:1.5em
+}
+#ez-toc-container li,#ez-toc-container ul {
+	margin:0;
+	padding:0
+}
+#ez-toc-container li,#ez-toc-container ul,#ez-toc-container ul li,div.ez-toc-widget-container,div.ez-toc-widget-container li {
+	background:0 0;
+	list-style:none none;
+	line-height:1.6;
+	margin:0;
+	overflow:hidden;
+	z-index:1
+}
+#ez-toc-container p.ez-toc-title {
+	text-align:left;
+	line-height:1.45;
+	margin:0;
+	padding:0;
+	color:#000;
+	font-weight:bold;
+	font-size: 1.2em;
+}
+.ez-toc-title-container {
+	display:table;
+	width:100%
+}
+.ez-toc-title,.ez-toc-title-toggle {
+	display:table-cell;
+	text-align:left;
+	vertical-align:middle
+}
+#ez-toc-container.ez-toc-black p.ez-toc-title {
+	color:#fff
+}
+#ez-toc-container div.ez-toc-title-container+ul.ez-toc-list {
+	margin-top:1em
+}
+.ez-toc-wrap-left {
+	float:left;
+	margin-right:10px
+}
+.ez-toc-wrap-right {
+	float:right;
+	margin-left:10px
+}
+#ez-toc-container a {
+	color:#444;
+	text-decoration:none;
+	text-shadow:none
+}
+#ez-toc-container a:visited {
+	color:#9f9f9f
+}
+#ez-toc-container a:hover {
+	text-decoration:underline
+}
+#ez-toc-container.ez-toc-black a {
+	color:#fff
+}
+#ez-toc-container.ez-toc-black a:visited {
+	color:#fff
+}
+#ez-toc-container a.ez-toc-toggle {
+	color:#444
+}
+#ez-toc-container.counter-flat ul,#ez-toc-container.counter-hierarchy ul,.ez-toc-widget-container.counter-flat ul,.ez-toc-widget-container.counter-hierarchy ul {
+	counter-reset:item
+}
+#ez-toc-container.counter-numeric li,.ez-toc-widget-container.counter-numeric li {
+	list-style-type:decimal;
+	list-style-position:inside
+}
+#ez-toc-container.counter-decimal ul.ez-toc-list li a::before,.ez-toc-widget-container.counter-decimal ul.ez-toc-list li a::before {
+	content:counters(item,".") ". ";
+	counter-increment:item
+}
+#ez-toc-container.counter-roman li a::before,.ez-toc-widget-container.counter-roman ul.ez-toc-list li a::before {
+	content:counters(item,".",upper-roman) ". ";
+	counter-increment:item
+}
+.ez-toc-widget-container ul.ez-toc-list li::before {
+	content:' ';
+	position:absolute;
+	left:0;
+	right:0;
+	height:30px;
+	line-height:30px;
+	z-index:-1
+}
+.ez-toc-widget-container ul.ez-toc-list li.active::before {
+	background-color:#ededed
+}
+.ez-toc-widget-container li.active>a {
+	font-weight:900
+}
+.ez-toc-btn {
+	display:inline-block;
+	padding:6px 12px;
+	margin-bottom:0;
+	font-size:14px;
+	font-weight:400;
+	line-height:1.428571429;
+	text-align:center;
+	white-space:nowrap;
+	vertical-align:middle;
+	cursor:pointer;
+	background-image:none;
+	border:1px solid transparent;
+	border-radius:4px;
+	-webkit-user-select:none;
+	-moz-user-select:none;
+	-ms-user-select:none;
+	-o-user-select:none;
+	user-select:none
+}
+.ez-toc-btn:focus {
+	outline:thin dotted #333;
+	outline:5px auto -webkit-focus-ring-color;
+	outline-offset:-2px
+}
+.ez-toc-btn:focus,.ez-toc-btn:hover {
+	color:#333;
+	text-decoration:none
+}
+.ez-toc-btn.active,.ez-toc-btn:active {
+	background-image:none;
+	outline:0;
+	box-shadow:inset 0 3px 5px rgba(0,0,0,.125)
+}
+.ez-toc-btn-default {
+	color:#333;
+	background-color:#fff;
+	border-color:#ccc
+}
+.ez-toc-btn-default.active,.ez-toc-btn-default:active,.ez-toc-btn-default:focus,.ez-toc-btn-default:hover {
+	color:#333;
+	background-color:#ebebeb;
+	border-color:#adadad
+}
+.ez-toc-btn-default.active,.ez-toc-btn-default:active {
+	background-image:none
+}
+.ez-toc-btn-sm,.ez-toc-btn-xs {
+	padding:5px 10px;
+	font-size:12px;
+	line-height:1.5;
+	border-radius:3px
+}
+.ez-toc-btn-xs {
+	padding:1px 5px
+}
+.ez-toc-btn-default {
+	text-shadow:0 -1px 0 rgba(0,0,0,.2);
+	box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 1px 1px rgba(0,0,0,.075)
+}
+.ez-toc-btn-default:active {
+	box-shadow:inset 0 3px 5px rgba(0,0,0,.125)
+}
+.btn.active,.ez-toc-btn:active {
+	background-image:none
+}
+.ez-toc-btn-default {
+	text-shadow:0 1px 0 #fff;
+	background-image:linear-gradient(to bottom,#fff 0,#e0e0e0 100%);
+	background-repeat:repeat-x;
+	border-color:#dbdbdb;
+	border-color:#ccc
+}
+.ez-toc-btn-default:focus,.ez-toc-btn-default:hover {
+	background-color:#e0e0e0;
+	background-position:0 -15px
+}
+.ez-toc-btn-default.active,.ez-toc-btn-default:active {
+	background-color:#e0e0e0;
+	border-color:#dbdbdb
+}
+.ez-toc-pull-right {
+	float:right!important;
+	margin-left:10px
+}
+```
+# 结果
+效果就如本文章开头。

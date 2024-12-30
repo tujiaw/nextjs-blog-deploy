@@ -1,0 +1,376 @@
+---
+title: 'Qt重要特性'
+date: '2017-09-18'
+tags: ['Qt', 'C/C++']
+draft: false
+summary: Qt 是跨平台 C++开发框架，含丰富类库与工具。有事件循环、事件过滤，通过 QEventLoop 处理自发和已发事件。信号槽机制可松耦合通信，新语法有编译期检查等优点。还有元对象、隐式共享与 d-pointer 技术、布局管理（多种布局可组合）、内存管理（自动或延迟销毁）等重要特性。 
+---
+
+Qt基本特性
+
+Qt是一个跨平台的C++开发框架，它包含了功能丰富的C++类库以及集成开发工具。
+
+## 事件循环，事件过滤
+Qt是事件驱动的，程序每个动作都是由某个事件所触发。QApplication::exec()会调用QEventLoop进入事件循环，此时程序会进入等待状态，等待处理各种事件。
+
+* Spontaneoutsevents自发事件：
+从系统得到的消息，比如鼠标，键盘等。Qt事件循环的时候读取这些事件，转换为QEvent后依次处理。
+
+* Posted events， QCoreApplication::postEvent：
+由Qt或应用程序产生，放入消息队列
+
+* Sent events， QCoreApplication::sendEvent：
+由Qt或应用程序产生，不放入队列直接通过QApplication::notify进行派发和处理，是同步的。
+
+事件循环主要代码如下：
+```
+while(!exit_was_called){
+    while(!posted_event_queue_is_empty){
+        process_next_posted_event();
+    }
+    while(!spontaneous_event_queue_is_empty){
+        process_next_spontaneous_event();
+    }
+    while(!posted_event_queue_is_empty){
+        process_next_posted_event();
+    }
+}
+```
+
+先处理Qt事件队列中的事件，直至为空  
+再处理系统消息队列中的消息，直至为空  
+在处理系统消息的时候会产生新的Qt事件，需要对其再次进行处理  
+最终所有的事件都是通过  
+```QCoreApplication::notify(QObject*receiver,QEvent *event)```  
+来派发。下面是核心代码：
+```
+/*!\internal
+ 
+Helperfunction called by notify()
+*/
+boolQCoreApplicationPrivate::notify_helper(QObject*receiver,QEvent *event)
+{
+    //send to all application event filters
+    if(sendThroughApplicationEventFilters(receiver,event))
+        returntrue;
+    //send to all receiver event filters
+    if(sendThroughObjectEventFilters(receiver,event))
+        returntrue;
+    //deliver the event
+    returnreceiver->event(event);
+}
+```
+
+在调用receiver的event函数之前要先通过QApplication和receiver的过滤器。  
+安装过滤器monitoredObj->installEventFilter(filterObj);  
+重新实现filterObj对象中的  
+bool eventFilter(QObject * watched, QEvent * event)  
+在这个函数中监视这个类和所有它的子类的所有事件。  
+
+如果过滤器处理了这个事件就返回true，否则返回false继续派发到指定的对象。此时是调用receiver的event虚函数，它根据事件的类型主要做事件分发，对于QWidget类它会分发到各个具体的事件处理器。  
+```
+boolQWidget::event(QEvent*event){
+    switch(e->type()){
+    caseQEvent::KeyPress:
+        keyPressEvent((QKeyEvent*)event);
+        if(!((QKeyEvent*)event)->isAccepted())
+            returnfalse;
+        break;
+    caseQEvent::KeyRelease:
+        keyReleaseEvent((QKeyEvent*)event);
+        if(!((QKeyEvent*)event)->isAccepted())
+            returnfalse;
+        break;
+    //more...
+    }
+    returntrue;
+}
+```
+
+在具体的事件处理器中使用accept和ignore来标示这个事件是否被处理了。但是实际上在我们覆盖的事件处理器中很少使用这两个函数，当你不关心这个事件的时候应该调用父类的函数来进行默认处理，如果不这样做的话可能会造成一些潜在的风险。
+```
+voidMyLabel::mousePressEvent(QMouseEvent*event)
+{
+    if(event->button()==Qt::LeftButton){
+        //do something
+    }else{
+        QLabel::mousePressEvent(event);
+    }
+}
+```
+
+对于某些特定类型的事件, 如果在整个事件的派发过程结束后还没有被处理（event返回false）, 那么这个事件将会向上转发给它的父widget, 直到最顶层窗口。
+
+## 信号槽
+Qt的信号和槽机制是用来在对象间通信的方法，当一个特定的事件发生的时候，signal会被emit发射出来，slot函数用来响应相应的signal。它使得对象间通信保持一种松耦合的关系。
+
+Qt信号槽需要Q_OBJECT宏支持的，程序在编译之前moc预处理器会对有Q_OBJECT宏的类进行预处理，生成moc_xxxx.cpp来扩展当前类。内部由meta object来维护我们需要的信息和接口。
+
+一个信号可以连接到多个槽和信号；
+
+多个信号可以连接到同一个槽；
+
+如果一个信号连接到多个槽，当信号被发射后所有的槽函数按照连接建立的顺序都会被激活。
+
+旧语法：
+```
+staticQMetaObject::Connectionconnect(constQObject *sender,constchar*signal,constQObject *receiver,constchar*member,Qt::ConnectionType=Qt::AutoConnection);
+```
+```
+例如：connect(m_slider,SIGNAL(valueChanged(int)),this,SLOT(onValueChanged(int)));
+```
+
+信号槽要求信号和槽的参数一致，所谓一致，是参数类型一致。如果不一致，允许的情况是，槽函数的参数可以比信号的少，即便如此，槽函数存在的那 些参数的顺序也必须和信号的前面几个一致起来。这是因为，你可以在槽函数中选择忽略信号传来的数据（也就是槽函数的参数比信号的少），但是不能说信号根本 没有这个数据，你就要在槽函数中使用（就是槽函数的参数比信号的多，这是不允许的）。
+
+幕后的实际情况是SIGNAL和SLOT这两个宏会把它们的参数转换成字符串。然后QObject::connect()将会把这些字符串和moc工具所收集的内部数据进行比较。
+
+虽然通常情况下都可以正常工作，我们还是发现了如下问题：
+* 没有编译期检查：因为函数名被处理成字符串，所有的检查都是在运行时完成的。这就是为什么有时会发生编译通过了，但槽并没有被调用。此时，你就应该去检查标准输出，看看有没有什么警告说明这个连接没有成功；
+
+* 因为处理的是字符串，所以槽函数中的类型名字必须与信号的完全一致，而且在头文件中的和实际的connect()语句中的也必须一致。也就是说，如果你使用了typedef或者命名空间，那么这个连接就不能正常工作。
+
+
+新语法：
+```
+static QMetaObject::Connectionconnect(constQObject *sender,PointerToMemberFunction signal, constQObject *receiver,PointerToMemberFunction method,Qt::ConnectionTypetype =Qt::AutoConnection);
+static QMetaObject::Connectionconnect(constQObject *sender,PointerToMemberFunction signal, constQObject *context,Functor functor,Qt::ConnectionTypetype =Qt::AutoConnection);
+例如：connect(m_slider, &QSlider::valueChanged, this, &Dialog::onValueChanged);
+```
+* 编译期检查，如果信号或者槽的名字的拼写发生了错误，或者槽函数的参数与信号的不一致，你会在编译期就得到一个错误；
+* 参数的自动类型转换，如：QVariant，QString之间的转换；
+* 连接到任意函数（非槽函数也可以），Qt的新语法通过函数指针直接调用函数，而不再需要moc支持的槽函数（slots）。
+
+*需要编译器支持C++11 lambda表达式*
+```
+staticQMetaObject::Connectionconnect(constQObject *sender,PointerToMemberFunction signal,Functor functor);
+例如：connect(m_slider,&QSlider::valueChanged,[this](intval){
+    m_label->setText(QString::number(val));
+});
+```
+
+这种语法对于那些简短的或者独立的响应函数编写代码非常方便（不需要单独定义一个函数）。
+
+最后一个参数描述了连接建立的类型，实际上它决定了信号是被立即投递还是进队。如果信号进队，那么它的参数类型必须是能被Qt'smeta-object系统认识的，因为Qt在事件背后需要拷贝其参数进行存储，否则的话会得到一个错误信息：
+```
+QObject::connect:Cannot queue arguments of type 'MyType'
+(Makesure 'MyType'is registered usingqRegisterMetaType().)
+```
+
+对于自定义的类型在connect之前需要注册一下：  
+```
+qRegisterMetaType<MyType>("MyType");
+```
+
+主要有下面几种连接方式：  
+* AutoConnection  
+默认参数，如果接收者所在的线程和信号发射的线程是同一个线程使用DirectConnect，否则使用QueuedConnection；
+* DirectConnection  
+信号发射后槽函数会被立刻调用，槽函数的执行在信号发射的线程；
+* QueuedConnection  
+将信号转换为事件，事件被派发到接收者所在的线程队列中，事件循环会在之后的某个时间取出事件调用槽函数，此槽函数的执行在接收者的线程；
+* BlockingQueuedConnection  
+与QueuedConnection类似，区别在于发送者的线程会被阻塞，直至接收者所在线程的事件循环处理发送者发送（入栈）的事件，当连接信号的槽被触发后，阻塞被解除。
+
+要注意的是使用这个参数要求接收者所在的线程不是信号发射的线程，否则应用程序会死锁。
+
+从上面的连接方式可以看出，发送对象（sender）在哪个线程并不重要，AutoConnection是根据信号是在哪个线程发射的来决定用哪一种连接类型。
+```
+classThread :publicQThread
+{
+    Q_OBJECT
+signals:
+    voidmySignal();
+ 
+protected:
+    voidrun()
+    {
+        emit mySignal();
+    }
+};
+ 
+Threadthread;
+Objectobject;
+QObject::connect(thread,SIGNAL(mySignal()),&object,SLOT(mySlot()));
+thread.start();
+```
+如上代码，虽然发送者thread和接收者object在同一线程，但是mySignal是在不同的线程发射的所以使用的应该是QueuedConnection。
+
+## 元对象
+元对象就是描述另一个对象结构的对象。  
+
+每个Qt类都是从QObject继承的。  
+
+QMetaObject是元对象的一个Qt实现，它提供了QObject对象所拥有的属性和方法等信息。一个拥有元对象的类就可以支持反射。虽然C++中不存在反射，但是Qt的元对象编译器(MetaObject compiler,moc)可以为QObject类生成支持这种机制的代码。
+
+```
+#defineQ_OBJECT \
+public:\
+    Q_OBJECT_CHECK \
+    static const QMetaObject staticMetaObject;\
+    virtual const QMetaObject *metaObject()const; \
+    virtual void *qt_metacast(const char *); \
+    QT_TR_FUNCTIONS \
+    virtual int qt_metacall(QMetaObject::Call,int, void **); \
+private:\
+    Q_DECL_HIDDEN_STATIC_METACALL static voidqt_static_metacall(QObject *, QMetaObject::Call, int, void **); \
+    struct QPrivateSignal {};
+```
+
+信号槽依赖于QMetaObject，要想支持信号槽还必须在类中增加Q_OBJECT宏， Q_OBJECT宏定义了QMetaObject，程序在编译之前moc预处理器会对有Q_OBJECT的类进行预处理，生成moc_xxxx.cpp来扩展当前类，也就是记录当前类的一些信息，包括：类名，方法，属性，信号，槽等以及支持信号槽的方法。
+
+connect信号槽的时候实际上就是利用sender和receiver这两个类的QMetaObject对象来实现的。对于普通用户而言其实我们很少使用这个对象，它是由Qt在底层使用的。
+
+信号槽内部实现的简单过程：connect的时候，把sender，signal，receiver，slot等信息记录在一个全局的connect list中。一旦信号发射就通过查找全局connect list找到对应的槽函数进行调用，这中间涉及到参数的打包和解包。以上实现的基础都依赖于QMetaObject所登记的信息和提供的方法。
+
+## 隐式共享与d-pointer技术
+一般情况下，一个类的多个对象所占用的内存是相互独立的。如果其中某些对象数据成员的取值完全相同（如传参）我们可以令它们共享一块内存以节省空间。只有当程序需要修改其中某个对象的数据成员时，我们再为该对象分配新的内存。这种技术被称为隐式共享(implicitsharing)。该技术被Qt库广泛使用。
+
+通常情况下，与一个类密切相关的数据会被作为数据成员直接定义在该类中。然而，在某些场合下，我们会将这些数据从该类（公类）分离出来，定义在一个单独的类中（私类）。公类中定义一个指针，指向私类对象。这种模式被称为pointer toimplementation(pimpl)。通常私类中只包含纯数据，Qt中将其命名为d_ptr（d指针）。
+
+隐式数据共享需要通过d-pointer技术来实现。
+
+一般类：
+```
+classMatrix
+{
+public:
+    Matrix()
+    {
+        memset(data,0,sizeof(data));
+    }
+ //...
+private:
+    doubledata[3][3];
+};
+```
+直接定义一个类的数据成员是没办法实现隐式数据共享的，一般正确做法我们会实现深拷贝这样对于同一个类的不同对象拥有各自独立的数据。
+
+隐式共享类：
+```
+classMatrix;
+classMatrixPrivate
+{
+public:
+    MatrixPrivate()
+    {
+        memset(data,0,sizeof(data));
+    }
+private:
+    doubledata[3][3];
+    intrefCount;
+    friendMatrix;
+};
+ 
+classMatrix
+{
+public:
+    Matrix()
+    {
+        d_ptr =newMatrixPrivate;
+        d_ptr->refCount=1;
+    }
+    Matrix(constMatrix &other)
+    {
+        d_ptr =other.d_ptr;
+        d_ptr->refCount++;
+    }
+    Matrix&operator=(constMatrix &other)
+    {
+        if(this==&other){
+            return*this;
+        }
+        d_ptr =other.d_ptr;
+        d_ptr->refCount++;
+        return*this;
+    }
+ 
+    ~Matrix()
+    {
+        if(--d_ptr->refCount==0){
+            deleted_ptr;
+        }
+    }
+    double&operator()(introw,intcol)
+    {
+        detach();
+        returnd_ptr->data[row][col];
+    }
+    voiddetach()
+    {
+        if(d_ptr->refCount<=1){
+            return;
+        }
+        d_ptr->refCount--;
+        d_ptr =newMatrixPrivate(*d_ptr);
+        d_ptr->refCount=1;
+    }
+private:
+    MatrixPrivate *d_ptr;
+};
+```
+在实现拷贝构造和复制操作符的时候我们并没有把数据成员进行深拷贝，而只是给新对象一个指向私类对象的指针，用引用计数来记录有多少个对象引用这份数据。当某个对象要对这份数据进行更改时才创建一个新的私类对象。
+
+好处：
+* 节省内存空间，提高代码执行效率；
+* 避免破坏动态库的二进制兼容性。在更新这个库的时候我们可以自由的更改私类的数据成员，包括添加，删除，修改数据成员定义的顺序。更新后的库用户直接替换就可以了不需要重新编译原来的程序。
+> 所谓“二进制兼容性”指的就是在升级（也可能是 bug fix）库文件的时候，不必重新编译使用这个库的可执行文件或使用这个库的其他库文件，程序的功能不被破坏。
+
+在稍微复杂一点的类中，通常私类还需要访问公类的方法，信号，所以在创建私类的时候可以把公类的指针传给私类，这个指针在私类中称为q_ptr（q指针）。
+
+Qt的很多类都是通过上面技术实现的，所以它为了方便定义了几个宏：
+```
+template<typenameT>staticinlineT *qGetPtrHelper(T*ptr){returnptr;}
+template<typenameWrapper>staticinlinetypenameWrapper::pointerqGetPtrHelper(constWrapper &p){returnp.data();}
+ 
+#defineQ_DECLARE_PRIVATE(Class) \
+    inline Class##Private* d_func() { returnreinterpret_cast<Class##Private *>(qGetPtrHelper(d_ptr)); } \
+    inline const Class##Private* d_func() const{ return reinterpret_cast<const Class##Private *>(qGetPtrHelper(d_ptr));} \
+    friend class Class##Private;
+ 
+#defineQ_DECLARE_PRIVATE_D(Dptr, Class) \
+    inline Class##Private* d_func() { returnreinterpret_cast<Class##Private *>(Dptr); } \
+    inline const Class##Private* d_func() const{ return reinterpret_cast<const Class##Private *>(Dptr); } \
+    friend class Class##Private;
+ 
+#defineQ_DECLARE_PUBLIC(Class)                                    \
+    inline Class* q_func() { returnstatic_cast<Class *>(q_ptr); } \
+    inline const Class* q_func() const { returnstatic_cast<const Class *>(q_ptr); } \
+    friend class Class;
+ 
+#defineQ_D(Class) Class##Private * const d = d_func()
+#defineQ_Q(Class) Class * const q = q_func()
+```
+
+## 布局管理
+GUI界面就是有一堆组件（控件）的组合，对于组件放在什么位置Qt提供了两种组件定位机制：绝对定位和布局定位。
+
+绝对定位是一种最原始的定位方法，它根据组件的坐标，长宽来放置。这样做的缺点是当用户改变窗口大小的时候不能做到自适应。
+
+Qt使用布局管理器来解决这个问题。  
+
+QHBoxLayout水平布局     
+
+QVBoxLayout垂直布局  
+
+QGridLayout网格布局  
+
+QFormLayout表格布局，这是一个两列的布局，左边是label，右边是组件，常用来描述一组信息，比如：人的名字，手机，邮件，城市，地址
+
+QStackedLayout层叠布局，允许将几个组件按照Z轴次序堆叠，类似如安装向导那种。
+
+各种布局可以组合成一个更复杂的布局。所有的QWidget类都可以使用layout来管理它的子组件，通过QWidget::setLayout函数设置一个布局。
+
+我们可以通过手写代码的方式来编写界面，也可以通过Qt提供的工具Qt Designer来进行可视化布局。实际上可视化布局会生成一个ui_xxxx.h头文件，它里面是一个Ui_xxxx类，定义了我们放置的所有子组件，以及setupUi方法来给所有的子组件进行布局，用户只需要使用这个类调用它的setupUi方法就可以完成界面的布局。实际上手写代码布局和Qt Designer帮我们生成代码布局差别不是很大，优点主要体现在：
+* 手写代码布局：更灵活，在程序执行的过程中我们可以动态的调整布局  
+* 使用Qt Designer：方便，效率高。
+
+## 内存管理
+Qt有一定机制来帮我们保证内存的销毁。Qt 在内部能够维护对象的层次结构。对于可视元素，这种层次结构就是子组件与父组件（控件）的关系；对于非可视元素，则是一个对象与另一个对象的从属关系。在 Qt 中，删除父对象会将其子对象一起删除。所以，我们经常可以看到在Qt的代码中只有new没有delete。那么它们很可能是通过下面途径来销毁的：
+* 这个对象指定了父对象或者说这个对象在父对象中（类似如一种组合的关系，子对象的生命周期由父对象来控制）；
+* 如果这个对象是窗口widget的话setAttribute(Qt::WA_DeleteOnClose);那么在窗口关闭的时候会自动调用析构函数释放内存。
+* 调用deleteLater函数，区别于delete，这是个延迟销毁，由于窗口涉及到事件循环所以不能调用delete立马销毁这个对象，deleteLater会在合适的时候销毁对象。
+
+前两种方式基本实现了自动销毁，第三种方式需要自己去调用。但由于这是个槽函数，根据实际应用场景可以connect某个信号到这个函数做到自动销毁，如：
+```
+connect(&m_taskThread, &QThread::finished, task, &QObject::deleteLater);
+```

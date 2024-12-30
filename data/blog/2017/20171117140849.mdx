@@ -1,0 +1,282 @@
+---
+title: 'API设计原则(下)'
+date: '2017-11-17'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 总结：介绍 API 设计原则，包括语义文档、命名艺术、避免陷阱等方面，以 QProgressBar 等案例展示实际应用，强调抽象类等问题，还提及相关 Qt 类的改进，如去掉 QGLayoutIterator 等，原文链接为[API Design Principles – Qt Wiki](http://qt-project.org/wiki/API-Design-Principles)。 
+---
+
+# API的语义和文档
+当传值为-1的参数给函数，函数会是什么行为？有很多类似的问题……
+
+是警告、致命错误还是其它？
+
+API需要的是质量保证。API第一个版本一定是不对的；必须对其进行测试。 以阅读使用API的代码的方式编写用例，且验证这样代码是可读的。
+
+还有其他的验证方法，比如
+* 让别人使用API（看了文档或是先不看文档都可以）
+* 给类写文档（包含类的概述和每个函数）
+
+# 命名的艺术
+命名很可能是API设计中最重要的一个问题。类应该叫什么名字？成员函数应该叫什么名字？
+
+## 通用的命名规则
+有几个规则对于所有类型的命名都等同适用。第一个，之前已经提到过，不要使用缩写。即使是明显的缩写，比如把previous缩写成prev，从长远来看是回报是负的，因为用户必须要记住缩写词的含义。
+
+如果API本身没有一致性，之后事情自然就会越来越糟；例如，Qt 3 中同时存在activatePreviousWindow()与fetchPrev()。恪守『不缩写』规则更容易地创建一致性的API。
+
+另一个时重要但更微妙的准则是在设计类时应该保持子类名称空间的干净。在Qt 3中，此项准则并没有一直遵循。以QToolButton为例对此进行说明。如果调用QToolButton的 name()、caption()、text()或者textLabel()，你觉得会返回什么？用Qt设计器在QToolButton上自己先试试吧：
+
+* name属性是继承自QObject，返回内部的对象名称，用于调试和测试。
+* caption属性继承自QWidget，返回窗口标题，对QToolButton来说毫无意义，因为它在创建的时候parent就存在了。
+* text函数继承自QButton，一般用于按钮。当useTextLabel不为true，才用这个属性。
+* textLabel属性在QToolButton内声明，当useTextLabel为true时显示在按钮上。
+
+为了可读性，在Qt 4中QToolButton的name属性改成了objectName，caption改成了windowTitle，删除了textLabel属性因为和text属性相同。
+
+当你找不到好的命名时，写文档也是个很好方法：要做的就是尝试为各个条目（item）（如类、方法、枚举值等等）写文档，并用写下的第一句话作为启发。如果找不到一个确切的命名，往往说明这个条目是不该有的。如果所有尝试都失败了，并且你坚信这个概念是合理的，那么就发明一个新名字。像widget、event、focus和buddy这些命名就是在这一步诞生的。
+> 【译注】：写文档是一个非常好的习惯。写文档的过程其实就是在帮你梳理你的编程思路。很多时候，文档写着写着你就会发现要去改代码去了。除了上述的好处多，写文档还有更多的好处。比如，在写文档的过程中，你发现文字描述过于复杂了，这表明着你的代码或逻辑是复杂的，这就倒逼你去重构你的代码。所以 —— 写文档其实就是写代码。
+
+## 类的命名
+识别出类所在的分组，而不是为每个类都去找个完美的命名。例如，所有Qt 4的能感知模型（model-aware）的item view，类后缀都是View（QListView、QTableView、QTreeView），而相应的基于item（item-based）的类后缀是Widget（QListWidget、QTableWidget、QTreeWidget）。
+
+## 枚举类型及其值的命名
+声明枚举类型时，需要记住在C++中枚举值在使用时不会带上类型（与Java、C#不同）。下面的例子演示了枚举值命名得过于通用的危害：
+```
+namespace Qt
+{
+    enum Corner { TopLeft, BottomRight, ... };
+    enum CaseSensitivity { Insensitive, Sensitive };
+    ...
+};
+ 
+tabWidget->setCornerWidget(widget, Qt::TopLeft);
+str.indexOf("$(QTDIR)", Qt::Insensitive);
+```
+在最后一行，Insensitive是什么意思？命名枚举类型的一个准则是在枚举值中至少重复此枚举类型名中的一个元素：
+```
+namespace Qt
+{
+    enum Corner { TopLeftCorner, BottomRightCorner, ... };
+    enum CaseSensitivity { CaseInsensitive, CaseSensitive };
+    ...
+};
+ 
+tabWidget->setCornerWidget(widget, Qt::TopLeftCorner);
+str.indexOf("$(QTDIR)", Qt::CaseInsensitive);
+```
+当对枚举值进行或运算并作为某种标志（flag）时，传统的做法是把或运算的结果保存在int型的值中，但这不是类型安全的。Qt 4提供了一个模板类QFlags，其中的T是枚举类型。为了方便使用，Qt用typedef重新定义了QFlag类型，所以可以用Qt::Alignment代替QFlags。
+
+习惯上，枚举类型命名用单数形式（因为它一次只能『持有』一个flag），而持有多个『flag』的类型用复数形式，例如：
+```
+enum RectangleEdge { LeftEdge, RightEdge, ... };
+typedef QFlags<RectangleEdge> RectangleEdges;
+```
+
+在某些情形下，持有多个『flag』的类型命名用单数形式。对于这种情况，持有的枚举类型名称要求是以Flag为后缀：
+```
+enum AlignmentFlag { AlignLeft, AlignTop, ... };
+typedef QFlags<AlignmentFlag> Alignment;
+```
+
+## 函数和参数的命名
+函数命名的第一准则是可以从函数名看出来此函数是否有副作用。在Qt 3中，const函数QString::simplifyWhiteSpace()违反了此准则，因为它返回了一个QString而不是按名称暗示的那样，改变调用它的QString对象。在Qt 4中，此函数重命名为QString::simplified()。
+
+虽然参数名不会出现在使用API的代码中，但是它们给程序员提供了重要信息。因为现代的IDE都会在写代码时显示参数名称，所以值得在头文件中给参数起一个恰当的名字并在文档中使用相同的名字。
+
+## 布尔类型的getter与setter方法的命名
+为bool属性的getter和setter方法命名总是很痛苦。getter应该叫做checked()还是isChecked()？scrollBarsEnabled()还是areScrollBarEnabled()？
+
+Qt 4中，我们套用以下准则为getter命名：
+* 形容词以is为前缀，例子：
+```
+sChecked()
+isDown()
+isEmpty()
+isMovingEnabled()
+```
+* 然而，修饰名词的形容词没有前缀：
+```
+scrollBarsEnabled()，而不是areScrollBarsEnabled()
+```
+* 动词没有前缀，也不使用第三人称(-s)：
+```
+acceptDrops()，而不是acceptsDrops()
+allColumnsShowFocus()
+```
+* 名词一般没有前缀：
+```
+autoCompletion()，而不是isAutoCompletion()
+boundaryChecking()
+```
+* 有的时候，没有前缀容易产生误导，这种情况下会加上is前缀：
+```
+isOpenGLAvailable()，而不是openGL()
+isDialog()，而不是dialog()
+（一个叫做dialog()的函数，一般会被认为是返回QDialog。）
+```
+setter的名字由getter衍生，去掉了前缀后在前面加上了set；例如，setDown()与setScrollBarsEnabled()。
+
+# 避免常见陷阱
+## 简化的陷阱
+一个常见的误解是：实现需要写的代码越少，API就设计得越好。应该记住：代码只会写上几次，却要被反复阅读并理解。例如：
+```
+QSlider *slider = new QSlider(12, 18, 3, 13, Qt::Vertical, 0, "volume");
+```
+这段代码比下面的读起来要难得多（甚至写起来也更难）：
+```
+QSlider *slider = new QSlider(Qt::Vertical);
+slider->setRange(12, 18);
+slider->setPageStep(3);
+slider->setValue(13);
+slider->setObjectName("volume");
+```
+> 【译注】：在有IDE的自动提示的支持下，后者写起来非常方便，而前者还需要看相应的文档。
+
+## 布尔参数的陷阱
+布尔类型的参数总是带来无法阅读的代码。给现有的函数增加一个bool型的参数几乎永远是一种错误的行为。仍以Qt为例，repaint()有一个bool类型的可选参数用于指定背景是否被擦除。可以写出这样的代码：
+```
+widget->repaint(false);
+```
+初学者很可能是这样理解的，『不要重新绘制！』，能有多少Qt用户真心知道下面3行是什么意思：
+```
+widget->repaint();
+widget->repaint(true);
+widget->repaint(false);
+```
+更好的API设计应该是这样的：
+```
+widget->repaint();
+widget->repaintWithoutErasing();
+```
+在Qt 4中，我们通过移除了重新绘制（repaint）而不擦除widget的能力来解决了此问题。Qt 4的双缓冲使这种特性被废弃。
+
+还有更多的例子：
+```
+widget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding, true);
+textEdit->insert("Where's Waldo?", true, true, false);
+QRegExp rx("moc_***.c??", false, true);
+```
+一个明显的解决方案是bool类型改成枚举类型。我们在Qt 4的QString中就是这么做的。对比效果如下：
+```
+str.replace("%USER%", user, false);               // Qt 3
+str.replace("%USER%", user, Qt::CaseInsensitive); // Qt 4
+```
+
+# 案例研究
+## QProgressBar
+为了展示上文各种准则的实际应用。我们来研究一下Qt 3中QProgressBar的API，并与Qt 4中对应的API作比较。在Qt 3中：
+```
+class QProgressBar : public QWidget
+{
+    ...
+public:
+    int totalSteps() const;
+    int progress() const;
+ 
+    const QString &progressString() const;
+    bool percentageVisible() const;
+    void setPercentageVisible(bool);
+ 
+    void setCenterIndicator(bool on);
+    bool centerIndicator() const;
+ 
+    void setIndicatorFollowsStyle(bool);
+    bool indicatorFollowsStyle() const;
+ 
+public slots:
+    void reset();
+    virtual void setTotalSteps(int totalSteps);
+    virtual void setProgress(int progress);
+    void setProgress(int progress, int totalSteps);
+ 
+protected:
+    virtual bool setIndicator(QString &progressStr,
+                              int progress,
+                              int totalSteps);
+    ...
+};
+```
+该API相当的复杂和不一致；例如，reset()、setTotalSteps()、setProgress()是紧密联系的，但方法的命名并没明确地表达出来。
+
+改善此API的关键是抓住QProgressBar与Qt 4的QAbstractSpinBox及其子类QSpinBox、QSlider、QDail之间的相似性。怎么做？把progress、totalSteps替换为minimum、maximum和value。增加一个valueChanged()消息，再增加一个setRange()函数。
+
+进一步可以观察到progressString、percentage与indicator其实是一回事，即是显示在进度条上的文本。通常这个文本是个百分比，但是可通过setIndicator()设置为任何内容。以下是新的API：
+```
+virtual QString text() const;
+void setTextVisible(bool visible);
+bool isTextVisible() const;
+```
+默认情况下，显示文本是百分比指示器（percentage indicator），通过重写text()方法来定制行为。
+
+Qt 3的setCenterIndicator()与setIndicatorFollowsStyle()是两个影响对齐方式的函数。他们可被一个setAlignment()函数代替：
+```
+void setAlignment(Qt::Alignment alignment);
+```
+如果开发者未调用setAlignment()，那么对齐方式由风格决定。对于基于Motif的风格，文字内容在中间显示；对于其他风格，在右侧显示。
+
+下面是改善后的QProgressBar API:
+```
+class QProgressBar : public QWidget
+{
+    ...
+public:
+    void setMinimum(int minimum);
+    int minimum() const;
+    void setMaximum(int maximum);
+    int maximum() const;
+    void setRange(int minimum, int maximum);
+    int value() const;
+ 
+    virtual QString text() const;
+    void setTextVisible(bool visible);
+    bool isTextVisible() const;
+    Qt::Alignment alignment() const;
+    void setAlignment(Qt::Alignment alignment);
+ 
+public slots:
+    void reset();
+    void setValue(int value);
+ 
+signals:
+    void valueChanged(int value);
+    ...
+};
+```
+
+## QAbstractPrintDialog & QAbstractPageSizeDialog
+Qt 4.0有2个幽灵类QAbstractPrintDialog和QAbstractPageSizeDialog，作为 QPrintDialog和QPageSizeDialog类的父类。这2个类完全没有用，因为Qt的API没有是QAbstractPrint-或是-PageSizeDialog指针作为参数并执行操作。通过篡改qdoc（Qt文档），我们虽然把这2个类隐藏起来了，却成了无用抽象类的典型案例。
+
+这不是说，好 的抽象是错的，QPrintDialog应该是需要有个工厂或是其它改变的机制 —— 证据就是它声明中的#ifdef QTOPIA_PRINTDIALOG。
+
+## QAbstractItemModel
+关于模型/视图（model/view）问题的细节在相应的文档中已经说明得很好了，但作为一个重要的总结这里还需要强调一下：抽象类不应该仅是所有可能子类的并集（union）。这样『合并所有』的父类几乎不可能是一个好的方案。QAbstractItemModel就犯了这个错误 —— 它实际上就是个QTreeOfTablesModel，结果导致了错综复杂（complicated）的API，而这样的API要让 所有本来设计还不错的子类 去继承。
+
+仅仅增加抽象是不会自动就把API变得更好的。
+
+## QLayoutIterator & QGLayoutIterator
+在Qt 3，创建自定义的布局类需要同时继承QLayout和QGLayoutIterator（命名中的G是指Generic（通用））。QGLayoutIterator子类的实例指针会包装成QLayoutIterator，这样用户可以像和其它的迭代器（iterator）类一样的方式来使用。通过QLayoutIterator可以写出下面这样的代码：
+```
+QLayoutIterator it = layout()->iterator();
+QLayoutItem **child;
+while ((child = it.current()) != 0) {
+    if (child->widget() == myWidget) {
+        it.takeCurrent();
+        return;
+    }
+    ++it;
+}
+```
+在Qt 4，我们干掉了QGLayoutIterator类（以及用于盒子布局和格子布局的内部子类），转而是让QLayout的子类重写itemAt()、takeAt()和count()。
+
+## QImageSink
+Qt 3有一整套类用来把完成增量加载的图片传递给一个动画 —— QImageSource/Sink/QASyncIO/QASyncImageIO。由于这些类之前只是用于启用动画的QLabel，完全过度设计了（overkill）。
+
+从中得到的教训就是：对于那些未来可能的还不明朗的需求，不要过早地增加抽象设计。当需求真的出现时，比起一个复杂的系统，在简单的系统新增需求要容易得多。
+
+[API设计原则(上)](http://3inns.cn/post/5a0eed10c0fd2b0eee159d0b)  
+[API设计原则(中)](http://3inns.cn/post/5a0eed56c0fd2b0eee159d0c)  
+[API设计原则(下)](http://3inns.cn/post/5a0eed71c0fd2b0eee159d0d)  
+
+原文链接：[API Design Principles – Qt Wiki](http://qt-project.org/wiki/API-Design-Principles)
+基于[Gary的影响力上](http://blog.csdn.net/gaoyingju) Gary Gao 的译文稿：[C++的API设计指导](http://blog.csdn.net/gaoyingju/article/details/8245108)

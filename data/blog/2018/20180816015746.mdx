@@ -1,0 +1,243 @@
+---
+title: 'CMake简单用法'
+date: '2018-08-16'
+tags: ['Tools']
+draft: false
+summary: 介绍 CMake 简单用法，包括静态库、动态库、可执行程序及多工程模板。静态库通过特定 CMakeLists.txt 编译生成 libstatic_math.a；动态库类似，将 STATIC 改为 SHARED；可执行程序使用静态库和动态库需添加头文件目录等；多工程模板有主 CMakeLists.txt 及各子工程 CMakeLists.txt。 
+---
+
+CMake简单用法
+
+# 静态库
+编译生成静态库，目录结构如下：
+```
+learncmake
+    static
+        CMakeLists.txt
+        static_math.h
+        static_math.cpp
+```
+
+static_math.h
+```
+#pragma once
+
+int mysqrt(int a);
+```
+static_math.cpp
+```
+#include "static_math.h"
+
+int mysqrt(int a)
+{
+  return a * a;
+}
+
+```
+CMakeLists.txt
+```
+cmake_minimum_required(VERSION 2.8)
+project(static_math)
+
+aux_source_directory(. MAIN)
+set(ALL ${MAIN})
+
+add_library(static_math STATIC ${ALL})
+```
+* cmake_minimum_required  
+编译所需要的最低CMake版本
+
+* project  
+工程名  
+
+* aux_source_directory  
+```
+aux_source_directory(<dir> <variable>)
+```  
+
+收集目录中的所有源文件，将列表存储在变量中
+
+* set
+设置变量
+
+* add_library
+使用指定的源文件将库添加到项目中，注意中间的STATIC。
+
+编译后生成libstatic_math.a静态库文件
+
+# 动态库
+编译生成动态库，目录结构如下：
+```
+learncmake
+    share
+        CMakeLists.txt
+        share_math.h
+        share_math.cpp
+```
+
+share_math.h
+```
+#pragma once
+
+int myadd(int a, int b);
+
+```
+share_math.cpp
+```
+#include "share_math.h"
+
+int myadd(int a, int b)
+{
+  return a + b;
+}
+
+```
+CMakeLists.txt
+```
+cmake_minimum_required(VERSION 2.8)
+project(share_math)
+
+aux_source_directory(. MAIN)
+SET(ALL ${MAIN})
+
+add_library(share_math SHARED ${MAIN})
+
+```
+与编译静态库差不多，只是将add_library中的STATIC改为SHARED。
+
+# 可执行程序
+生成可执行程序，使用静态库和动态库  
+目录如下：
+```
+learncmake
+    main
+        3rd
+            share_math
+                include
+                    share_math.h
+                lib
+                    libshare_math.so
+            static_math
+                include
+                    static_math.h
+                lib
+                    libstatic_math.a
+        bld
+        include
+            student.h
+        src
+            common
+                common.h
+                common.cpp
+            model
+                bond.h
+                bond.cpp
+            main.cpp
+            student.cpp
+        CMakeLists.txt
+```
+如上目录，能覆盖基本的CMake使用  
+
+CMakeLists.txt内容如下：
+```
+cmake_minimum_required(VERSION 2.8)
+project(test)
+
+# 添加头文件目录
+include_directories(
+	include 
+	${CMAKE_CURRENT_SOURCE_DIR}/3rd/static_math/include
+	${CMAKE_CURRENT_SOURCE_DIR}/3rd/share_math/include
+)
+
+# 添加第三方库lib目录
+link_directories(
+	${CMAKE_CURRENT_SOURCE_DIR}/3rd/static_math/lib
+	${CMAKE_CURRENT_SOURCE_DIR}/3rd/share_math/lib
+)
+
+
+aux_source_directory(src SRC_DIR)
+aux_source_directory(src/common COMMON_DIR)
+aux_source_directory(src/model MODEL_DIR)
+
+set(ALL 
+	${SRC_DIR} 
+	${COMMON_DIR}
+	${MODEL_DIR}
+)
+
+add_executable(test ${ALL})
+
+# 链接第三方库
+target_link_libraries(test libstatic_math.a)
+target_link_libraries(test libshare_math.so)
+
+```
+在bld目录中编译
+
+# 多工程模板
+主CMakeLists.txt
+```
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+ADD_DEFINITIONS(-DDISKLESS_CONFIGURATION=1 -DLOG4CXX_STATIC -DNDEBUG)
+
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -g -O3")
+
+SET(topDir ${CMAKE_CURRENT_SOURCE_DIR})
+SET(LIBRARY_OUTPUT_PATH ${topDir}/linux)
+SET(EXECUTABLE_OUTPUT_PATH ${topDir}/linux)
+
+IF (NOT EXISTS "${topDir}/linux")
+    FILE(MAKE_DIRECTORY "${topDir}/linux")
+ENDIF()
+
+ADD_SUBDIRECTORY(Common)
+ADD_SUBDIRECTORY(Server)
+```
+Common动态库CMakeLists.txt
+```
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+FILE(GLOB SOURCE_FILES
+     *.cpp
+     cache/*.cpp
+     cache/controller/*.cpp
+     cache/model/*.cpp
+     cache/data/*.cpp)
+
+INCLUDE_DIRECTORIES(./
+                    include
+                    ../../mq/inc)
+
+ADD_LIBRARY(Common ${SOURCE_FILES})
+```
+
+Server可执行文件CMakeLists.txt
+```
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+FILE(GLOB SOURCE_FILES
+     *.cpp
+     *.cc
+     cache/*.cpp
+     monitor/*.cpp
+     service/*.cpp)
+
+INCLUDE_DIRECTORIES(./
+                    ../Common
+                    ../Common/include
+                    ../../mq/inc)
+
+LINK_DIRECTORIES(${topDir}/linux
+                 ${topDir}/../mq/lib/linux)
+
+ADD_EXECUTABLE(BasicDataServer ${SOURCE_FILES})
+TARGET_LINK_LIBRARIES(Server
+                      Common
+                      log4cxx
+                      mysqlcppconn-static
+                      boost_locale
+                      boost_date_time)
+```

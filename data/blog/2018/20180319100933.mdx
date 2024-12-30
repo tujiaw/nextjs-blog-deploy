@@ -1,0 +1,51 @@
+---
+title: 'bug修复，解决延迟搜索的问题'
+date: '2018-03-19'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 文章主要讲 C/C++ 和 Qt 中解决输入框搜索延迟问题。通过设置 200 毫秒输入间隔时间，利用 Timer 控制搜索，先停止再重新开始计时，还优化了 Timer 触发逻辑，避免用户快速输入时带来问题。 
+---
+
+在输入框进行搜索的时候，通常我们每输入一个文字都要进行一次搜索，这样能得到实时的搜索结果。如果搜索速度很快的话当然是没问题的。
+
+如果搜索的速度慢，当用户快速输入的时候就会很卡了。  
+其实在用户快速输入的时候对中间搜索的结果并不感兴趣，最后的结果才是我们想要的，所以中间过程的频繁搜索中是有些浪费时间。
+
+# 解决方法
+我们可以设置一个输入的间隔时间，假如是200毫秒。从第一次输入开始计时，如果200毫秒后用户没有继续输入（说明这就是他想要搜索的关键词）才进行搜索，如果200毫秒内有输入我们就重新计时。这个可以过滤掉很多中间词的搜索。
+
+1. 先定义一个Timer
+```
+    timer_ = new QTimer(this);
+    timer_->setSingleShot(true);
+    connect(timer_, SIGNAL(timeout()), this, SLOT(onOnceTimer()));
+```
+
+2. 当有输入时Timer先停止然后重新开始
+```
+void Test::onTextEdited(const QString &text)
+{
+	timer_->stop();
+	timer_->start(200);
+}
+```
+
+3. 做搜索的动作
+```
+void Test::onOnceTimer()
+{
+    QString textTrimmed = text().trimmed();
+    // start search ...
+}
+```
+
+# 优化
+如果用户输入的非常非常快在200毫秒之内，此时搜索结果还没有出来他就进行了下一步操作。根据不同场景这样会带来一些问题，优化一下Timer触发逻辑。
+```
+	if (timer_->isActive()) {
+		timer_->stop();
+		timer_->start(200);
+	} else {
+		timer_->start(0);
+	}
+```

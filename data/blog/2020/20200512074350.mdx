@@ -1,0 +1,39 @@
+---
+title: '解决ssh登录远程服务器慢的问题'
+date: '2020-05-12'
+tags: ['Linux']
+draft: false
+summary: 
+---
+
+使用ssh远程登录大概需要两分钟才能登上去。
+参考网上的方法改各种配置重启sshd都没用，
+使用ssh -v root@118.24.114.114调试命令发现卡在pledge: network这里，然后用
+这个关键字去找答案终于找到了解决方法。
+
+我这里造成ssh登录慢的原因是/var/log/btmp文件过大（1G多），此文件记录的是错误登录的日志，
+执行lastb命令就可以查看到最后一个不成功的登录尝试，当有人尝试使用密码登录时会造成文件较大，然后导致“pledge: network”时出现延迟。
+
+解决方法很简单，清掉这个文件就可以了
+```
+echo "" > /var/log/btmp
+```
+
+上面说过btmp文件会记录下登录失败的日志，那说明有很多非法用户尝试登录我的服务器，使用下面命令找出登录失败的用户:
+```
+lastb | awk '{ print $3}' | sort | uniq -c | sort -n
+```
+centos7使用firewall-cmd禁用指定IP  
+
+禁用IP
+```
+firewall-cmd --zone=public --add-rich-rule="rule family='ipv4' source address='51.178.47.65' port port=22 protocol=tcp drop" --permanent
+```
+取消禁用
+```
+firewall-cmd --zone=public --remove-rich-rule="rule family='ipv4' source address='51.178.47.65' port port=22 protocol=tcp drop" --permanent
+```
+最后要：
+```
+firewall-cmd --reload
+```

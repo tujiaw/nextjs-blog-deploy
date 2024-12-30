@@ -1,0 +1,166 @@
+---
+title: 'QNetworkAccessManager http请求'
+date: '2019-09-27'
+tags: ['Qt']
+draft: false
+summary: 文章介绍使用 QNetworkAccessManager 发起 http 请求，列举 get、post（表单形式）、post 上传文件三种场景及代码，包括设置请求头、构建请求数据等，还给出完整的 HttpRequest 类代码及相关信号槽。 
+---
+
+使用QNetworkAccessManager可以发起http请求，下面列举三种常见的场景：
+
+# get请求
+这个很简单传一个url就可以了
+```
+QNetworkReply *reply = manager_->get(QNetworkRequest(QUrl(url)));
+```
+
+# post请求
+这里post数据使用表单的形式
+```
+    QUrl aurl(url);
+    QNetworkRequest req(aurl);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+    QNetworkReply *reply = manager_->post(req, data);
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(slotError(QNetworkReply::NetworkError)));
+```
+
+# post上传文件
+注意part2和part3不是必须的，这个根据服务器的需要来填，从这里可以看出QHttpMultiPart使用方法
+```
+    QHttpPart part1;
+    part1.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("image/png"));
+    part1.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"file\"; filename=\"0.png\""));
+    part1.setBody(data);
+
+    QHttpPart part2;
+    part2.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"engine\""));
+    part2.setBody("t");
+
+    QHttpPart part3;
+    part3.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"type\""));
+    part3.setBody("ocrtype_tencent");
+
+    QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+    multiPart->append(part1);
+    multiPart->append(part2);
+    multiPart->append(part3);
+
+    QUrl aurl(url);
+    QNetworkRequest req(aurl);
+    QNetworkReply *reply = manager_->post(req, multiPart);
+    multiPart->setParent(reply);
+
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(slotError(QNetworkReply::NetworkError)));
+```
+
+完整代码：
+```
+#pragma once
+
+#include <QObject>
+#include <QNetworkReply>
+
+class QNetworkAccessManager;
+class HttpRequest : public QObject
+{
+    Q_OBJECT
+
+public:
+    HttpRequest(QObject *parent);
+    ~HttpRequest();
+    void get(const QString &url);
+    void post(const QString &url, const QByteArray &data);
+    void ocrUpload(const QString &url, const QByteArray &data);
+
+signals:
+    void sigHttpResponse(int err, const QByteArray &data);
+
+private slots:
+    void replyFinished(QNetworkReply*);
+    void slotError(QNetworkReply::NetworkError);
+
+private:
+    QNetworkAccessManager *manager_;
+};
+
+```
+```
+#include "HttpRequest.h"
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QHttpMultiPart>
+
+HttpRequest::HttpRequest(QObject *parent)
+    : QObject(parent)
+    , manager_(new QNetworkAccessManager(this))
+{
+    connect(manager_, SIGNAL(finished(QNetworkReply*)), this, SLOT(replyFinished(QNetworkReply*)), Qt::QueuedConnection);
+}
+
+HttpRequest::~HttpRequest()
+{
+}
+
+void HttpRequest::get(const QString &url)
+{
+    QNetworkReply *reply = manager_->get(QNetworkRequest(QUrl(url)));
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(slotError(QNetworkReply::NetworkError)));
+}
+
+void HttpRequest::post(const QString &url, const QByteArray &data)
+{
+    qDebug() << "url:" << url << "," << data;
+    QUrl aurl(url);
+    QNetworkRequest req(aurl);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+    QNetworkReply *reply = manager_->post(req, data);
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(slotError(QNetworkReply::NetworkError)));
+}
+
+void HttpRequest::ocrUpload(const QString &url, const QByteArray &data)
+{
+    QHttpPart part1;
+    part1.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("image/png"));
+    part1.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"file\"; filename=\"0.png\""));
+    part1.setBody(data);
+
+    QHttpPart part2;
+    part2.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"engine\""));
+    part2.setBody("t");
+
+    QHttpPart part3;
+    part3.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"type\""));
+    part3.setBody("ocrtype_tencent");
+
+    QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+    multiPart->append(part1);
+    multiPart->append(part2);
+    multiPart->append(part3);
+
+    QUrl aurl(url);
+    QNetworkRequest req(aurl);
+    QNetworkReply *reply = manager_->post(req, multiPart);
+    multiPart->setParent(reply);
+
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(slotError(QNetworkReply::NetworkError)));
+}
+
+void HttpRequest::replyFinished(QNetworkReply *reply)
+{
+    if (!reply) {
+        LOGGER_ERROR("replyFinished is null");
+        return;
+    }
+
+    emit sigHttpResponse(0, reply->readAll());
+    reply->deleteLater();
+}
+
+void HttpRequest::slotError(QNetworkReply::NetworkError err)
+{
+    if (err != QNetworkReply::NoError) {
+        LOGGER_ERROR("http response error:" << err);
+    }
+}
+
+```

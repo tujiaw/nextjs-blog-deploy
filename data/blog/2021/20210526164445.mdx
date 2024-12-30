@@ -1,0 +1,27 @@
+---
+title: 'ZMQ DEMO proxy代理模式'
+date: '2021-05-26'
+tags: ['MQ']
+draft: false
+summary: 
+---
+
+请求应答直连模式
+
+![](https://ningto.com/upload/20210526-ntscreenshot-164326.png)
+
+请求应答代理模式
+
+![](https://ningto.com/upload/20210526-ntscreenshot-164400.png)
+
+客户端连接到7733端口，服务端连接到7744端口，相对于proxy服务而言它们都是客户端。注意它们的socket type 是 router-dealer。
+
+代码：
+```
+    zmq::context_t context(1);
+    zmq::socket_t frontend(context, zmq::socket_type::router);
+    frontend.bind("tcp://127.0.0.1:7733");
+    zmq::socket_t backend(context, zmq::socket_type::dealer);
+    backend.bind("tcp://127.0.0.1:7744");
+    zmq::proxy(frontend, backend);
+```

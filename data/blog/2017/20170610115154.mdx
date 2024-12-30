@@ -1,0 +1,19 @@
+---
+title: 'Static table views are only valid when embedded in'
+date: '2017-06-10'
+tags: ['Mobile']
+draft: false
+summary: 在 UIViewController 中加入 Table View 并设 Content 为 Static Cells 会报错，解决方法为将放置 Table View 改为 Container View 或拖出单独 Table View Controller 并关联，即可成功。 
+---
+
+**问题**
+当在UIViewController中加入Table View，然后将其Content设置为Static Cells，xcode编译时报错提示：Static table views are only valid when embedded in UITableViewController instances。
+
+**解决方法**
+
+ 1. 将放置Table View改为放置Container View；
+ 
+ 2. 单独拖出一个Table View Controller，在这里就可以将Table View的Content设置为Static Cells做你想做的事情；
+ 
+ 3. 关联，在Container View上按住右键拖出一条线到Table View Controller释放鼠标右键弹出如下窗口，选择Embed，这样就大功告成了。
+![这里写图片描述](http://img.blog.csdn.net/20160216212646326)

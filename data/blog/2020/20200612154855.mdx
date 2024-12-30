@@ -1,0 +1,20 @@
+---
+title: 'Mac安装国内版homebrew'
+date: '2020-06-12'
+tags: ['Linux']
+draft: false
+summary: HomeBrew 是 macOS 和 linux 包管理工具，官方版本下载慢，此文介绍国内版安装方法。粘贴脚本到终端回车安装，选 1，安装过程若需安装 xcode 工具按提示操作，安装完成后截图如下，速度快。 
+---
+
+HomeBrew是macOS和linux平台的包管理工具  
+由于大家都知道的原因，安装官方的homebrew下载速度很慢，所以这里找了个国内版本的试下，速度非常快。
+
+# 安装方法
+粘贴下面的脚本到终端命令行界面，直接回车安装，后面选择1就可以了
+```
+/bin/zsh -c "$(curl -fsSL https://gitee.com/cunkai/HomebrewCN/raw/master/Homebrew.sh)"
+```
+安装的过程中可能会提示要安装xcode相关的工具，按照它的提示来安装就可以了，安装完成后再次执行上面的命令（之前的过程被打断了）继续安装，如下图是我安装后的截图
+![homebrew1](/upload/F3D877EA533F9A0F6D14D66B93A51952.png)
+
+![homebrew2](/upload/7685CBD152E26010E4A91A8C22A1D418.png)

@@ -1,0 +1,269 @@
+---
+title: 'QtCharts使用'
+date: '2020-09-03'
+tags: ['Qt', 'C/C++']
+draft: false
+summary: 介绍 QtCharts 使用，其在 Qt5.7 后包含，包含重要类如 QChart 等。给出 demo 截图及相关源码，包含 MyChart 类的定义和实现，用于展示图表等功能。  
+---
+
+QtCharts是Qt的图表模块在Qt5.7版本之后才包含进来的，之前的版本需要下载源码单独编译。
+
+介绍几个重要的类：  
+QChart：Qt图标的核心类，建立在图形视图之上的，管理各个图表部件  
+QChartView：是一个独立的widget用来展示QChart  
+QDateTimeAxis：日期时间轴  
+QValueAxis：数值轴  
+QLineSeries：折线图  
+QScatterSeries：离散图  
+
+demo截图：  
+![qcharts_demo](https://ningto.com/upload/ntscreenshot_39769519b55feefdd9a603b3a24c1de0.png)
+
+源码：  
+MyChart.h
+```
+#pragma once
+#include <QtCharts/QChart>
+#include <QtCharts/QChartView>
+#include <QPen>
+using namespace QtCharts;
+
+class QMouseEvent;
+class QLabel;
+class QTimer;
+class QGraphicsLineItem;
+class MyChart : public QChartView
+{
+	Q_OBJECT
+
+public:
+	MyChart(QWidget *parent = nullptr);
+	~MyChart();
+	void init();
+	void updateXList();
+
+protected:
+	virtual void showEvent(QShowEvent *event);
+	virtual void mouseMoveEvent(QMouseEvent *event);
+	virtual void resizeEvent(QResizeEvent *event);
+
+private:
+	QTimer *m_timer;
+	QLabel *m_showLabel;
+	QGraphicsLineItem *m_lineItem;
+	QList<QPointF> m_xList;
+	QPen m_middleLinePen;
+	QPoint m_middlePos;
+};
+
+```
+MyChart.cpp
+```
+#include "MyChart.h"
+#include <QEvent>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/qxyseries.h>
+#include <QtCore/QRandomGenerator>
+#include <QtCharts/QBarCategoryAxis>
+#include <QtCharts/QValueAxis>
+#include <QtCharts/QDateTimeAxis>
+#include <QtCharts/QScatterSeries>
+#include <QTime>
+#include <QTimer>
+#include <QDateTime>
+#include <QLabel>
+#include <QDebug>
+
+typedef QPair<qint64, int> Data;
+typedef QList<Data> DataList;
+typedef QList<DataList> DataTable;
+
+const int g_listCount = 2;
+DataTable g_dataTable;
+
+int getRandom(int maxValue)
+{
+	return QRandomGenerator::global()->bounded(maxValue);
+}
+
+DataTable generateRandomData(int listCount, int &maxX, int &maxY)
+{
+	DataTable dataTable;
+
+	// generate random data
+	for (int i(0); i < listCount; i++) {
+		QDateTime start = QDateTime(QDateTime::currentDateTime().date(), QTime(8, 0));
+
+		DataList dataList;
+		int yValue(0);
+		int xIndex = 0;
+		for (int j(0); j < 11; j++) {
+			yValue = yValue + getRandom(100);
+			maxY = yValue;
+			maxX = xIndex++;
+
+			dataList << Data(start.toMSecsSinceEpoch(), yValue);
+			start = start.addSecs(3000);
+		}
+		dataTable << dataList;
+	}
+
+	return dataTable;
+}
+
+MyChart::MyChart(QWidget *parent)
+	: QChartView(parent), m_lineItem(nullptr)
+{
+	init();
+}
+
+MyChart::~MyChart()
+{
+}
+
+
+void MyChart::init()
+{
+	m_middleLinePen.setStyle(Qt::DashLine);
+	m_middleLinePen.setColor(Qt::red);
+
+	m_timer = new QTimer(this);
+	m_timer->setSingleShot(true);
+	m_timer->setInterval(10);
+
+	m_showLabel = new QLabel(this);
+	m_showLabel->hide();
+	m_showLabel->setFixedSize(120, 60);
+	m_showLabel->setWindowFlag(Qt::ToolTip);
+	m_showLabel->setFocusPolicy(Qt::NoFocus);
+
+	int g_xMax = 0;
+	int g_yMax = 0;
+	g_dataTable = generateRandomData(g_listCount, g_xMax, g_yMax);
+
+	QDateTimeAxis *axisX = new QDateTimeAxis(); // X轴是时间
+	axisX->setFormat("HH:mm");
+	axisX->setTickCount(11);
+	QDateTime start = QDateTime(QDateTime::currentDateTime().date(), QTime(8, 0));
+	QDateTime end = QDateTime(QDateTime::currentDateTime().date(), QTime(18, 0));
+	axisX->setRange(start, end);
+
+	QValueAxis *axisY = new QValueAxis(); // Y轴是值
+	axisY->setRange(0, g_yMax * 1.5);
+	axisY->setLabelFormat("%i");
+	axisY->setTickCount(6);
+
+	QChart *chart = new QChart();
+	chart->setTitle("Line chart");
+	chart->addAxis(axisX, Qt::AlignBottom);
+	chart->addAxis(axisY, Qt::AlignLeft);
+	this->setChart(chart);
+
+	QString name("Series ");
+	int nameIndex = 0;
+	for (const DataList &list : g_dataTable) {
+		QLineSeries *lineSeries = new QLineSeries(); // 线图
+		QScatterSeries *scatterSeries = new QScatterSeries(); // 离散图
+		scatterSeries->setMarkerShape(QScatterSeries::MarkerShapeCircle);//圆形的点
+		scatterSeries->setBorderColor(QColor(21, 100, 255)); //离散点边框颜色
+		scatterSeries->setBrush(QBrush(QColor(21, 100, 255)));//离散点背景色
+		scatterSeries->setMarkerSize(6); //离散点大小
+
+		for (const Data &data : list) {
+			QPointF pp((qreal)data.first, (qreal)data.second);
+			lineSeries->append(pp);
+			scatterSeries->append(pp);
+		}
+
+		lineSeries->setName(name + QString::number(nameIndex));
+		nameIndex++;
+		chart->addSeries(lineSeries);
+		chart->addSeries(scatterSeries);
+		chart->legend()->hide(); // 图标标题
+
+		lineSeries->attachAxis(axisY);
+		lineSeries->attachAxis(axisX);
+		scatterSeries->attachAxis(axisY);
+		scatterSeries->attachAxis(axisX);
+	}
+
+	this->setRenderHint(QPainter::Antialiasing, true);
+	this->setMouseTracking(true);
+}
+
+void MyChart::updateXList()
+{
+	m_xList.clear();
+	if (!g_dataTable.isEmpty()) {
+		for (int i = 0; i < g_dataTable[0].size(); i++) {
+			Data d = g_dataTable[0][i];
+			QPointF p = this->chart()->mapToPosition(QPointF(d.first, d.second));
+			m_xList << p;
+		}
+	}
+}
+
+void MyChart::showEvent(QShowEvent *event)
+{
+	updateXList();
+	QChartView::showEvent(event);
+}
+
+void MyChart::resizeEvent(QResizeEvent *event)
+{
+	updateXList();
+	QChartView::resizeEvent(event);
+}
+
+void MyChart::mouseMoveEvent(QMouseEvent *event)
+{
+	QPoint p = event->pos();
+	if (this->chart()->plotArea().contains(p)) {
+		QPointF pf;
+		int lastDiff = -1;
+		foreach(const QPointF &px, m_xList) {
+			int diff = qAbs((int)px.x() - p.x());
+			if (lastDiff < 0) {
+				lastDiff = diff;
+				pf = px;
+			}
+			else {
+				if (diff < lastDiff) {
+					lastDiff = diff;
+					pf = px;
+				}
+			}
+		}
+		QPoint pf2((int)pf.x(), (int)pf.y());
+		if (m_middlePos != pf2) {
+			m_middlePos = pf2;
+			QPointF pv = this->chart()->mapToValue(pf);
+			QRectF r = this->chart()->plotArea();
+			QGraphicsLineItem *oldItem = m_lineItem;
+			m_lineItem = this->scene()->addLine(QLine(QPoint(m_middlePos.x(), (int)r.y()), QPoint(m_middlePos.x(), (int)(r.y() + r.height()))), m_middleLinePen);
+			if (oldItem) {
+				this->scene()->removeItem(oldItem);
+			}
+			QStringList ls;
+			ls << "xxx title";
+			ls << "time:" + QDateTime::fromMSecsSinceEpoch((qint64)pv.x()).toString("HH:mm");
+			ls << "deal:" + QString::number(pv.y());
+			m_showLabel->setText(ls.join("\n"));
+		}
+
+		QPoint labelPos = this->mapToGlobal(p);
+		labelPos.setX(labelPos.x() + 20);
+		labelPos.setY(labelPos.y() + 10);
+		m_showLabel->move(labelPos);
+		m_showLabel->show();
+	}
+	else {
+		m_showLabel->hide();
+		if (m_lineItem) {
+			this->scene()->removeItem(m_lineItem);
+		}
+	}
+	QChartView::mouseMoveEvent(event);
+}
+
+```

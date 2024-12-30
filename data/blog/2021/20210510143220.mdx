@@ -1,0 +1,288 @@
+---
+title: '截图软件窗口自动识别实现'
+date: '2021-05-10'
+tags: ['Windows']
+draft: false
+summary: 
+---
+
+使用截图软件开始截图的时候，实际上是将当前桌面抓取成一张背景图（加点暗色的透明度），将背景图作为一个无边框的z-order顶级全屏窗口覆盖在桌面上，后续操作就在这个窗口上进行，类似一个当前桌面的快照。
+
+这里要讲的是当鼠标在桌面滑动的时候截图软件会自动框选出一个小的区域，这个区域其实是通过窗口句柄来获取的，一个大的窗口可能只有一个窗口句柄也有可能有多个子窗口组成，所以能框选的区域都是一个个独立的窗口句柄（根据窗口句柄可以获取区域GetWindowRect），如果你想要更细粒度的框选那就要考虑其他技术了。
+
+![](https://ningto.com/upload/20210510-ntscreenshot-205354.png)
+
+实现过程：
+1. 使用EnumWindows函数获取所有屏幕上的顶层窗口  
+2. 在回调函数中使用EnumChildWindows枚举父窗口的所有子窗口  
+3. 递归枚举，直到不能枚举为止，判断句柄所在区域包含当前鼠标光标所在的位置，并且过滤掉不符合条件的窗口，如：非可见的，透明的。  
+
+下面代码给出两种获取的方法，一种是实时获取，一种是先缓存所有窗口句柄然后从缓冲中查找，实时获取其实效率蛮高的，当然如果你需要更高的效率可以用缓存，但是缓存所有窗口句柄会花不少时间（跟打开的应用程序多少有关，我这里是几十毫秒）
+
+实时获取，使用方法：
+```
+POINT pt;
+::GetCursorPos(&pt);
+HWndRectCacheManager::GetInstance()->setFilterHWnd(hWndMySelf);
+RECT rect = HWndRectCacheManager::GetInstance()->getWndRect(pt, TRUE);
+```
+setFilterHWnd是为了过滤截图软件自身的背景窗口
+
+源码：
+```
+#pragma once
+#include <vector>
+#include <Windows.h>
+#include "Singleton.h"
+
+#define GET_X_LPARAM(lp)                        ((int)(short)LOWORD(lp))
+#define GET_Y_LPARAM(lp)                        ((int)(short)HIWORD(lp))
+
+BOOL IsRectEmpty(RECT r)
+{
+    return r.bottom == 0 && r.left == 0 && r.right == 0 && r.top == 0;
+}
+
+//pop up win 1 (level 1).. first Z order
+//        child11 (level 2)
+//        child12 (level 2)
+//                chilld121 (level 3)
+//                chilld122 (level 3)
+//                
+//        child3 (level 2)
+//pop up win2
+//        child21 (level 2)
+//        child21 (level 2)
+// .
+// .
+//pop up winN . last Z order
+
+struct HWndCacheInfo
+{
+    HWndCacheInfo() : hwnd(NULL) {}
+    HWndCacheInfo(HWND _hwnd, RECT _rect, INT _level) : hwnd(_hwnd), rect(_rect), level(_level) {}
+    BOOL isNull() const { return hwnd == NULL; }
+    HWND hwnd;
+    RECT rect;    //window rect
+    INT level;    // 1 - pop up window  ;  2N - child window
+};
+
+class HWndRectCacheManager : public Singleton<HWndRectCacheManager>
+{
+public:
+    BOOL cacheAll()
+    {
+        m_cacheList.clear();
+        // cache current window Z order when call this function
+        EnumWindows(EnumWindowsSnapshotProc, 1);
+
+        return TRUE;
+    }
+
+    void setFilterHWnd(HWND hwnd)
+    {
+        m_hWndFilter = hwnd;
+    }
+
+    HWND getWnd(POINT pt)
+    {
+        m_hWndTarget = NULL;
+        EnumWindows(EnumWindowsRealTimeProc, MAKELPARAM(pt.x, pt.y));
+        return m_hWndTarget;
+    }
+
+    RECT getWndRect(POINT ptHit, BOOL bGetInRealTime = FALSE)
+    {
+        RECT rtRect;
+        rtRect.bottom = 0; rtRect.left = 0; rtRect.right = 0; rtRect.top = 0;
+        //get from current Z order
+        if (bGetInRealTime) {
+            HWND hWndTarget = getWnd(ptHit);
+            if (hWndTarget != NULL) {
+                GetWindowRect(hWndTarget, &rtRect);
+            }
+        } else {
+            //get from snapshot cache
+            getRectFromCache(ptHit, rtRect);
+        }
+
+        return rtRect;
+    }
+
+protected:
+    static BOOL CALLBACK EnumWindowsRealTimeProc(HWND hwnd, LPARAM lParam)
+    {
+        POINT p;
+        p.x = GET_X_LPARAM(lParam);
+        p.y = GET_Y_LPARAM(lParam);
+        if (!HWndContainsPoint(hwnd, p)) return TRUE;
+        if (HWndFilter(hwnd)) return TRUE;
+
+        m_hWndTarget = hwnd;
+        EnumChildWindows(hwnd, EnumChildRealTimeProc, lParam);
+        return FALSE;
+    }
+
+    static BOOL CALLBACK EnumChildRealTimeProc(HWND hwnd, LPARAM lParam)
+    {
+        POINT p;
+        p.x = GET_X_LPARAM(lParam);
+        p.y = GET_Y_LPARAM(lParam);
+        if (!HWndContainsPoint(hwnd, p)) return TRUE;
+        if (HWndFilter(hwnd)) return TRUE;
+
+        m_hWndTarget = hwnd;
+        EnumChildWindows(hwnd, EnumChildRealTimeProc, lParam);
+        return FALSE;
+    }
+
+protected:
+    static BOOL CALLBACK EnumWindowsSnapshotProc(HWND hwnd, LPARAM lParam)
+    {
+        INT nLevel = lParam;
+        if (HWndFilter(hwnd)) return TRUE;
+        saveHWndRect(hwnd, nLevel);
+        EnumChildWindows(hwnd, EnumChildSnapshotProc, ++nLevel);
+        return TRUE;
+    }
+
+    static BOOL CALLBACK EnumChildSnapshotProc(HWND hwnd, LPARAM lParam)
+    {
+        INT nLevel = lParam;
+        if (HWndFilter(hwnd)) return TRUE;
+
+        saveHWndRect(hwnd, nLevel);
+        ++nLevel;
+        EnumChildWindows(hwnd, EnumChildSnapshotProc, nLevel);
+        return TRUE;
+    }
+
+protected:
+    static BOOL HWndContainsPoint(HWND hWnd, POINT pt)
+    {
+        RECT rtWin;
+        rtWin.bottom = 0; rtWin.left = 0; rtWin.right = 0; rtWin.top = 0;
+        GetWindowRect(hWnd, &rtWin);
+        return PtInRect(&rtWin, pt);
+    }
+
+    static BOOL HWndFilter(HWND hWnd)
+    {
+        if (m_hWndFilter && m_hWndFilter == hWnd) {
+            return TRUE;
+        }
+
+        DWORD dwStyle = GetWindowLong(hWnd, GWL_STYLE);
+        DWORD dwStyleMust = WS_VISIBLE;
+        if ((dwStyle & dwStyleMust) != dwStyleMust) {
+            return TRUE;
+        }
+
+        DWORD dwStyleEx = GetWindowLong(hWnd, GWL_EXSTYLE);
+        DWORD dwStyleMustNot = WS_EX_TRANSPARENT;
+        if ((dwStyleMustNot & dwStyleEx) != 0) {
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
+    //find the first window that level is biggest
+    static BOOL  getRectFromCache(POINT point, RECT& rect)
+    {
+        HWndCacheInfo targetInfo;
+        for (const auto &info : m_cacheList) {
+            if (!targetInfo.isNull() && info.level <= targetInfo.level) {
+                break;
+            }
+            if (PtInRect(&info.rect, point)) {
+                if (targetInfo.isNull()) {
+                    targetInfo = info;
+                } else {
+                    if (info.level > targetInfo.level) {
+                        targetInfo = info;
+                    }
+                }
+            }
+        }
+        if (!targetInfo.isNull()) {
+            rect = targetInfo.rect;
+            return TRUE;
+        }
+        return FALSE;
+    }
+
+    static VOID saveHWndRect(HWND hWnd, INT nLevel)
+    {
+        _ASSERTE(hWnd != NULL && IsWindow(hWnd));
+        RECT rect;
+        if (GetWindowRect(hWnd, &rect)) {
+            HWndCacheInfo info(hWnd, rect, nLevel);
+            if (!info.isNull()) {
+                m_cacheList.push_back(info);
+            }
+        }
+    }
+
+protected:
+    friend class Singleton<HWndRectCacheManager>;
+
+    static HWND m_hWndTarget;
+    static HWND m_hWndFilter;
+    static std::vector<HWndCacheInfo> m_cacheList;
+};
+
+HWND HWndRectCacheManager::m_hWndTarget = NULL;
+HWND HWndRectCacheManager::m_hWndFilter = NULL;
+std::vector<HWndCacheInfo> HWndRectCacheManager::m_cacheList;
+```
+单例源码：
+```
+#pragma once
+
+template<typename T>
+class Singleton {
+public:
+    static T* GetInstance() noexcept(std::is_nothrow_constructible<T>::value) {
+        static T instance;
+        return &instance;
+    }
+    virtual ~Singleton() noexcept  { }
+    Singleton(const Singleton&) = delete;
+    Singleton& operator =(const Singleton&) = delete;
+protected:
+    Singleton() {}
+};
+```
+
+还有一种更简单的方法，代码很简单，我后来没有用这种方法的原因是，某些区域上面的方法能框选出来而这种方法不行，不知道问题出在哪里？？？
+```
+    bool getSmallestWindowFromCursor(QRect &smallestRect)
+    {
+        HWND hwnd;
+        POINT pt;
+        // 获得当前鼠标位置
+        ::GetCursorPos(&pt);
+        // 获得当前位置桌面上的子窗口
+        hwnd = ::ChildWindowFromPointEx(::GetDesktopWindow(), pt, CWP_SKIPDISABLED | CWP_SKIPINVISIBLE);
+        if (hwnd != NULL) {
+            HWND temp_hwnd;
+            temp_hwnd = hwnd;
+            while (true) {
+                ::GetCursorPos(&pt);
+                ::ScreenToClient(temp_hwnd, &pt);
+                temp_hwnd = ::ChildWindowFromPointEx(temp_hwnd, pt, CWP_SKIPINVISIBLE);
+                if (temp_hwnd == NULL || temp_hwnd == hwnd) {
+                    break;
+                }
+                hwnd = temp_hwnd;
+            }
+            RECT r;
+            ::GetWindowRect(hwnd, &r);
+            setCurrentHwnd(hwnd);
+            smallestRect.setRect(r.left, r.top, r.right - r.left, r.bottom - r.top);
+            return true;
+        }
+        return false;
+    }
+```

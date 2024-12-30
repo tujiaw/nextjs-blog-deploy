@@ -1,0 +1,14 @@
+---
+title: '给QPushButton增加图标并且显示在文本右边'
+date: '2017-06-13'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 介绍了在 C/C++ 的 Qt 中，给 QPushButton 增加图标并显示在文本右边的方法。通过创建按钮、设置文本、图标及布局方向实现，如上述代码所示。 
+---
+
+```
+    m_button = new QPushButton(this);
+    m_button->setText(tr("Ope34543r"));
+    m_button->setIcon(QIcon("F:\\qt\\OperWidget\\test.png"));
+    m_button->setLayoutDirection(Qt::RightToLeft);
+```

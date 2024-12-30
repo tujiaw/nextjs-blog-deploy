@@ -1,0 +1,175 @@
+---
+title: 'golang 控制goroutine调度顺序'
+date: '2020-07-29'
+tags: ['Go']
+draft: false
+summary: 文章介绍 golang 控制 goroutine 调度顺序，用 go 启动 goroutine 执行顺序不保证，通过 event 包中的 Event 结构及相关函数可按需求调度。如多个 goroutine 按特定顺序执行及 a、b、c、d 倒序执行的代码示例等。 
+---
+
+使用go关键字就可以很容易的启动一个goroutine，启动后他们的执行顺序是不能保证的。如果有多个goroutine，怎样按照我想要的顺序来执行呢？
+
+如：  
+* a1在b1和c1后面执行（b1和c1都执行完a1才能执行）  
+* d1在a1后面执行（d1执行完才能执行a1）    
+* e1在b1或者c1后面执行（b1或者c1有一个执行完就可以执行e1）   
+
+下面代码演示了怎样解决上面问题：
+event/event.go
+```
+package event
+
+import (
+	"reflect"
+	"sync"
+	"sync/atomic"
+)
+
+type Event struct {
+	fired int32
+	c     chan struct{}
+	once  sync.Once
+}
+
+func New() *Event {
+	return &Event{c: make(chan struct{})}
+}
+
+func (ev *Event) Fire() int32 {
+	atomic.AddInt32(&ev.fired, 1)
+	ev.once.Do(func() {
+		close(ev.c)
+	})
+	return ev.fired
+}
+
+func (ev *Event) Wait() {
+	<-ev.c
+}
+
+func (ev *Event) HasFired() bool {
+	return atomic.LoadInt32(&ev.fired) > 0
+}
+
+func (ev *Event) Start(f func()) {
+	go func() {
+		defer ev.Fire()
+		f()
+	}()
+}
+
+func (ev *Event) After(f func(), e *Event) {
+	go func() {
+		defer ev.Fire()
+		e.Wait()
+		f()
+	}()
+}
+
+func (ev *Event) Every(f func(), evs ...*Event) {
+	go func() {
+		defer ev.Fire()
+		for _, e := range evs {
+			e.Wait()
+		}
+		f()
+	}()
+}
+
+func (ev *Event) Some(f func(), evs ...*Event) {
+	var selectCase = make([]reflect.SelectCase, len(evs))
+	for i, e := range evs {
+		selectCase[i].Dir = reflect.SelectRecv
+		selectCase[i].Chan = reflect.ValueOf(e.c)
+	}
+
+	go func() {
+		defer ev.Fire()
+		reflect.Select(selectCase)
+		f()
+	}()
+}
+
+```
+main.go
+```
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"godemo/event"
+)
+
+func main() {
+	a1 := event.New()
+	b1 := event.New()
+	c1 := event.New()
+	d1 := event.New()
+	e1 := event.New()
+
+	// a1在b1和c1后面
+	a1.Every(func() {
+		fmt.Println("a1")
+	}, b1, c1)
+
+	b1.Start(func() {
+		time.Sleep(100 * time.Millisecond)
+		fmt.Println("b1")
+	})
+
+	c1.Start(func() {
+		time.Sleep(1 * time.Second)
+		fmt.Println("c1")
+	})
+
+	// d1在a1后面
+	d1.After(func() {
+		fmt.Println("d1")
+	}, a1)
+
+	// e1在b1或c1后面
+	e1.Some(func() {
+		fmt.Println("e1")
+	}, b1, c1)
+
+	time.Sleep(2 * time.Second)
+}
+
+```
+
+再举个例子，如a, b, c, d按倒序执行：
+```
+package main
+
+import (
+	"fmt"
+
+	"godemo/event"
+)
+
+func main() {
+	a1 := event.New()
+	b1 := event.New()
+	c1 := event.New()
+	d1 := event.New()
+
+	a1.After(func() {
+		fmt.Println("a1")
+	}, b1)
+
+	b1.After(func() {
+		fmt.Println("b1")
+	}, c1)
+
+	c1.After(func() {
+		fmt.Println("c1")
+	}, d1)
+
+	d1.Start(func() {
+		fmt.Println("d1")
+	})
+
+	a1.Wait()
+}
+```

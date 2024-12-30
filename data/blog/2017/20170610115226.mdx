@@ -1,0 +1,99 @@
+---
+title: 'swift分享到微信'
+date: '2017-06-10'
+tags: ['Mobile']
+draft: false
+summary: 介绍 swift 分享到微信的步骤，需申请 AppId 并下载 sdk 导入工程，链接相关库，添加桥接头文件等，还可分享文字、文章到朋友、朋友圈及收藏，调试需装微信，提供 github 地址。 
+---
+
+1. 申请微信开发平台AppId
+ 地址：open.weixin.qq.com
+ 
+ 2. 下载微信终端sdk文件
+ 包括以下文件：
+ ![微信sdk](http://img.blog.csdn.net/20151211233145053)
+ 
+ 3. 将sdk文件导入到工程
+![这里写图片描述](http://img.blog.csdn.net/20151211233353651)
+
+4.微信开放平台新增了微信模块用户统计功能，便于开发者统计微信功能模块的用户使用和活跃情况。开发者需要在工程中链接上:SystemConfiguration.framework,libz.dylib,libsqlite3.0.dylib,libc++.dylib
+Build Settings->All->Linking
+![这里写图片描述](http://img.blog.csdn.net/20151211233812827)
+Build Phases, 增加framework，CoreTelephony和SystemConfiguration
+![这里写图片描述](http://img.blog.csdn.net/20151211234059256)
+
+5.桥接头文件
+方法同：http://blog.csdn.net/tujiaw/article/details/47048343
+Objective-CBridgingHeader.h内容如下，CommonCrypto/CommonHMAC.h可以忽略，@import UIKit;包括这个分号不可少！
+![这里写图片描述](http://img.blog.csdn.net/20151211234645094)
+
+6.添加微信sdk目录，我的默认就添加了。
+Build Settings -> All -> SearchPaths
+![这里写图片描述](http://img.blog.csdn.net/20151211235500185)
+
+7.在Xcode中，选择你的工程设置项，选中“TARGETS”一栏，在“info”标签栏的“URL type“添加“URL scheme”为你所注册的应用程序id（如下图所示）。
+![这里写图片描述](http://img.blog.csdn.net/20151212000321995)
+
+8.注册AppId
+![这里写图片描述](http://img.blog.csdn.net/20151211235016875)
+
+9.分享简单文字
+![这里写图片描述](http://img.blog.csdn.net/20151211235737964)
+
+10.分享文章到朋友，朋友圈以及收藏
+
+```
+    @IBAction func onShare(sender: UIBarButtonItem) {
+        let sheet = UIAlertController(title: "文章 ", message: "分享到微信", preferredStyle: .ActionSheet)
+        let cancelAction = UIAlertAction(title: "取消", style: .Cancel, handler: {(action) -> Void in
+            print("cancel share")
+        })
+        let shareToFriend = UIAlertAction(title: "好朋友", style: .Destructive, handler: {(action) -> Void in
+            self.shareToWChat(WXSceneSession)
+        })
+        let shareToGroupsFriends = UIAlertAction(title: "朋友圈", style: .Destructive, handler: {(action) -> Void in
+            self.shareToWChat(WXSceneTimeline)
+        })
+        let favorite = UIAlertAction(title: "收藏", style: .Default, handler: {(action) -> Void in
+            self.shareToWChat(WXSceneFavorite)
+        })
+
+        sheet.addAction(cancelAction)
+        sheet.addAction(shareToFriend)
+        sheet.addAction(shareToGroupsFriends)
+        sheet.addAction(favorite)
+        self.presentViewController(sheet, animated: true, completion: {() -> Void in
+            print("present over")
+        })
+    }
+    
+    func shareToWChat(scene: WXScene) {
+        let page = WXWebpageObject()
+        page.webpageUrl = content.url
+        
+        let msg = WXMediaMessage()
+        msg.mediaObject = page
+        msg.title = (scene == WXSceneTimeline ? content.title : content.userName)
+        msg.description = content.title
+        
+        switch dataType {
+        case .GoodArticle:
+            msg.setThumbImage(Data.sharedManager.goodArticle.imagedic[content.contentImg])
+        case .SearchArticle:
+            msg.setThumbImage(Data.sharedManager.searchArticle.imagedic[content.contentImg])
+        default:
+            print("data type error")
+        }
+        
+        let req = SendMessageToWXReq()
+        req.message = msg
+        req.scene = Int32(scene.rawValue)
+        WXApi.sendReq(req)
+    }
+```
+![这里写图片描述](http://img.blog.csdn.net/20151212094932972)
+![这里写图片描述](http://img.blog.csdn.net/20151212094917214)
+
+调试的时候必须装有微信才行！！！
+
+[github地址](https://github.com/tujiaw/WxArticle)

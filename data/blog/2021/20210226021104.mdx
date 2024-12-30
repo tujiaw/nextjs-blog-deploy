@@ -1,0 +1,49 @@
+---
+title: 'QWebEngineView支持https'
+date: '2021-02-26'
+tags: ['C/C++', 'Qt']
+draft: false
+summary: 
+---
+
+# 问题
+我有个本地网页，里面有https地址的图片，使用QWebEngineView load本地网页后图片显示不出来。
+
+# 解决
+从QWebEnginePage类派生出WebPage类实现certificateError接口，然后将WebPage设置给QWebEngineView。
+
+# 代码
+WebPage代码：
+```
+// .h
+class WebPage : public QWebEnginePage
+{
+    Q_OBJECT
+
+public:
+    explicit WebPage(QWidget *parent = 0);
+
+protected:
+    bool certificateError(const QWebEngineCertificateError &error) override;
+};
+
+// .cpp
+WebPage::WebPage(QWidget *parent) :
+    QWebEnginePage(parent)
+{
+}
+
+bool WebPage::certificateError(const QWebEngineCertificateError &error)
+{
+    if (!error.isOverridable()) {
+        LOGGER_ERROR(error.errorDescription().toStdString());
+    }
+    return error.isOverridable();
+}
+```
+
+QWebEngineView使用
+```
+    webview_ = new QWebEngineView(this);
+    webview_->setPage(new WebPage(this));
+```

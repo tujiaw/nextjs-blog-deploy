@@ -1,0 +1,154 @@
+---
+title: '接入腾讯AI智能闲聊API接口'
+date: '2021-05-20'
+tags: ['Tools', 'Go']
+draft: false
+summary: 
+---
+
+蛮有意思的一个接口就是你问什么它会给你一些回应，如：
+```
+问：你好啊
+答：果然我的魅力无敌，终于把你吸引来了，哈哈哈
+问：你是谁
+答：我叫小豪豪，一定要记住，好不好嘛
+```
+文档地址[https://ai.qq.com/doc/nlpchat.shtml](https://ai.qq.com/doc/nlpchat.shtml),
+使用https协议进行GET或POST请求，接口比较简单，主要是sign接口鉴权这个字段的生成方法。
+目前这个接口是完全免费的，也没有什么限额。
+
+# 创建应用
+首先要创建应用，获取APPID,APPKEY，[参考创建应用文档](https://ai.qq.com/product/nlpchat.shtml)
+![](https://ningto.com/upload/20210520-ntscreenshot-075230.png)
+
+# 接口鉴权
+鉴权接口就是把参数进行排序，编码，组合最后计算MD5值，[参考接口鉴权文档](https://ai.qq.com/doc/auth.shtml)，代码如下：
+```
+func GetSign(params []Param) string {
+	sort.Slice(params, func(i, j int) bool {
+		return params[i].key < params[j].key
+	})
+	var s string
+	for _, param := range params {
+		if len(param.value) > 0 {
+			s += fmt.Sprintf("%s=%s&", param.key, url.QueryEscape(param.value))
+		}
+	}
+	s += fmt.Sprintf("app_key=%s", APPKEY)
+
+	data := []byte(s)
+	dataSum := md5.Sum(data)
+	s = fmt.Sprintf("%x", dataSum)
+
+	s = strings.ToUpper(s)
+	return s
+}
+```
+
+# http请求
+通过QuestionRequest接口就可以发起请求了，只有一个参数，填写你的问题。
+```
+const APPID = xxxxxxxxxxx
+const APPKEY = "xxxxxxxxxx"
+const OCRURL = "https://api.ai.qq.com/fcgi-bin/nlp/nlp_textchat"
+
+type Param struct {
+	key   string
+	value string
+}
+
+type RequestData struct {
+	AppId     int
+	TimeStamp int
+	NonceStr  string
+	Sign      string
+	Session   string
+	Question  string
+}
+
+type Response struct {
+	Ret  int    `json:"ret"`
+	Msg  string `json:"msg"`
+	Data struct {
+		Session string `json:"session"`
+		Answer  string `json:"answer"`
+	} `json:"data"`
+}
+
+func GetSign(params []Param) string {
+	sort.Slice(params, func(i, j int) bool {
+		return params[i].key < params[j].key
+	})
+	var s string
+	for _, param := range params {
+		if len(param.value) > 0 {
+			s += fmt.Sprintf("%s=%s&", param.key, url.QueryEscape(param.value))
+		}
+	}
+	s += fmt.Sprintf("app_key=%s", APPKEY)
+
+	data := []byte(s)
+	dataSum := md5.Sum(data)
+	s = fmt.Sprintf("%x", dataSum)
+
+	s = strings.ToUpper(s)
+	return s
+}
+
+func GetRequestData(question string) string {
+	req := RequestData{
+		AppId:     APPID,
+		TimeStamp: int(time.Now().Unix()),
+		NonceStr:  "123456",
+		Sign:      "",
+		Session:   "10000",
+		Question:  question,
+	}
+	var params []Param
+	params = append(params, Param{key: "app_id", value: strconv.Itoa(req.AppId)})
+	params = append(params, Param{key: "time_stamp", value: strconv.Itoa(req.TimeStamp)})
+	params = append(params, Param{key: "nonce_str", value: req.NonceStr})
+	params = append(params, Param{key: "sign", value: req.Sign})
+	params = append(params, Param{key: "session", value: req.Session})
+	params = append(params, Param{key: "question", value: req.Question})
+	req.Sign = GetSign(params)
+	result := ""
+	for _, param := range params {
+		if param.key == "sign" {
+			result += fmt.Sprintf("sign=%s&", req.Sign)
+		} else if len(param.value) > 0 {
+			result += fmt.Sprintf("%s=%s&", param.key, url.QueryEscape(param.value))
+		}
+	}
+	if len(result) > 1 {
+		result = result[0 : len(result)-1]
+	}
+	return result
+}
+
+func QuestionRequest(question string) (Response, error) {
+	query := GetRequestData(question)
+	request, err := http.NewRequest("POST", OCRURL, bytes.NewBufferString(query))
+	if err != nil {
+		return Response{}, err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	client := http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return Response{}, err
+	}
+	defer response.Body.Close()
+	var rsp Response
+	err = json.NewDecoder(response.Body).Decode(&rsp)
+	if err != nil {
+		aa, _ := ioutil.ReadAll(response.Body)
+		log.Println(aa)
+		return Response{}, err
+	}
+	return rsp, nil
+}
+```
+
+# 智能闲聊web页面
+我的博客上已经接入了一个智能闲聊，大家可以体验下，[智能闲聊地址](https://www.ningto.com/aichat)

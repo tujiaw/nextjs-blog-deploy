@@ -1,0 +1,42 @@
+---
+title: '静态库（lib）的编写与调用'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 介绍了静态库的编写与调用。先新建 Win32 Console Project 生成 LibAdd.lib，再新增头文件和源文件。调用时新建 Test 工程，包含头文件，指定 LibAdd.lib 目录和名称，在 main 函数中测试，得到所需结果。 
+---
+
+静态库的编写：
+
+* 新建一个Win32 Console Project命名为LibAdd， Application type选中Static library（可以去掉Precompiled header的勾选）， 然后点finish；
+* 增加一个头文件LibAdd.h和一个源文件LibAdd.cpp， 内容如下：
+
+```
+// LibAdd.h
+
+#ifndef _ADD_H_
+#define _ADD_H_
+
+int libAdd(int a, int b);
+
+#endif // _ADD_H_
+// LibAdd.cpp
+
+#include "LibAdd.h"
+
+int libAdd(int a, int b)
+{
+	return a + b;
+}
+
+```
+编译后会生成一个lib文件：LibAdd.lib
+
+静态库的调用：
+* 为了方便在先前工程的Solution上点右键，增加一个一般的Win32 Console Project命名为Test；
+* 在main函数上面包含静态库的头文件，注意路径，我的是：#include "../LibAdd/LibAdd.h"， 你也可以指定绝对路径；
+* 在test工程上点右键属性->Linker->General， 在Additional Library Directories中指定LibAdd.lib所在目录；
+* 同上属性->Linker->Input， 在Additional Dependencies中输入lib名称LibAdd.lib；
+* 在main函数中使用LibAdd.h头文件里的libAdd函数测试一下得到了我们需要的结果。
+
+> 2011-07-15

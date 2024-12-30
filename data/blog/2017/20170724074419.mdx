@@ -1,0 +1,74 @@
+---
+title: '使用flex固定头部和底部中间滚动'
+date: '2017-07-24'
+tags: ['Web']
+draft: false
+summary: 介绍使用 flex 固定头部和底部中间滚动的方法，关键在于 root 纵向布局高度 100vh 隐藏滚动条，content 设滚动且 flex 为 1，item 设高度后需 flexShrink 为 0，代码示例如下。 
+---
+
+使用flex固定头部和底部中间滚动
+
+关键点：
+* root纵向布局高度充满整个浏览器界面并且隐藏滚动条
+* content设置滚动，flex设置1，否则当所有item的高度太小时footer会离开底部
+* item设置高度后，必须设置flexShrink为0，否则当所有item高度超过content高度时item会被压缩掉
+
+> '100vh'浏览器视口高度的百分比，这里是100%；  
+> flex为1其他元素为0时（默认为0），当有多余空间时会被flex为1的元素侵占；  
+> flexShrink为0，当空间被压缩时flexShrink为0的元素不被压缩；  
+
+
+代码如下：
+```
+class App extends React.Component {
+  render() {
+    const items = [1, 2, 3, 4, 5, 6, 7]
+    return (
+        <div style={Style.root}>
+            <div style={Style.head}>head</div>
+            <div style={Style.content}>
+                {items.map((item, index) => {
+                    return <div key={index} style={Style.item}>{item}</div>
+                })}
+            </div>
+            <div style={Style.footer}>footer</div>
+        </div>
+    )
+  }
+}
+
+const Style = {}
+Style.root = {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    overflowY: 'hidden'
+}
+
+Style.head = {
+    height: 80,
+    backgroundColor: '#ccc',
+}
+
+Style.footer = {
+    height: 80,
+    backgroundColor: '#ccc',
+} 
+
+Style.content = {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1, 
+    overflowY: 'scroll'
+}
+
+Style.item = {
+    display: 'flex',
+    height: 200,
+    flexShrink: 0,
+    backgroundColor: 'rgb(232, 128, 36)',
+    margin: 10
+}
+
+export default App;
+```

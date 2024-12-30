@@ -1,0 +1,66 @@
+---
+title: '函数外初始化与函数内初始化'
+date: '2017-01-26'
+tags: ['C/C++']
+draft: false
+summary: 介绍函数外初始化与函数内初始化，通过测试代码说明。函数内初始化需注意参数带&，为传递指针引用；函数外初始化参数带&或不带&均可，传进来是同一地址。认为第二种方式符合分配释放原则。 
+---
+
+关于函数外初始化与函数内初始化之前一直分的不是太清，也不太在意。昨天终于出现了这方面的问题，所以决定好好看下，以下是这次的一些收获，先看测试代码：
+```
+#include "stdafx.h"
+#include <iostream>
+using namespace std;
+bool FillStr(char *&szDst, int nSize)
+{
+	bool bRet = false;
+	if (nSize > 0)
+	{
+		szDst = (char*)malloc(sizeof(char) * nSize);
+		memset(szDst, 0, sizeof(char) * nSize);
+		strcpy(szDst, "hello, world");
+		bRet = true;
+	}
+	return bRet;
+}
+bool FillStr(char *szDst)
+{
+	bool bRet = false;
+	if (szDst)
+	{
+		strcpy(szDst, "hello, 5.1");
+		
+		bRet = true;
+	}
+	return bRet;
+}
+int _tmain(int argc, _TCHAR* argv[])
+{
+	char* szWord = NULL;
+	// 第一种
+	//FillStr(szWord, 64);
+	// 第二种
+	szWord = (char*)malloc(sizeof(char) * 64);
+	memset(szWord, 0, sizeof(char) * 64);
+	FillStr(szWord);
+	printf("%s/n", szWord);
+	if (szWord)
+	{
+		free(szWord);
+		szWord = NULL;
+	}
+	getchar();
+	return 0;
+}
+```
+
+* 函数内初始化：bool FillStr(char *&szDst, int nSize);
+第一个参数中的&一定不能少，这是因为在函数外部我们只声明了这个指针，具体这个指针指向内存中的哪个地址我们并不知道，所以&是为了说明传递的是这个指针的引用，那么在函数内初始化后这个指针的地址也就是外面指针的地址了。
+第二个参数是我们要分配的字符个数。
+
+* 函数外初始化：bool FillStr(char *szDst);
+这个函数的参数加不加&都可以，因为传进来的时候已经初始化了，已经有了一个确切的地址，如果不加&的话传进来的就是原来地址的拷贝，如果加&的话就是同一个指针。所以不管怎样它们传进来的都是一样的地址，对其操作都是对同一块内存的操作。
+
+> 虽然上面两种方法都可以达到相同的效果，但是我认为还是第二种方式好些，这样符合谁分配谁释放的原则。
+
+> （迁移2011-04-29）

@@ -1,0 +1,53 @@
+---
+title: 'WTL CComboBox 增加所有字体名（迁移2011-03-10）'
+date: '2017-01-26'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 2017 年 1 月 26 日记录为 CComboBox 控件增加系统字体名的过程。先定义并关联对象，再通过 EnumFontFamiliesEx 及回调函数获取字体名并添加到 CComboBox 中，注意相关参数设置和返回值，还需去掉带@号的字体名。 
+---
+
+今天为CComboBox控件增加系统中的字体名折腾了半天， 记录下防止再犯， 或许以后用不到。
+1. 定义一个CComboBox的对象：
+```
+CComboBox m_cbChiFont;
+```
+2. 给上面的对象关联一个资源ID：
+```
+m_cbChiFont.Attach(GetDlgItem(IDC_CHI_FONT));
+```
+3. 关键地方来了， 首先定义函数所需要的参数， 然后调用EnumFontFamiliesEx(...)， 通过这个函数的回调函数来获取字体名，注意回调函数要在类外提前声明， 实现也要在类外，不然会报错，代码如下：
+```
+int CALLBACK EnumFontProc(ENUMLOGFONTEX *lpelfe, NEWTEXTMETRICEX *lpntme, int FontType, LPARAM lParam);
+class xxxx : public xxxx
+{
+...
+LRESULT OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+{
+    LOGFONT lf;
+    HDC hdc;
+    hdc = GetDC();
+    lf.lfCharSet = GB2312_CHARSET;
+    lf.lfFaceName[0] = '/0';
+    ::EnumFontFamiliesEx(hdc,&lf,(FONTENUMPROCW)EnumFontProc, (LPARAM)this, 0);
+    ReleaseDC(hdc);
+    ....
+}
+...
+};
+int CALLBACK EnumFontProc(ENUMLOGFONTEX *lpelfe, NEWTEXTMETRICEX *lpntme, int FontType, LPARAM lParam)
+	{
+		CStyleSetDlg *pWnd = (CStyleSetDlg*)lParam;
+		if (lpelfe->elfLogFont.lfFaceName[0] != '@')
+		{
+			pWnd->m_cbChiFont.AddString(lpelfe->elfLogFont.lfFaceName);
+		}
+		return 1;
+	}
+```
+
+解释：
+> EnumFontFamiliesEx第四个参数this，是将当前窗口类的句柄（指针）传给回调函数， 这样我们就可以在回调函数中获取当前窗口指针， 通过这个指针找到ComboBox的对象， 就可以对其进行操作了。
+
+>  if (lpelfe->elfLogFont.lfFaceName[0] != '@')是为了去掉前面带有@号的字体名， 这种字体是在原来的基础上旋转90度。
+
+> EnumFontProc(...)回调函数最后一定要返回1， 这样它会多次调用。 返回0的话就只能执行一次，得到一种字体名。

@@ -1,0 +1,82 @@
+---
+title: 'go channel缓冲的作用'
+date: '2020-04-19'
+tags: ['Go']
+draft: false
+summary: 文章介绍 go channel 缓冲作用，make chan 第二个参数设缓冲区大小，无缓冲时同步，有缓冲可提高数据传输效率。通过代码示例展示无缓冲、缓冲大小为 1 和大于 1 的情况及执行结果，强调要合理设置缓冲大小。 
+---
+
+golang中make chan第二个参数设置缓冲区的大小，如果不设置是无缓冲区的。
+下面通过一个例子来说明缓冲的作用。
+
+代码如下：
+```
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+var ch = make(chan int)
+func main() {
+	go sender()
+	time.Sleep(1 * time.Second)
+	fmt.Println("receive", <-ch)
+	time.Sleep(1 * time.Second)
+	fmt.Println("receive", <-ch)
+	time.Sleep(1 * time.Second)
+}
+
+func sender() {
+	fmt.Println("send 1")
+	ch <- 1
+	fmt.Println("send 2")
+	ch <- 2
+	fmt.Println("send end")
+}
+```
+
+# 无缓冲
+```
+var ch = make(chan int)
+```
+这种方式创建channel是无缓冲的，通常我们认为无缓冲的channel是同步channel，因为在不同的goroutine之间发送者和接收者会阻塞，发送者发送完数据之后会被阻塞只有接收者接收后才能继续执行。反之，接收者接收数据的时候也会被阻塞只有接收到了发送者发送的数据才能继续执行。  
+上面例子执行结果如下：
+```
+send 1
+receive 1
+send 2
+receive 2
+send end
+```
+
+# 缓冲大小为1
+```
+var ch = make(chan int, 1)
+```
+缓冲大小为1的channel，可以在发送完一个数据到channel后继续执行，当下次再发送数据到channel的时候如果缓冲区满了会被阻塞，没有满可以继续执行。反之，接收者可以从channel中接收数据，当缓冲区为空的时候才会被阻塞。  
+上面例子执行结果如下：
+```
+send 1
+send 2
+receive 1
+send end
+receive 2
+```
+
+# 缓冲大小大于1
+```
+var ch = make(chan int, 2)
+```
+同缓冲区为1的情况，这时它的缓冲区中可以放更多的数据，被阻塞的情况就变小了。   
+上面例子执行结果如下：
+```
+send 1
+send 2
+send end
+receive 1
+receive 2
+```
+
+所以，无缓冲的channel可以实现goroutine之间的同步，有缓冲的channel可以提高goroutine之间数据传输的效率（减少阻塞），要根据实际情况设置一个合理的缓冲大小。

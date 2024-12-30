@@ -1,0 +1,103 @@
+---
+title: 'goquery基本用法'
+date: '2019-07-16'
+tags: ['Go']
+draft: false
+summary: 介绍 goquery 基本用法，用于处理网络拿到的网页文本数据。通过示例代码截取网页中 table 内容并转换为 markdown 格式，展示其便捷性，代码可从特定地址获取，运行后输出相应 markdown 内容。 
+---
+
+当我们通过网络拿到网页文本数据的时候，要对网页中的数据进行分析，筛选有用的数据。如果只是用平常的strings库来处理数据那效率太低了，goquery可以让我们使用类似jquery的方式来处理数据。
+
+
+地址：[https://github.com/PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)
+
+下面例子使用goquery截取所有table内容将其转换为markdown格式：
+```
+package main
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/PuerkitoBio/goquery"
+)
+
+func NewSlice(len int, item string) []string {
+	result := make([]string, 0, len)
+	for i := 0; i < len; i++ {
+		result = append(result, item)
+	}
+	return result
+}
+
+func GetMarkdownTableList(url string) ([]string, error) {
+	doc, err := goquery.NewDocument(url)
+	if err != nil {
+		return nil, err
+	}
+
+	tableList := []string{}
+	appendTable := func(table []string, row []string) []string {
+		if len(row) > 0 {
+			if len(table) == 1 {
+				head := NewSlice(len(row), "------")
+				table = append(table, "|"+strings.Join(head, "|")+"|")
+			}
+			table = append(table, "|"+strings.Join(row, "|")+"|")
+		}
+		return table
+	}
+
+	doc.Find("table").Each(func(_ int, tableTag *goquery.Selection) {
+		table := []string{}
+		head := []string{}
+		tableTag.Find("thead>tr>th").Each(func(_ int, th *goquery.Selection) {
+			text := strings.TrimSpace(th.Text())
+			if len(text) > 0 {
+				head = append(head, text)
+			}
+		})
+		table = appendTable(table, head)
+
+		tableTag.Find("tbody>tr").Each(func(i int, trTag *goquery.Selection) {
+			tdTag := trTag.Find("td")
+			row := make([]string, 0, tdTag.Length())
+			tdTag.Each(func(j int, td *goquery.Selection) {
+				text := strings.TrimSpace(td.Text())
+				if len(text) > 0 {
+					row = append(row, text)
+				}
+			})
+			table = appendTable(table, row)
+		})
+		if len(table) > 0 {
+			tableList = append(tableList, strings.Join(table, "\n"))
+		}
+	})
+	return tableList, nil
+}
+
+func main() {
+	tableList, _ := GetMarkdownTableList("https://www.jianshu.com/p/7a655e5345b2")
+	for _, item := range tableList {
+		fmt.Println("----------------------------------")
+		fmt.Println(item)
+	}
+}
+
+```
+
+输出的markdown内容如下：
+```
+|Tables|Are|Cool|
+|------|------|------|
+|col 1 is|left-aligned|$1600|
+|col 2 is|centered|$12|
+|col 3 is|right-aligned|$1|
+```
+
+|Tables|Are|Cool|
+|------|------|------|
+|col 1 is|left-aligned|$1600|
+|col 2 is|centered|$12|
+|col 3 is|right-aligned|$1|

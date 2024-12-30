@@ -1,0 +1,87 @@
+---
+title: 'go常见排序方法'
+date: '2019-05-10'
+tags: ['Go']
+draft: false
+summary: 文章介绍 golang 常见排序方法，包括整型、字符串和结构体。整型和字符串有简洁排序写法，结构体可通过切片函数按名字或年龄排序及倒序排序，展示了不同类型排序的示例及结果。 
+---
+
+golang排序写法还是蛮简洁的，不管是简单类型还是复杂的结构，倒序排序的时候可能有点奇怪不知道为什么这样设计
+
+```
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+type Person struct {
+	Name string
+	Age  int
+}
+
+func main() {
+	// 整型排序
+	intList := []int{3, 5, 1, 3, 6, 4, 65, 1}
+	fmt.Println("int排序前：", intList)
+	sort.Sort(sort.IntSlice(intList)) // 简洁写法：sort.Ints(intList)
+	fmt.Println("int排序后：", intList)
+	sort.Sort(sort.Reverse(sort.IntSlice(intList)))
+	fmt.Println("int倒序排序后：", intList)
+	fmt.Println("-------------------------------------------")
+
+	// 字符串排序
+	strList := []string{"aaa", "ccc", "eee", "bbbb", "dddd"}
+	fmt.Println("字符串排序前：", strList)
+	sort.Sort(sort.StringSlice(strList)) // 简洁写法：sort.Strings(strList)
+	fmt.Println("字符串排序后：", strList)
+	sort.Sort(sort.Reverse(sort.StringSlice(strList)))
+	fmt.Println("字符串倒序排序后：", strList)
+	fmt.Println("-------------------------------------------")
+
+	// 结构体排序
+	p1 := Person{"foo", 31}
+	p2 := Person{"wff", 33}
+	p3 := Person{"bob", 32}
+	personList := []Person{p1, p2, p3}
+	fmt.Println("结构体排序前：", personList)
+
+	sort.Slice(personList, func(i int, j int) bool {
+		return personList[i].Name < personList[j].Name
+	})
+	fmt.Println("结构体名字排序后：", personList)
+
+	sort.Slice(personList, func(i int, j int) bool {
+		return personList[i].Name > personList[j].Name
+	})
+	fmt.Println("结构体名字倒序排序后：", personList)
+
+	sort.Slice(personList, func(i int, j int) bool {
+		return personList[i].Age < personList[j].Age
+	})
+	fmt.Println("结构体年龄排序后：", personList)
+
+	sort.Slice(personList, func(i int, j int) bool {
+		return personList[i].Age > personList[j].Age
+	})
+	fmt.Println("结构体年龄倒序排序后：", personList)
+}
+
+```
+输出结果：
+```
+int排序前： [3 5 1 3 6 4 65 1]
+int排序后： [1 1 3 3 4 5 6 65]
+int倒序排序后： [65 6 5 4 3 3 1 1]
+-------------------------------------------
+字符串排序前： [aaa ccc eee bbbb dddd]
+字符串排序后： [aaa bbbb ccc dddd eee]
+字符串倒序排序后： [eee dddd ccc bbbb aaa]
+-------------------------------------------
+结构体排序前： [{foo 31} {wff 33} {bob 32}]
+结构体名字排序后： [{bob 32} {foo 31} {wff 33}]
+结构体名字倒序排序后： [{wff 33} {foo 31} {bob 32}]
+结构体年龄排序后： [{foo 31} {bob 32} {wff 33}]
+结构体年龄倒序排序后： [{wff 33} {bob 32} {foo 31}]
+```

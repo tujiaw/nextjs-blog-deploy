@@ -1,0 +1,94 @@
+---
+title: 'windows判断窗口是否置顶、设置取消置顶、设置前景'
+date: '2017-03-18'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 文章介绍了 Windows 中判断窗口是否置顶、设置取消置顶及设置前景的方法。通过相关函数可实现这些操作，还定义了 WinParameter 类来解决特殊情况下设置失败问题，包含构造和析构函数。 
+---
+
+判断窗口是否置顶
+```
+	bool isWndTopMost(HWND hwnd) {
+		return GetWindowLong(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST;
+	}
+```
+设置和取消置顶
+```
+	void showWndTopMost(HWND hwnd){
+		RECT rect;
+		GetWindowRect(hwnd, &rect);
+		SetWindowPos(hwnd, HWND_TOPMOST, rect.left, rect.top, abs(rect.right - rect.left), abs(rect.bottom - rect.top), SWP_SHOWWINDOW);
+	}
+	void cancelTopMost(HWND hwnd){
+		RECT rect;
+		GetWindowRect(hwnd, &rect);
+		SetWindowPos(hwnd, HWND_NOTOPMOST, rect.left, rect.top, abs(rect.right - rect.left), abs(rect.bottom - rect.top), SWP_SHOWWINDOW);
+	}
+```
+设置窗口前景
+```
+	void showWndTop(HWND hWnd){
+		if (!::IsWindow(hWnd))
+			return;
+		if (!::SetForegroundWindow(hWnd)) {
+			WinParameter winParameter;
+			::SetForegroundWindow(hWnd)
+		}
+	}
+```
+> WinParameter是为了解决某些特殊情况下设置失败的问题
+
+```
+#ifndef WINPARAMETER_H
+#define WINPARAMETER_H
+
+class WinParameter 
+{
+public:
+	WinParameter();
+	~WinParameter();
+
+private:
+	unsigned long  m_lockTimeOut;
+};
+
+#endif // WINPARAMETER_H
+
+///////////////////////////////////////////////////////
+#include "winparameter.h"
+#include <windows.h>
+WinParameter::WinParameter()
+{
+	m_lockTimeOut = 0;
+	HWND  hCurrWnd = ::GetForegroundWindow();
+	unsigned long dwThisTID = ::GetCurrentThreadId();
+	unsigned long dwCurrTID = ::GetWindowThreadProcessId(hCurrWnd,0);
+
+	//we need to bypass some limitations from Microsoft :)
+	if(dwThisTID != dwCurrTID)
+	{
+		::AttachThreadInput(dwThisTID, dwCurrTID, TRUE);
+
+		::SystemParametersInfo(SPI_GETFOREGROUNDLOCKTIMEOUT,0,&m_lockTimeOut,0);
+
+		::SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT,0,0,SPIF_SENDWININICHANGE | SPIF_UPDATEINIFILE);
+		::AllowSetForegroundWindow(ASFW_ANY);
+	}
+	
+}
+
+WinParameter::~WinParameter()
+{
+	HWND  hCurrWnd = ::GetForegroundWindow();
+	unsigned long dwThisTID = ::GetCurrentThreadId();
+	unsigned long dwCurrTID = ::GetWindowThreadProcessId(hCurrWnd,0);
+	if(dwThisTID != dwCurrTID)
+	{
+
+		::SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT,0,(PVOID)m_lockTimeOut,SPIF_SENDWININICHANGE | SPIF_UPDATEINIFILE);
+
+		::AttachThreadInput(dwThisTID, dwCurrTID, FALSE);
+	}
+}
+
+```

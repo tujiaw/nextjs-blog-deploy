@@ -1,0 +1,62 @@
+---
+title: '内存映射文件'
+date: '2017-02-02'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 总结：内存映射文件是一种内存管理方法，可将文件映射到进程虚拟地址空间，无需文件 I/O 操作和缓冲处理，适合管理大尺寸文件。文中给出 C++代码示例，通过创建文件、映射文件视图等操作实现内存映射。 
+---
+
+内存文件映射：一种内存管理方法，使程序可以像访问内存一样访问文件。它使磁盘文件的全部或部分内容映射到进程虚拟地址空间的某个区域，使用它不必执行文件I/O操作也无需对文件内容进行缓冲处理。该特性是非常适合于用来管理大尺寸文件的（批：故无需担心占用内存的问题？）。
+
+```
+#include "stdafx.h"
+#include <locale.h>	// add for unicode
+#include <windows.h>
+#include <iostream>
+using namespace std;
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+	::setlocale(LC_ALL, "chs"); // add for unicode
+
+	HANDLE hFile = ::CreateFile(
+		_T("test.txt"),
+		GENERIC_READ,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		NULL,
+		OPEN_EXISTING,
+		NULL,
+		NULL);
+
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		printf("hFile is invalid");
+		return 0;
+	}
+
+	HANDLE hFileMap = CreateFileMapping(
+		hFile,
+		NULL,
+		PAGE_READONLY,
+		0,
+		0,
+		_T("test"));
+
+	LPWORD lpView = NULL;
+
+	if (hFileMap)
+	{
+		lpView = (LPWORD)MapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 0);
+	}
+
+	wprintf(L"out: /n%s/n", lpView + 1);
+
+	UnmapViewOfFile(lpView);
+	CloseHandle(hFileMap);
+	CloseHandle(hFile);
+
+	system("pause");
+	return 0;
+}
+```
+> （迁移2011-05-12）

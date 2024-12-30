@@ -1,0 +1,137 @@
+---
+title: 'C++ String正确实现以及关键点'
+date: '2018-05-09'
+tags: ['C/C++']
+draft: false
+summary: 本文介绍 C++ String 正确实现及关键点，包括构造函数等必要操作，列举要点如成员初始化列表顺序等，还给出简化代码及相关注意事项，如字符串需以'\0'结尾、赋值操作符参数传值等。 
+---
+
+正确实现String可以考察C++的一些基本功，稍不注意就会出错，下面来列举一下关键点：
+1. 构造函数，拷贝构造，赋值操作符是必须的；
+2. 成员初始化列表执行顺序；
+3. c_str()不要返回空指针；
+4. 实现swap函数；
+5. 分配内存的时候要用外面传进来的size；
+6. 赋值操作符的实现方法：参数以传值的形式；
+7. 析构函数delete []；
+
+先看下代码：
+```
+class String {
+public:
+	String() 
+		: len_(0)
+		, buffer_(nullptr) 
+	{
+	}
+
+	String(const char *str, size_t size)
+		: len_(size)
+		, buffer_(size ? new char[size + 1] : nullptr)
+	{
+		if (buffer_) {
+			std::copy(str, str + len_, buffer_);
+			buffer_[size] = '\0';
+		}
+	}
+
+	String(const char *str)
+		: String(str, strlen(str))
+	{
+	}
+
+	String(const String &str)
+		: String(str.buffer_, str.len_)
+	{
+	}
+
+	~String()
+	{
+		delete[] buffer_;
+	}
+
+	void swap(String& right) 
+	{
+		std::swap(len_, right.len_);
+		std::swap(buffer_, right.buffer_);
+	}
+
+	// 传统写法
+	//String& operator= (const String &str)
+	//{
+	//	String tmp(str);
+	//	this->swap(tmp);
+	//	return *this;
+	//}
+
+	String& operator=(String str)
+	{
+		this->swap(str);
+		return *this;
+	}
+
+	size_t size()
+	{
+		return len_;
+	}
+
+	const char* c_str()
+	{
+		return buffer_ ? buffer_ : "";
+	}
+
+private:
+	size_t len_;
+	char *buffer_;
+};
+```
+
+# 简化代码
+第二个构造函数很重要，有了它后面的构造函数写起来就方便多了。否则你要写多个类似下面的代码：
+```
+	String(const char *str, size_t size)
+		: len_(size)
+		, buffer_(size ? new char[size + 1] : nullptr)
+	{
+		if (buffer_) {
+			std::copy(str, str + len_, buffer_);
+			buffer_[size] = '\0';
+		}
+	}
+```
+
+# 成员初始化列表
+注意：成员初始化列表是以成员定义的顺序来进行初始化的。  
+如果成员变量定义的是如下顺序：
+```
+private:
+  char *buffer_;
+	size_t len_;
+```
+而构造函数是下面写法是会出错的：
+```
+  // 错误的写法
+	String(const char *str, size_t size)
+		: len_(size)
+		, buffer_(len_ ? new char[len_ + 1] : nullptr)
+	{
+		if (buffer_) {
+			std::copy(str, str + len_, buffer_);
+			buffer_[size] = '\0';
+		}
+	}
+```
+根据len_的长度来创建buffer_，看起来先将size赋值给了len_然后再使用len_，但其实在初始化buffer_的时候len_还没有被初始化，所以导致buffer_一直为nullptr。为了避免这个错误你需要注意成员变量的初始化顺序，但是这样做并不好，当成员变量多了的时候很难注意到这个问题。所以最好的做法就是：在成员初始化列表中使用传进来的参数，不要使用赋值后的参数。
+
+# 字符串以'\0'结尾
+由于实现的是字符串所以要多分配一个字符已'\0'结尾，如果是其他buffer，如：int[]就不需要了。
+
+# 参数通过传值的方式实现赋值操作符
+```
+	String& operator=(String str)
+	{
+		this->swap(str);
+		return *this;
+	}
+```
+原理是：str传进来的是一个临时拷贝，当swap之后，把当前this的buffer_交换给了临时str，临时str的buffer_赋值给了this，当临时str析构的时候它帮我们把this先前的buffer_给释放了，而它的buffer_给了this。

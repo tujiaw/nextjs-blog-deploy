@@ -1,0 +1,93 @@
+---
+title: 'JavaScript 栈、队列'
+date: '2019-03-27'
+tags: ['Javascript']
+draft: false
+summary: 介绍了 JavaScript 中的栈和队列，分别用代码实现其基本操作。还提到字符串拼接的常见问题及使用 join 方法解决，join 方法避免了过多中间字符串和连接操作，执行更快。 
+---
+
+# Stack
+栈，后进先出
+```
+class Stack {
+    constructor() {
+        this.list = []
+    }
+
+    pop() {
+        const t = this.top()
+        this.list.pop()
+        return t
+    }
+
+    push(...item) {
+        this.list.push(...item)
+    }
+
+    top() {
+        return this.isEmpty() ? undefined : this.list[this.size() - 1]
+    }
+
+    size() {
+        return this.list.length
+    }
+
+    isEmpty() {
+        return this.list.length === 0
+    }
+}
+```
+
+# Queue
+队列，先进先出
+```
+class Queue {
+    constructor() {
+        this.list = []
+    }
+
+    dequeue() {
+        const t = this.head()
+        this.list.shift()
+        return t
+    }
+
+    enqueue(...item) {
+        this.list.push(...item)
+    }
+
+    head() {
+        return this.isEmpty() ? undefined : this.list[0]
+    }
+
+    size() {
+        return this.list.length
+    }
+
+    isEmpty() {
+        return this.list.length === 0
+    }
+}
+```
+
+# String拼接
+考虑下面的方法
+```
+str = '';
+for (/* each piece */) {
+  str += piece; // bad for performance!
+}
+return str;
+```
+> 此方法将导致过多的中间字符串和连接操作，并且整体执行效果不佳
+
+解决上面问题的方法是使用join
+```
+var tmp = [];
+for (/* each piece */) {
+  tmp.push(piece);
+}
+str = tmp.join(''); // Specified an empty separator, thanks Jonathan
+return str;
+```
+> 此方法不会受到额外字符串对象的影响，并且通常执行得更快。

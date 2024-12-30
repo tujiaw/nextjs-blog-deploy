@@ -1,0 +1,37 @@
+---
+title: 'vscode go插件安装失败'
+date: '2019-05-07'
+tags: ['Go']
+draft: false
+summary: vscode go 插件安装失败，因本地无 golang tools 致其他插件安装也失败。可手动从 github 下载，先查看 GOPATH 目录，再在 go/src 下新建 golang.org 目录并 clone tools，之后安装插件可能成功，有诸多开发便利。 
+---
+
+vscode go插件安装失败
+
+原因是本地没有golang tools，导致其他的插件安装失败，我们可以手动从github上下载。
+
+使用命令查看GOPATH目录：
+```
+go env GOPATH
+```
+
+找到您的GOPATH目录，我的是
+```
+C:\Users\yourname\go
+```
+
+在go/src目录下，新建golang.org目录如下：
+```
+go\src\golang.org\x
+```
+在上面目录下clone tools
+```
+git clone https://github.com/golang/tools.git
+```
+完整的目录是：
+```
+C:\Users\yourname\go\src\golang.org\x\tools
+```
+
+后面vscode上如果再次触发安装插件应该就能成功了。  
+有插件后开发起来就很爽了，有各种提示，智能补全，代码格式化。

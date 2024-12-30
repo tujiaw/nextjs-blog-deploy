@@ -1,0 +1,164 @@
+---
+title: 'select模型'
+date: '2017-10-24'
+tags: ['Windows']
+draft: false
+summary: 介绍 select 模型，需设 listenSock 为非阻塞，放入 fdread 中。每次 FD_SET 前要 FD_ZERO，用 list 保存 SOCKET 循环处理。在`_tmain`函数中创建套接字、绑定、监听等，通过 select 检测读写事件并处理客户端连接与数据收发。 
+---
+
+需要注意的是要将listenSock设置为非阻塞模式，这样在while(1)循环中accept才不会被阻塞。同时listenSock也要set到fdread中，如果不这样做的话，select只能监视到客户端的socket，当客户端没有进行任务IO操作的时候select返回值为SOCKET_ERROR会一直进行循环检测，这样是没必要的。
+
+如果有listenSock在fdread中，而又没有新的客户端接入的时候select会阻塞的，只要有一个客户端进行了IO操作或者有新客户端接入select就会变成非阻塞继续进行下面的处理。
+
+
+在每次FD_SET之前必须FD_ZERO，所以这里使用了一个list来保存SOCKET，在下一次循环的时候重新FD_SET一遍list中的所有SOCKET。
+```
+
+// TcpDemo.cpp : Defines the entry point for the console application.
+//
+
+#include "stdafx.h"
+#include <iostream>
+#include <Windows.h>
+#include <sstream>
+#include <list>
+
+#pragma comment(lib, "Ws2_32.lib")
+
+void handleConn(std::list<SOCKET> &clientSocks, fd_set &fdread);
+int _tmain(int argc, _TCHAR* argv[])
+{
+	WSADATA wsaData;
+	SOCKET listenSock;
+	SOCKADDR_IN serverAddr;
+	SOCKADDR_IN clientAddr;
+	fd_set fdread;
+	int port = 5100;
+
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
+
+	listenSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (INVALID_SOCKET == listenSock)
+	{
+		std::cout << "socket failed, errcode:" << WSAGetLastError() << std::endl;
+		return 0;
+	}
+	unsigned long iMode = 1;
+	ioctlsocket(listenSock, FIONBIO, &iMode);
+
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_port = htons(port);
+	serverAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+	int iret = bind(listenSock, (sockaddr*)&serverAddr, sizeof(serverAddr));
+	if (SOCKET_ERROR == iret)
+	{
+		std::cout << "bind failed, errcode:" << WSAGetLastError() << std::endl;
+		closesocket(listenSock);
+		return 0;
+	}
+	
+	iret = listen(listenSock, SOMAXCONN);
+	if ( SOCKET_ERROR == iret)
+	{
+		std::cout << "listen failed, errcode:" << WSAGetLastError() << std::endl;
+		closesocket(listenSock);
+		return 0;
+	}
+
+	int clientAddrLen = sizeof(clientAddr);
+
+	std::list<SOCKET> clientSocks;
+	while (1)
+	{
+		std::cout << "running" << std::endl;
+	
+		FD_ZERO(&fdread);
+		FD_SET(listenSock, &fdread);
+		SOCKET connSock = accept(listenSock, (sockaddr*)&clientAddr, &clientAddrLen);
+		if (INVALID_SOCKET == connSock)
+		{
+			iret = WSAGetLastError();
+			if (WSAEWOULDBLOCK == iret)
+			{
+				std::cout << "waitting ..." << std::endl;
+			}
+			else
+			{
+				closesocket(listenSock);
+				break;
+			}
+		}
+		else
+		{
+			clientSocks.push_back(connSock);
+		}
+
+		std::list<SOCKET>::iterator iter = clientSocks.begin();
+		for ( ; iter!=clientSocks.end(); ++iter)
+		{
+			FD_SET(*iter, &fdread);
+		}
+
+		if (SOCKET_ERROR == select(0, &fdread, NULL, NULL, NULL))
+		{
+			std::cout << "select failed, errcode:" << WSAGetLastError() << std::endl;
+			continue;
+		}
+
+		handleConn(clientSocks, fdread);
+	}
+
+	system("pause");
+	return 0;
+}
+
+void handleConn(std::list<SOCKET> &clientSocks, fd_set &fdread)
+{
+	std::cout << "handle connection" << std::endl; 
+	std::list<SOCKET>::iterator iter = clientSocks.begin();
+	while (iter != clientSocks.end())
+	{
+		bool isError = false;
+		if (FD_ISSET(*iter, &fdread))
+		{
+			char buf[1000];
+			int irecv = recv(*iter, buf, sizeof(buf), 0);
+			int lastError = 0;
+			if (SOCKET_ERROR == irecv || 0 == irecv)
+			{
+				lastError = WSAGetLastError();
+				std::cout << "socket:" << *iter << ", erase, lasterror:" << lastError << std::endl;
+				isError = true;
+			}
+			else
+			{
+				int isend = send(*iter, buf, irecv, 0);
+				if (isend < 0)
+				{
+					lastError = WSAGetLastError();
+					if (WSAEWOULDBLOCK == lastError)
+					{
+						::Sleep(100);
+					}
+					else
+					{
+						isError = true;
+						std::cout << "echo error, lasterror:" << lastError << std::endl;
+					}
+				}
+			}
+		}
+		if (isError)
+		{
+			closesocket(*iter);
+			clientSocks.erase(iter++);
+		}
+		else
+		{
+			++iter;
+		}
+	}
+}
+
+
+```

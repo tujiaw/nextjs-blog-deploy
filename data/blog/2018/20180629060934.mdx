@@ -1,0 +1,67 @@
+---
+title: 'visual studio中props文件用法'
+date: '2018-06-29'
+tags: ['Windows']
+draft: false
+summary: 在 visual studio 中，.props 文件可固定工程配置，方便下次使用。其内容包含库目录宏定义等，导入到 vcxproj 文件只需在后者中用<Import Project="$(SolutionDir)asio.props"/>等语句。 
+---
+
+使用visual studio IDE经常要进行一些工程属性的配置，通常是引入第三方库。如果库比较多的话每次建新工程都要配置一下比较麻烦，.props文件可以帮助我们把一些固定的配置写好，下次使用的时候直接import到vcxproj文件中就可以了。.props中的配置相当于vcxproj配置中的一部分，一般是共有部分才提出来。
+
+# props文件内容
+props文件内容如下：
+```
+<?xml version="1.0" encoding="utf-8"?> 
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+	<BOOSTDIR>$(SolutionDir)asio\third\boost\</BOOSTDIR>
+	<PROTOBUFDIR>$(SolutionDir)asio\third\protobuf\</PROTOBUFDIR>
+	<GLOGDIR>$(SolutionDir)asio\third\glog\</GLOGDIR>
+	<ZLIBDIR>$(SolutionDir)asio\third\zlib\</ZLIBDIR>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IncludePath>$(WindowsSDK_IncludePath);$(VC_IncludePath);$(SolutionDir);$(BOOSTDIR)include;$(PROTOBUFDIR)include;$(GLOGDIR)include;$(ZLIBDIR)include</IncludePath>
+    <LibraryPath>$(WindowsSDK_LibraryPath_x86);$(VC_LibraryPath_x86);$(BOOSTDIR)lib;$(PROTOBUFDIR)lib;$(GLOGDIR)lib;$(ZLIBDIR)lib</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+	<Link>
+	  <AdditionalDependencies>libboost_system-vc120-mt-gd-1_65_1.lib;libprotobufd.lib;glogd.lib;zlibstatic.lib</AdditionalDependencies>
+	</Link>
+  </ItemDefinitionGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+   	<Link>
+	  <AdditionalDependencies>libboost_system-vc120-mt-gd-1_65_1.lib;libprotobufd.lib;glogd.lib;zlibstatic.lib</AdditionalDependencies>
+	</Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+  </ItemGroup>
+</Project>
+```
+从上到下很容易看出来大致内容：
+* 库目录宏定义
+* 库头文件目录，库lib文件目录
+* 依赖的第三方库
+
+最后ItemGroup用法如下，这里暂时用不到：
+```
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+```
+
+# 导入props到vcxproj文件中
+如我的props文件名为：asio.props，将其放在sln文件所在目录。  
+用记事本打开vcxproj文件，参考Microsoft.Cpp.props导入方式，如下：
+```
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(SolutionDir)asio.props"/>
+```

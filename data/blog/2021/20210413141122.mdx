@@ -1,0 +1,53 @@
+---
+title: 'Qt 更改Object Name显示指定的样式'
+date: '2021-04-13'
+tags: ['Qt']
+draft: false
+summary: 
+---
+
+Qt 更改Object Name显示指定的样式
+
+# 背景
+Qt做UI样式的时候通常会在构造函数里设置窗口整体的stylesheet，然后各个组件根据ObjectName或者类名来应用这些样式。但是这里有个问题就是必须先设置好各个组件，然后再设置样式，反过来先设置了stylesheet，再给组件设置不同的Object Name来应用不同的样式是不生效的，也就是说动态的改变样式不方便。
+
+# 需求
+现在的需求是我设置好了几个不同Object Name的样式，想通过修改对象的Object Name来实时生效对应的样式。
+
+# 代码
+我做了一个简单的演示，在stylesheet里设置了三个对象名为red，green，blue的样式（简单的设置字体颜色），在编辑框里输入对象名后点击“Ok”按钮使QLabel样式生效。  
+![](https://ningto.com/upload/20210413-ntscreenshot-135706.png)
+```
+#include "dialog.h"
+#include "ui_dialog.h"
+#include <QStyle>
+
+Dialog::Dialog(QWidget *parent)
+    : QDialog(parent)
+    , ui(new Ui::Dialog)
+{
+    ui->setupUi(this);
+    connect(ui->pushButton, &QPushButton::clicked, this, &Dialog::onOk);
+    this->setStyleSheet("#red{color:#ff0000;} #green{color:#00ff00;} #blue{color:#0000ff;}");
+}
+
+Dialog::~Dialog()
+{
+    delete ui;
+}
+
+void Dialog::onOk()
+{
+    ui->label->setObjectName(ui->lineEdit->text());
+    this->style()->polish(ui->label); // 关键！！！
+}
+```
+看代码里的注释，其实关键函数就是style里面的polish。我也不知道单词是啥意思，百度查了一下：
+```
+v. 抛光，擦亮；修改，润色；（使）完美，改进
+n. 磨光，擦亮；擦亮剂；打磨光滑的面；完美，娴熟；优雅，精良
+```
+Qt官方文档解释是：初始化widget的外观，这个函数会在widget的创建之后，第一次显示之前被调用。
+
+# 结论
+改变Object Name后要应用新的样式可以使用style的polish函数来实现，调用这个函数之前最好检查一下Object Name有没有改变，如果没有改变就不必要调用了，因为如果是复杂的组件、样式或者调用比较频繁会消耗不少计算机资源。

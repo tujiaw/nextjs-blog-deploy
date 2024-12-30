@@ -1,0 +1,144 @@
+---
+title: 'centos基础环境准备'
+date: '2019-09-29'
+tags: ['Linux']
+draft: false
+summary: 本文介绍 centos 基础环境准备，包括 ifconfig 网卡设置、crontab 编辑、hostname 修改、jdk 环境变量、ntp 时间同步、ulimit 修改、安装 vsftpd 及添加用户等操作，还涉及修改网络内核参数。 
+---
+
+# ifconfig发现没有网卡
+```
+vi /etc/sysconfig/network-scritps/ifcfg-eth0
+修改ONBOOT=yes
+
+启动网络卡
+service network restart
+ifconfig检查一下，发现eth0存在
+ping www.baidu.com是通的
+```
+
+# crontab编辑
+```
+crontab -e
+```
+
+# hostname修改
+```
+vi /etc/sysconfig/network
+HOSTNAME=node1
+
+vi /etc/hosts
+ip1(如：172.16.75.170) node1
+ip2 node2
+ip3 node3
+
+输入hostname验证是否成功
+如果显示不正确重启网卡
+service network restart
+```
+
+# jdk环境变量
+```
+vi /etc/profile
+
+export JAVA_HOME=/opt/sumscope/jdk1.8.0_111
+export JRE_HOME=${JAVA_HOME}/jre
+export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib
+export PATH=${JAVA_HOME}/bin:$PATH
+
+source /etc/profile
+java -version
+
+```
+
+# ntp时间同步
+```
+ntp 时间同步 
+查看是否安装ntp服务，没有的话
+yum install ntp -y 
+
+若系统时间不在CST中国时区，可以进行如下调整： 
+ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime 
+vi /etc/ntp.conf 
+server 0.centos.pool.ntp.org iburst ---> server time.nist.gov prefer 
+server 1.centos.pool.ntp.org iburst ---> server ntp.sjtu.edu.cn 
+server 2.centos.pool.ntp.org iburst ---> #server 2.centos.pool.ntp.org iburst 
+server 3.centos.pool.ntp.org iburst ---> #server 3.centos.pool.ntp.org iburst 
+
+vi /etc/sysconfig/ntpd 
+SYNC_HWCLOCK=yes
+
+service ntpd start 
+chkconfig ntpd on
+```
+
+# ulimit修改
+```
+vi /etc/profile(服务器重启后生效)
+
+ulimit -n 65535 # 文件描述符数量
+ulimit -c unlimited # 最大core文件大小
+
+同时需要在终端上执行以上命令，以达到实时生效。
+```
+
+# 安装vsftpd
+```
+vsftpd yum install -y vsftpd
+
+service vsftpd stop
+
+cd /etc/vsftpd 
+mv vsftpd.conf vsftpd.bak.(date +%Y%m%d)
+mkdir -p /var/ftp/mydir && chmod 777 /var/ftp/mydir
+vim /etc/vsftpd/vsftpd.conf
+listen=YES
+anonymous_enable=YES
+local_enable=YES
+chroot_list_enable=YES
+ascii_upload_enable=YES
+ascii_download_enable=YES
+pam_service_name=vsftpd
+local_root=/var/ftp
+write_enable=YES
+anon_umask=022
+anon_world_readable_only=NO
+anon_upload_enable=YES
+anon_mkdir_write_enable=YES
+anon_other_write_enable=YES
+pasv_enable=YES
+pasv_min_port=40000
+pasv_max_port=40099
+pasv_promiscuous=YES
+
+service vsftpd start
+```
+
+# 添加用户，如：tujiaw
+```
+先查看账户是否存在
+cat /etc/passwd
+
+添加tujiaw用户
+1.	使用root用户登录。
+2.	【mkdir /tujiaw】【ln -s /tujiaw /opt/tujiaw】创建部署目录。
+3.	【useradd tujiaw】添加用户并指定组和默认目录。
+4.	【passwd tujiaw】设置密码为【tujiaw】。
+5.	【visudo】，在【root ALL=(ALL) ALL】下增加【tujiaw ALL=(ALL) ALL】。
+6.	【chown -hR tujiaw:tujiaw /tujiaw /opt/tujiaw】修改归属。
+```
+
+# 修改网络内核参数
+```
+vi /etc/sysctl.conf
+
+# for sumscope broker
+  net.core.wmem_default=1024000
+  net.core.wmem_max=1024000
+  net.core.rmem_default=1024000
+  net.core.rmem_max=1024000
+  
+sysctl -p
+
+查看是否生效：sysctl -a -n | grep "net.core"
+```

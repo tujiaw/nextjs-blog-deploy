@@ -1,0 +1,144 @@
+---
+title: 'android app 微信热门文章精选'
+date: '2017-01-08'
+tags: ['Mobile']
+draft: false
+summary: 这是关于 android app 微信热门文章精选的介绍。用 react native 做小软件，通过 showapi 获取文章，展示了 index.android.js 中初始化文章列表等内容，还有 articleList.js 的文章列表显示等，以及 showArticle.js 和 typeList.js 的相关部分。 
+---
+
+1. render...
+---
+试用一下react native做了这个小软件，文章内容是用showapi获取的， 如果你喜欢或者对你有帮助给个star吧（[github地址](https://github.com/tujiaw/react_native_wxarticle) [apk下载地址](http://pan.baidu.com/s/1i4XQkWd)）。
+
+  
+#### index.android.js 
+---
+1. render中使用navigator组件初始化articleList文章列表作为主页面；
+```
+render() {
+    const typeName = "热点";
+    return (
+        <Navigator
+          ref={component => this._navigator = component}
+          navigationBar={
+            <Navigator.NavigationBar
+              routeMapper={{
+                LeftButton: this.initLeftButton.bind(this),
+                RightButton: this.initRightButton.bind(this),
+                Title: this.initTitle.bind(this),
+              }}
+              style={{margin:10}}
+            />
+          }
+
+          initialRoute={{name: "articleList", component: ArticleList, params: {typeName: typeName}}}
+          configureScene = {(route) => { return Navigator.SceneConfigs.FloatFromRight; }}
+          renderScene={(route, navigator) => {
+            let Component = route.component;
+            return <Component {...route.params} navigator={navigator} title={route.name}/>
+          }}
+          />
+      );
+    }
+```
+2. 注册处理退出按键事件，两秒钟之内按两次Back键退出程序
+```
+  componentDidMount() {
+    BackAndroid.addEventListener('hardwareBackPress', this.handleBack);
+  }
+
+  componentWillUnmount() {
+    BackAndroid.removeEventListener('hardwareBackPress', this.handleBack);
+  }
+
+  _handleBack() {
+    if (this._navigator && this._navigator.getCurrentRoutes().length > 1) {
+      this._navigator.pop();
+      return true;
+    }
+    // 两秒钟之内按两次Back键退出程序
+    this.backPressTime.push(new Date());
+    const count = this.backPressTime.length;
+    if (count >= 2) {
+      const ms = this.backPressTime[count - 1] - this.backPressTime[count - 2];
+      this.backPressTime = [];
+      if (ms <= 2000) {
+        return false;
+      }
+    }
+    ToastAndroid.show('再按一次退出程序', ToastAndroid.SHORT);
+    return true;
+  }
+```
+
+#### articleList.js
+---
+1. 定义Article类显示每篇文章图片，标题，简介
+```
+render() {
+    return (
+      <TouchableHighlight underlayColor='#c2c2c2' onPress={() => this.handleClick()}>
+        <View style={styles.article}>
+          <Image style={styles.image} source={{uri: this.props.contentImg}} />
+          <View style={styles.right}>
+            <View style={styles.rightTop}>
+              <Text style={styles.userName}>{this.props.userName}</Text>
+              <Text style={styles.date}>{this.getShowDate(this.props.date)}</Text>
+            </View>
+            <Text style={styles.title}>{this.props.title}</Text>
+          </View>
+        </View>
+      </TouchableHighlight>
+    );
+  }
+```
+2. 使用ListView组件显示文章列表
+```
+  render() {
+    return (
+      <ListView
+        ref={component => this._listView = component}
+        style={{flex: 1, marginTop: 40}}
+        dataSource={this.state.dataSource}
+        enableEmptySections={true}
+        onEndReached={this._onEndReached.bind(this)}
+        onEndReachedThreshold={10}
+        renderRow={(rowData) => {
+          return (<View><Article {...rowData} /></View>)
+        }}
+      />
+
+    );
+  }
+```
+3. updateArticleList获取文章列表数据
+4. _onEndReached加载更多文章
+
+#### showArticle.js
+---
+使用WebView显示文章内容
+```
+export default class ShowArticle extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {};
+    }
+
+    render() {
+      return (
+        <WebView style={{flex: 1, marginTop: 40}} source={{uri: this.props.url}} />
+      );
+    }
+}
+```
+
+#### typeList.js
+---
+文章类别列表
+
+* 文章列表  
+![文章列表](https://ww4.sinaimg.cn/large/006tNc79jw1fbjirh7233j30a00hsdgd.jpg)
+* 分类列表  
+![分类列表](https://ww2.sinaimg.cn/large/006tNc79jw1fbjirj7chuj30a00hst8x.jpg)
+* 文章内容  
+![文章内容](https://ww2.sinaimg.cn/large/006tNc79jw1fbjirl7dd7j30a00hs3z1.jpg)

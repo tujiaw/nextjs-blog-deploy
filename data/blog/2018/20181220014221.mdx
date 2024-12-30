@@ -1,0 +1,59 @@
+---
+title: 'STL容器循环erase迭代器失效'
+date: '2018-12-20'
+tags: ['C/C++']
+draft: false
+summary: 文章介绍 STL 容器循环 erase 迭代器失效，以 std::map 为例，给出 C++11 和 C++03 两种写法。C++03 中 iter++可避免迭代器失效，而 C++11 写法在某些 linux 编译器不支持，同时指出错误写法会造成崩溃。 
+---
+
+STL容器循环erase迭代器失效
+
+下面以std::map作为例子其他容器类似，给出两种写法一种C++11的一种C++03的
+```
+    // 初始化
+    std::map<int, int> mp;
+    for (int i = 0; i < 10; i++) {
+        mp[i + 1] = i + 1;
+    }
+    
+    // 删除value为偶数的
+    // C++11
+    {
+        auto iter = mp.begin();
+        while (iter != mp.end()) {
+            if (iter->second % 2 == 0) {
+                iter = mp.erase(iter);
+            } else {
+                ++iter;
+            }
+        }
+    }
+
+    // C++03
+    {
+        std::map<int, int>::iterator iter = mp.begin();
+        while (iter != mp.end()) {
+            if (iter->second % 2 == 0) {
+                mp.erase(iter++); // iter++，iter先++再返回先前的iter
+            } else {
+                ++iter;
+            }
+        }
+    }
+
+    // 打印结果
+    {
+        std::map<int, int>::iterator iter = mp.begin();
+        for (; iter != mp.end(); ++iter) {
+            std::cout << iter->second << std::endl;
+        }
+    }
+```
+
+C++03这种写法成立的原因是erase(iter++)迭代器失效之前iter已经++，erase其实使用的是之前的迭代器，所以下面这种写法是错误的会造成崩溃
+```
+mp.erase(iter);
+iter++; // 此时迭代器已经失效
+```
+
+> c++11的这种写法在某些linux编译器上不支持

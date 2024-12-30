@@ -1,0 +1,419 @@
+---
+title: 'C++读写XML文件（Libxml2库）'
+date: '2017-10-24'
+tags: ['C/C++']
+draft: false
+summary: 介绍 C++读写 XML 文件的 Libxml2 库，给出相关代码示例。包括打开文件、解析文件、写入文件及查找节点等操作，代码有读写 XML 文件的具体实现及测试案例，示例文件内容也一并给出。 
+---
+
+C++程序有时候要读写XML文件， 这里介绍一个读写XML文件的库——Libxml2。
+
+主页：[http://xmlsoft.org/index.html](http://xmlsoft.org/index.html)
+
+入门教程很详细的：[http://jianlee.ylinux.org/Computer/C/libxml.html#sec11](http://jianlee.ylinux.org/Computer/C/libxml.html#sec11)
+
+读取节点内容的话用XPath方式比较好，要问XPath与Libxml2库之间的关系，有个很形象的比喻：
+
+那就是SQL与数据库之间的关系。
+
+下面的代码是在Linux下实现的：
+```
+
+#ifndef __XML_FILE_H__
+#define __XML_FILE_H__
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
+#include <map>
+#include <string>
+#include <iostream>
+
+using namespace std;
+
+const int XML_READ = 1;
+const int XML_WRITE = 0;
+
+typedef struct _XML_INFO XML_INFO;
+typedef struct _XML_INFO* HXML_INFO;
+
+struct _XML_INFO
+{
+    char version[16];
+    int update;
+    int scan_speed;
+    int type;
+    int device_counts;
+    int item_counts;
+    
+    map<string, string> map_item_info;
+};
+
+class CLibxml2
+{
+public:
+    CLibxml2();
+    ~CLibxml2();
+
+    CLibxml2(const char *xml_file_path, bool is_read);
+
+	/*!
+	  \fn bool open(const char *xml_file_path, bool is_read)
+	  \brief 打开一个XML文件是以读的方式还是以写的方式
+	  \param in xml_file_path XML文件路径
+	  \param in is_read true为读，false为写
+	  \return true成功，false失败
+	*/
+    bool open(const char *xml_file_path, bool is_read);
+    
+	/*!
+	  \fn bool parse_xml_file(XML_INFO &xml_info)
+	  \brief 解析XML文件，将解析后的结果保存在XML_INFO结构体中
+	  \param out xml_info 保存解析后的结果
+	  \return true成功，false失败
+	*/
+    bool parse_xml_file(const XML_INFO &xml_info);
+
+	/*!
+	  \fn bool save_xml_file(const XML_INFO &xml_info)
+	  \brief 写入XML文件
+	  \param in xml_info 需要写入的信息
+	  \return true成功，false失败
+	*/
+    bool save_xml_file(XML_INFO &xml_info);
+
+private:
+	/*!
+	  \fn xmlNodePtr search_node_ptr(const char *sz_expr)
+	  \brief 查找指定节点
+	  \param in sz_expr 节点路径表达式（XPATH）
+	  \return success返回指定节点指针，fail返回NULL
+	*/
+    xmlNodePtr search_node_ptr(const char *sz_expr);
+
+private:
+    char m_sz_path[512];
+    xmlDocPtr m_pdoc_read;
+    xmlNodePtr m_proot;
+};
+
+
+#endif // __XML_FILE_H__
+
+
+```
+
+```
+
+#include "xml-file.h"
+#include <string.h>
+#include <libxml/xpath.h>
+#include <libxml/xpathInternals.h>
+#include <libxml/xmlmemory.h>
+#include <libxml/xpointer.h>
+
+CLibxml2::CLibxml2()
+{
+    m_pdoc_read = NULL;
+    m_proot = NULL;
+    bzero(m_sz_path, sizeof(m_sz_path));
+}
+
+CLibxml2::~CLibxml2()
+{
+    if (m_pdoc_read)
+    {
+        xmlFreeDoc(m_pdoc_read);
+        m_pdoc_read = NULL;
+
+        xmlCleanupParser();
+        xmlMemoryDump();
+    }
+}
+
+CLibxml2::CLibxml2(const char *xml_file_path, bool is_read)
+{
+    if (xml_file_path)
+    {
+        open(xml_file_path, is_read);
+    }
+}
+
+bool CLibxml2::open(const char *xml_file_path, bool is_read)
+{
+    bool bret = false;
+    
+    m_pdoc_read = NULL;
+    m_proot = NULL;
+    bzero(m_sz_path, sizeof(m_sz_path));
+    
+    if (xml_file_path)
+    {
+        strcpy(m_sz_path, xml_file_path);
+
+        if (is_read)
+        {
+            xmlKeepBlanksDefault(0);
+            m_pdoc_read = xmlReadFile(xml_file_path, "UTF-8", XML_PARSE_RECOVER);
+            m_proot = xmlDocGetRootElement(m_pdoc_read);
+        }
+        
+        if (m_proot)
+        {
+            bret = true;
+        }
+    }
+
+    return bret;
+}
+
+bool CLibxml2::parse_xml_file(XML_INFO &xml_info)
+{
+    bool bret = false;
+    if (m_proot)
+    {
+        xmlNodePtr node = search_node_ptr("//config_Information");
+        xmlChar *str = xmlGetProp(node, node->properties->name);
+        strcpy(xml_info.version, (const char*)BAD_CAST(str));
+        //cout << xml_info.version << endl;
+
+        node = search_node_ptr("//Config_Data_block");
+        str = xmlGetProp(node, node->properties->name);
+        xml_info.update = atoi((const char*)BAD_CAST(str));
+        //cout << xml_info.update << endl;
+
+        node = search_node_ptr("//ScanSpeed");
+        str = xmlNodeGetContent(node);
+        xml_info.scan_speed = atoi((const char*)BAD_CAST(str));
+        //cout << xml_info.scan_speed << endl;
+
+        node = search_node_ptr("//DeviceType");
+        str = xmlGetProp(node, node->properties->name);
+        xml_info.type = atoi((const char*)BAD_CAST(str));
+        //cout << xml_info.type << endl;
+
+        node = search_node_ptr("//Device_Counts");
+        str = xmlNodeGetContent(node);
+        xml_info.device_counts = atoi((const char*)BAD_CAST(str));
+        //cout << xml_info.device_counts << endl;
+
+        node = search_node_ptr("//Item_Counts");
+        str = xmlNodeGetContent(node);
+        xml_info.item_counts = atoi((const char*)BAD_CAST(str));
+        //cout << xml_info.item_counts << endl;
+
+        int i;
+        char item_id[32];
+        char key_word[32];
+        char id_content[32];
+        char key_content[32];
+        xmlNodePtr node_id;
+        xmlNodePtr node_key;
+        
+        for (i=1; i<=xml_info.item_counts; i++)
+        {
+            bzero(item_id, sizeof(item_id));
+            bzero(key_word, sizeof(key_word));
+            bzero(id_content, sizeof(id_content));
+            bzero(key_content, sizeof(key_content));
+            
+            sprintf(item_id, "//ItemInfo[%d]/ItemID", i);
+            sprintf(key_word, "//ItemInfo[%d]/KeyWord", i);
+            node_id = search_node_ptr(item_id);
+            node_key = search_node_ptr(key_word);
+            xmlChar *temp_id = xmlNodeGetContent(node_id);
+            xmlChar *temp_key = xmlNodeGetContent(node_key);
+            strcpy(id_content, (const char*)BAD_CAST(temp_id));
+            strcpy(key_content, (const char*)BAD_CAST(temp_key));
+            xml_info.map_item_info.insert(pair<string, string>(id_content, key_content));
+        }
+        
+        bret = true;
+    }
+
+    return bret;
+}
+
+bool CLibxml2::save_xml_file(const XML_INFO &xml_info)
+{
+    if (NULL == m_sz_path)
+    {
+        return false;
+    }
+
+    char sz_temp[32];
+    
+    xmlDocPtr pdoc = xmlNewDoc(BAD_CAST(xml_info.version));
+    xmlNodePtr config_info = xmlNewNode(NULL, BAD_CAST"config_Information");
+    xmlNewProp(config_info, BAD_CAST"version", BAD_CAST(xml_info.version));
+    xmlDocSetRootElement(pdoc, config_info);
+    
+    xmlNodePtr data_block = xmlNewNode(NULL, BAD_CAST"Config_Data_block");
+    bzero(sz_temp, sizeof(sz_temp));
+    sprintf(sz_temp, "%d", xml_info.update);
+    xmlNewProp(data_block, BAD_CAST"update", BAD_CAST(sz_temp));
+    xmlAddChild(config_info, data_block);
+
+    bzero(sz_temp, sizeof(sz_temp));
+    sprintf(sz_temp, "%d", xml_info.scan_speed);
+    xmlNewTextChild(data_block, NULL, BAD_CAST"ScanSpeed", BAD_CAST(sz_temp));
+
+    bzero(sz_temp, sizeof(sz_temp));
+    sprintf(sz_temp, "%d", xml_info.type);
+    xmlNodePtr device_type = xmlNewNode(NULL, BAD_CAST"DeviceType");
+    xmlNewProp(device_type, BAD_CAST"type", BAD_CAST(sz_temp));
+    xmlAddChild(data_block, device_type);
+
+    bzero(sz_temp, sizeof(sz_temp));
+    sprintf(sz_temp, "%d", xml_info.item_counts);
+    xmlNewTextChild(device_type, NULL, BAD_CAST"Item_Counts", BAD_CAST(sz_temp));
+    int index = 1;
+    int ncounts = xml_info.item_counts;
+    
+    xmlNodePtr item_list = xmlNewNode(NULL, BAD_CAST"Item_list");
+    xmlAddChild(device_type, item_list);
+
+    map<string, string>::iterator iter;
+    for (iter=xml_info.map_item_info.begin();
+         iter!=xml_info.map_item_info.end();
+         ++iter)
+    {
+        
+        bzero(sz_temp, sizeof(sz_temp));
+        sprintf(sz_temp, "%d", index++);
+        xmlNodePtr item_info = xmlNewNode(NULL, BAD_CAST"ItemInfo");
+        xmlNewProp(item_info, BAD_CAST"NO", BAD_CAST(sz_temp));
+        xmlAddChild(item_list, item_info);
+
+        xmlNewTextChild(item_info, NULL, BAD_CAST"ItemID",
+                        BAD_CAST((*iter).first.c_str()));
+        xmlNewTextChild(item_info, NULL, BAD_CAST"KeyWord",
+                        BAD_CAST((*iter).second.c_str()));
+    }
+    
+    xmlSaveFormatFileEnc(m_sz_path, pdoc, "UTF-8", 1);
+    xmlFreeDoc(pdoc);
+    return true;
+}
+
+xmlNodePtr CLibxml2::search_node_ptr(const char *sz_expr)
+{
+    xmlNodePtr node_ret;
+    
+    if (sz_expr == NULL)
+    {
+        return NULL;
+    }
+    
+    xmlChar *sz_path = BAD_CAST(sz_expr);
+    xmlXPathContextPtr context = xmlXPathNewContext(m_pdoc_read);
+    xmlXPathObjectPtr result = xmlXPathEvalExpression(sz_path, context);
+    
+    if (result == NULL)
+    {
+        return NULL;
+    }
+    if (xmlXPathNodeSetIsEmpty(result->nodesetval))
+    {
+        return NULL;
+    }
+
+    xmlXPathFreeContext(context);
+    
+    node_ret = xmlXPtrBuildNodeList(result);
+
+    return node_ret;
+}
+
+/*/////////测试//////////////////////////
+int main(void)
+{
+    //write/////////////////////////////////
+    CLibxml2 lib("rmc1.xml", XML_WRITE);
+
+    map<string, string> map_item;
+    XML_INFO xml_info;
+    xml_info.map_item_info.insert(pair<string, string>("CPU", ""));
+    xml_info.map_item_info.insert(pair<string, string>("MEM", ""));
+    xml_info.map_item_info.insert(pair<string, string>("DISK_C_FREE", "C"));
+    xml_info.map_item_info.insert(pair<string, string>("RunTime", ""));
+    xml_info.map_item_info.insert(pair<string, string>("MainProcess0", "test.exe"));
+    xml_info.map_item_info.insert(pair<string, string>("NetPing", "127.0.0.1"));
+    
+    strcpy(xml_info.version, "1.0");
+    xml_info.update = 0;
+    xml_info.scan_speed = 100;
+    xml_info.type = 2;
+    xml_info.device_counts = 2;
+    xml_info.item_counts = xml_info.map_item_info.size();
+
+    lib.save_xml_file(xml_info);
+    //////////////////////////////////////////
+
+
+    //read/////////////////////////////////////
+    XML_INFO xml_info;
+    CLibxml2 lib("rmc.xml", XML_READ);
+    lib.parse_xml_file(xml_info);
+
+    map<string, string>::iterator iter;
+    for (iter = xml_info.map_item_info.begin();
+         iter != xml_info.map_item_info.end();
+         ++iter)
+    {
+        cout << (*iter).first << endl;
+        cout << (*iter).second << endl;
+    }
+    ////////////////////////////////////////////
+
+   
+    return 0;
+}
+//*////////////////////////////////
+
+
+```
+
+```
+
+<?xml version="1.0"?>
+<config_Information version="1.0">
+<Config_Data_block update="0">
+<ScanSpeed>100</ScanSpeed>
+<DeviceType type="2">
+<Device_Counts>1</Device_Counts>
+<Item_Counts>6</Item_Counts>
+<Item_list>
+<ItemInfo NO="1">
+	<ItemEvenFlag>1</ItemEvenFlag>
+	<ItemID>CPU</ItemID>
+	<KeyWord></KeyWord>
+</ItemInfo>
+<ItemInfo NO="2">
+	<ItemID>MEM</ItemID>
+	<KeyWord></KeyWord>
+</ItemInfo>
+<ItemInfo NO="3">
+	<ItemID>DISK_C_FREE</ItemID>
+	<KeyWord>C</KeyWord>
+</ItemInfo>
+<ItemInfo NO="4">
+	<ItemID>RunTime</ItemID>
+	<KeyWord></KeyWord>
+</ItemInfo>
+<ItemInfo NO="5">
+	<ItemID>MainProcess0</ItemID>
+	<KeyWord>test.exe</KeyWord>
+</ItemInfo>
+<ItemInfo NO="6">
+	<ItemID>NetPing</ItemID>
+	<KeyWord>127.0.0.1</KeyWord>
+</ItemInfo>
+</Item_list>
+</DeviceType>
+</Config_Data_block>
+</config_Information>
+
+
+```

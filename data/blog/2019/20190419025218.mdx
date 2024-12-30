@@ -1,0 +1,73 @@
+---
+title: 'boost asio获取本机IP地址'
+date: '2019-04-19'
+tags: ['C/C++', 'Boost']
+draft: false
+summary: 文章介绍 boost asio 获取本机 IP 地址的代码，只获取 IPV4 地址且多个用分号间隔。在 Linux 上原方法可能失败，给出 Linux 上获取本地 IP 的代码，通过遍历 ifaddrs 获取 IPv4 和 IPv6 地址。 
+---
+
+直接上代码，这里只获取IPV4的地址，多个IP之间用分号间隔  
+```
+std::string getLocalIpAddress()
+{
+    using boost::asio::ip::tcp;
+    std::string result;
+    try {
+        boost::asio::io_service io_service;
+        tcp::resolver resolver(io_service);
+        tcp::resolver::query query(tcp::v4(), boost::asio::ip::host_name(), "");
+        tcp::resolver::iterator iter = resolver.resolve(query);
+        tcp::resolver::iterator end; // End marker.
+        while (iter != end) {
+            tcp::endpoint ep = *iter++;
+            if (!result.empty()) {
+                result += ";";
+            }
+            result += ep.address().to_string();
+        }
+    }
+    catch (std::exception &e) {
+        LOGGER_ERROR("get local ip address failed, " << e.what());
+    }
+    return result;
+}
+```
+上面方法在linux上可能获取失败，错误信息：Host not found (authoritative)，用如下linux方法就可以了。  
+
+linux上获取本地IP
+```
+#include <stdio.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <arpa/inet.h>
+
+int main (int argc, const char * argv[]) {
+    struct ifaddrs * ifAddrStruct = NULL;
+    struct ifaddrs * ifa = NULL;
+    void * tmpAddrPtr = NULL;
+
+    getifaddrs(&ifAddrStruct);
+
+    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa ->ifa_addr->sa_family==AF_INET) { // Check it is
+            // a valid IPv4 address
+            tmpAddrPtr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+            char addressBuffer[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
+            printf("%s IP Address %s\n", ifa->ifa_name, addressBuffer);
+        }
+        else if (ifa->ifa_addr->sa_family==AF_INET6) { // Check it is
+            // a valid IPv6 address
+            tmpAddrPtr = &((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr;
+            char addressBuffer[INET6_ADDRSTRLEN];
+            inet_ntop(AF_INET6, tmpAddrPtr, addressBuffer, INET6_ADDRSTRLEN);
+            printf("%s IP Address %s\n", ifa->ifa_name, addressBuffer);
+        }
+    }
+    if (ifAddrStruct != NULL)
+        freeifaddrs(ifAddrStruct);
+    return 0;
+}
+```

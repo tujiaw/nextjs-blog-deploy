@@ -1,0 +1,144 @@
+---
+title: 'javascript原型和继承'
+date: '2017-07-01'
+tags: ['Javascript']
+draft: false
+summary: 介绍了 javascript 原型和继承，对象由方法和属性组成，javascript 无类概念，通过原型实现方法共享和继承。原型是隐藏对象，实例对象通过__proto__引用原型对象，形成原型链，new 操作符创建对象并关联原型函数。有伪类继承和原型继承等方式。 
+---
+
+# 对象和类
+javascript到处都是对象，一个对象是由方法和属性（值）组成的实体（这里我们叫实例）。例如：javascript中的数组就是一个具有值的对象，同时也包括了push,reverse和pop等方法。
+```
+var aArray = [1, 2, 3];
+aArray.push(3);
+aArray.reverse();
+aArray.pop();
+var length = aArray.length;
+```
+
+问题是像push这样的方法来自哪里呢？因为JavaScript没有类的概念，没有Array类。不像其他的静态语言（如：C++,JAVA）他们使用类来定义对象的结构。因为JavaScript是动态的，我们可以根据需要任意的将方法放置在对象中，如以下代码定义了一个对象来表示二维空间中的一个点，并且包括一个add方法。
+```
+var point = {
+  x: 3,
+  y: 6,
+  add: function(other) {
+    this.x += other.x;
+    this.y += other.y;
+  }
+};
+```
+然而，这种方法没有通用性，它不能做到让每一个point对象都有一个add方法。我们需要所有的对象共享一个add函数的实现，而不是在每个point对象中添加一个add函数。这就需要原型来发挥它的作用了。
+
+# 原型
+javascript中的每个对象背后都有一个隐藏的对象（__proto__对象），它是对原型对象的引用。之前我们创建的数组就引用了一个原型对象，后来创建的point对象也是如此。之所以说是隐藏对象因为它对用户来讲是透明的，我们是看不到的，但是有一些ECMAScript(javascript的正式名称)的实现，允许我们使用对象的__proto__属性（例如：google chrome）来捕获这个原型的引用。我们可以将上面两个对象用图来表示：
+
+![/upload/o_1bjuva06tumhra210lj1r74upja.png](/upload/o_1bjuva06tumhra210lj1r74upja.png)
+
+作为开发人员我们应该使用Object.getPrototypeOf函数而不是__proto__（不是标准的）属性来检查对象的原型引用。
+
+在chrome中，可以看到这两个对象的原型
+
+![/upload/o_1bjuvmgo414iq1i261r3v1jfe4lbg.png](/upload/o_1bjuvmgo414iq1i261r3v1jfe4lbg.png)
+
+![/upload/o_1bjuvmgo41g9d181gnn811071ge5h.png](/upload/o_1bjuvmgo41g9d181gnn811071ge5h.png)
+
+这下我们知道push方法来自哪里了吧，它是在原型对象中。
+请注意，aArray的原型对象包括一些函数，包括我们在开始代码示例中调用的push，pop和reverse方法。 所以原型对象是一个持有push方法的对象，但是如何通过aArray调用这个方法呢？
+
+虽然，原型对象也是一个对象，可以给它添加方法，属性。但是在JavaScript中有以下规则。当我们告诉JavaScript我们要调用对象上的push方法或者读取对象上的x属性时，运行时首先查看对象本身，如果没有找到它就会到__proto__引用的原型对象中查找。在aArray中没有找到push方法，但是在aArray原型对象中找到了，所以JavaScript会调用这个方法。
+
+根据以上规则我们可以重载push方法，给aArray对象增加了push方法，JavaScript就不会去原型对象中查找了。
+
+### 实例对象和原型对象的区别：
+为了区别原型对象我们叫aArray对象和point对象为实例对象；  
+Array对象和下面的Person函数我们称之为原型对象
+```
+function Person(name) {
+  this.name = name;
+}
+```
+很重要的一个区别是实例对象没有prototype  
+实例对象的__proto__属性引用原型对象prototype 
+可以由此证明aArray.__proto__ === Array.prototype
+
+# 多个实例对象共享同一个原型
+```
+var aArray = [1, 2, 3];
+var bArray = [11, 23];
+
+// 结果为true
+Object.getPrototypeOf(aArray) === Object.getPrototypeOf(bArray);
+```
+用图表示：
+
+![/upload/o_1bjv2gitm9mu12gmjsr1he6rn7p.png](/upload/o_1bjv2gitm9mu12gmjsr1he6rn7p.png)
+
+# 原型链
+prototype也是一个对象它也有一个__proto__属性引用其他的prototype，这样就形成了原型链。
+如果调用某个方法，先从aArray对象上查找，没有找到继续到Array.prototype中找到，没有找到继续到Object.prototype中查找，最后还是没有找到的话就是undefined。
+```
+aArray.__proto__ -> Array.prototype,Array.prototype.__proto__  -> Object.prototype,Object.prototype.__proto__ -> null
+```
+
+# 继承
+由上面原理实现继承就很简单了，将父类的实例对象赋值给子类的prototype。
+## 伪类继承（Pseudoclassical 继承）
+```
+function Parent(id, name) {
+  this.id = id;
+  this.name = name;
+}
+Parent.prototype.printInfo = function() {
+  console.log('id:' + this.id + ', name:' + this.name);
+}
+
+function Child( ) {
+  this.id = id;
+}
+
+Child.prototype = new Parent('123', 'hello');
+var child = new Child('456');
+
+//输出：id:456, name:hello
+child.printInfo();
+```
+这样child对象就拥有了Parent的printInfo方法和属性并且有自己的id属性
+
+## 原型继承（Prototypal继承）
+这种继承方式是使用Object.create方法实现的，不过这个是ECMAScript5的标准，虽然目前很多浏览器都支持了，但是对于低版本的浏览器也是有方法的：
+```
+function ObjectCreate(parentObj) {
+  function Child() {};
+  Child.prototype = parentObj;
+  return new Child();
+}
+```
+继承例子：
+```
+var parent = {
+  name: 'hello',
+  sayName: function() {
+    console.log(this.name);
+  }
+}
+
+var child = Object.create(parent);
+child.sayName();
+```
+
+## new操作符所做的事情
+new操作符干了三件事情，请看下面代码
+```
+如：
+var a = new Animal();
+
+分解后：
+var a = {};
+a.__proto__ = Animal.prototype;
+Animal.call(a);
+```
+* 创建一个空对象a
+* 将a对象的__proto__属性引用Animal的prototype对象
+* 将Animal对象的this替换为a对象，并且调用Animal函数
+
+![javascript objects treasure map](/upload/o_1bmb2kbri1k7nsm21mnudh8ul6a.png)

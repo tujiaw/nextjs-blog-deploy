@@ -1,0 +1,69 @@
+---
+title: 'WTL自画按钮与文件对话框（迁移2011-01-14）'
+date: '2017-01-22'
+tags: ['Windows']
+draft: false
+summary: 文章介绍了 WTL 自画按钮与文件对话框。包含自画按钮类 CBmpEixtBtn 的定义及相关操作，如在 OnInitDialog 中进行子类化；还有文件对话框相关代码，通过 BROWSEINFO 等设置获取选择目录并显示在编辑框中。 
+---
+
+```
+//////////////WTL自画按钮/////////////////  
+class CBmpEixtBtn : public CBitmapButtonImpl<CBmpEixtBtn>  
+{  
+public:  
+    DECLARE_WND_SUPERCLASS(_T("WTL_BmpBtn"), GetWndClassName())  
+    // added border style (auto3d_single)  
+    CBmpEixtBtn(DWORD dwExtendedStyle = BMPBTN_AUTOSIZE /*| BMPBTN_AUTO3D_SINGLE*/, HIMAGELIST   
+hImageList = NULL) :   
+        CBitmapButtonImpl<CBmpEixtBtn>(dwExtendedStyle, hImageList)  
+    { }  
+    BEGIN_MSG_MAP(CBmpEixtBtn)  
+        CHAIN_MSG_MAP(CBitmapButtonImpl<CBmpEixtBtn>)  
+    END_MSG_MAP()  
+    // override of CBitmapButtonImpl DoPaint(). Adds fillrect  
+    void DoPaint(CDCHandle dc)  
+    {  
+        // added by SoftGee to resolve image artifacts  
+        BITMAP bmp ;  
+        CBitmap bitmap ;  
+        bitmap.LoadBitmapW(IDB_BITMAP1) ;  
+        bitmap.GetBitmap(&bmp) ;  
+        //CPaintDC dc(this->m_hWnd) ;       
+        CDC dcImage ;  
+        dcImage.CreateCompatibleDC(dc.m_hDC) ;  
+        HBITMAP hBitmapOld = dcImage.SelectBitmap(bitmap.m_hBitmap) ;  
+        dc.StretchBlt(0,0, 80, 25, dcImage.m_hDC,0,0,bmp.bmWidth,bmp.bmHeight,SRCCOPY) ;  
+        bitmap.DeleteObject() ;  
+        dcImage.DeleteDC() ;  
+        // call ancestor DoPaint() method  
+        CBitmapButtonImpl<CBmpEixtBtn>::DoPaint(dc);  
+    }  
+}; 
+```
+在OnInitDialog里面:  
+```
+CBmpEixtBtn m_exitBtn;  
+m_exitBtn.SubclassWindow(GetDlgItem(IDC_BUTTON1)); 
+```
+```
+//////////////////WTL文件对话框///////////////////  
+CEdit m_edit;  
+m_edit.Attach(GetDlgItem(IDC_EDIT1));  
+TCHAR szDir[MAX_PATH];    
+BROWSEINFO bi;  
+ITEMIDLIST *pidl;  
+bi.hwndOwner = this->m_hWnd;  
+bi.pidlRoot = NULL;  
+bi.pszDisplayName = szDir;  
+bi.lpszTitle = L"请选择目录";  
+bi.ulFlags = BIF_RETURNONLYFSDIRS;  
+bi.lpfn = NULL;  
+bi.lParam = 0;  
+bi.iImage = 0;  
+pidl = SHBrowseForFolder(&bi);  
+if(pidl == NULL)  
+    return 0;  
+if(!SHGetPathFromIDList(pidl, szDir))  
+    return 1;  
+m_edit.SetWindowTextW(szDir);  
+```

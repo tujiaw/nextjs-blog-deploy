@@ -1,0 +1,622 @@
+---
+title: 'C++ windows实用函数'
+date: '2018-05-18'
+tags: ['C/C++', 'Windows']
+draft: false
+summary: 收集 C++ Windows 实用函数，含头文件依赖，如获取系统内存等信息、字符串编码转换、目标是否存在等 17 个函数，涵盖内存、线程、时间、文件等方面操作，方便开发使用。 
+---
+
+收集的一些比较实用的函数，头文件依赖（不包括全部）：
+```
+#include <TlHelp32.h>
+#include <psapi.h>
+#include <Windows.h>
+#include <time.h>
+#include <algorithm>
+#include <iterator>
+#include <io.h>
+#include <direct.h>
+#include <assert.h>
+#include <sstream>
+```
+
+1. 获取当前系统内存信息  
+```
+std::string getMemoryInfo() {
+	const int MB = 1024 * 1024;
+	MEMORYSTATUSEX statex;
+	statex.dwLength = sizeof(statex);
+	GlobalMemoryStatusEx(&statex);
+	DWORD memoryPercent = statex.dwMemoryLoad;
+	DWORD  memoryAll = statex.ullTotalPhys / MB;
+	DWORD memoryFree = statex.ullAvailPhys / MB;
+	DWORD memoryUse = memoryAll - memoryFree;
+	char buffer[1024] = { 0 };
+	sprintf_s(buffer, "memory all:%dMB, free:%dMB, use:%dMB", memoryAll, memoryFree, memoryUse);
+	return buffer;
+}
+```
+
+2. 获取当前进程内存大小  
+```
+size_t getCurrentProcessMemory()
+{
+	const int MB = 1024 * 1024;
+	PROCESS_MEMORY_COUNTERS pmc;
+	if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
+		return pmc.WorkingSetSize / MB;
+	}
+	return 0;
+}
+```
+
+3. 获取当前进程使用的线程数  
+```
+int getThreadAmount()
+{
+	PROCESSENTRY32 pe32;
+	pe32.dwSize = sizeof(pe32);
+
+	int processid = GetCurrentProcessId();
+	HANDLE hProcessSnap = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	if (hProcessSnap == INVALID_HANDLE_VALUE) {
+		printf("CreateToolhelp32Snapshot() failed. error code:%d.\n", GetLastError());
+		return 0;
+	}
+
+	int i = 0;
+	BOOL bMore = ::Process32First(hProcessSnap, &pe32);
+	HANDLE hProcess;
+	while (bMore) {
+		if (pe32.th32ProcessID == processid) {
+			i = pe32.cntThreads;
+			break;
+		}
+
+		bMore = Process32Next(hProcessSnap, &pe32);
+	}
+	CloseHandle(hProcessSnap);
+	return i;
+}
+```
+
+4. 减少当前进程使用的内存大小  
+谨慎使用，参考https://msdn.microsoft.com/en-us/library/windows/desktop/ms686234(v=vs.85).aspx
+```
+::SetProcessWorkingSetSize(::GetCurrentProcess(), -1, -1);
+```
+
+5. 获取系统当前时间  
+```
+	bool CurrentTime(int &year, int &month, int &day, int &hour, int &min, int &sec)
+	{
+		struct tm t;
+		time_t tt;
+		time(&tt);
+		if (0 == localtime_s(&t, &tt)) {
+			year = t.tm_year + 1900;
+			month = t.tm_mon + 1;
+			day = t.tm_mday;
+			hour = t.tm_hour;
+			min = t.tm_min;
+			sec = t.tm_sec;
+			return true;
+		}
+		return false;
+	}
+
+    // 格式化后的时间
+    std::string CurrentFormatTime()
+	{
+		int year, month, day, hour, min, sec;
+		if (CurrentTime(year, month, day, hour, min, sec)) {
+			char buffer[256];
+			sprintf_s(buffer, "%04d%02d%02d%02d%02d%02d", year, month, day, hour, min, sec);
+			return buffer;
+		}
+		return "";
+	}
+```
+
+6. 字符串编码转换  
+```
+	std::wstring ansi2unicode(const std::string& ansi)
+	{
+		if (ansi.empty()) {
+			return std::wstring(L"");
+		}
+		int len = MultiByteToWideChar(CP_ACP, 0, ansi.c_str(), -1, NULL, 0);
+		std::wstring unicode(len+1, L'\0');
+		len = MultiByteToWideChar(CP_ACP, 0, ansi.c_str(), ansi.size(), &unicode[0], len);
+		return unicode;
+	}
+
+	std::string unicode2ansi(const std::wstring& unicode)
+	{
+		if (unicode.empty()) {
+			return std::string("");
+		}
+		int len = WideCharToMultiByte(CP_ACP, 0, unicode.c_str(), -1, NULL, 0, NULL, NULL);
+		std::string ansi(len+1, '\0');
+		WideCharToMultiByte(CP_ACP, 0, unicode.c_str(), unicode.size(), &ansi[0], len, NULL, NULL);
+		return ansi;
+	}
+
+	std::string string_to_utf8(const std::string& srcStr)  
+	{  
+		if (srcStr.empty()) 
+		{
+			return "";
+		}
+
+		int nwLen = MultiByteToWideChar(CP_ACP, 0, srcStr.c_str(), -1, NULL, 0);  
+		wchar_t * pwBuf = new wchar_t[nwLen + 1];  
+		ZeroMemory(pwBuf, nwLen * 2 + 2);  
+		MultiByteToWideChar(CP_ACP, 0, srcStr.c_str(), srcStr.length(), pwBuf, nwLen);  
+		int nLen = ::WideCharToMultiByte(CP_UTF8, 0, pwBuf, -1, NULL, NULL, NULL, NULL);  
+		char * pBuf = new char[nLen + 1];  
+		ZeroMemory(pBuf, nLen + 1);  
+		WideCharToMultiByte(CP_UTF8, 0, pwBuf, nwLen, pBuf, nLen, NULL, NULL);  
+		string retStr(pBuf);  
+		delete []pwBuf;  
+		delete []pBuf;  
+		pwBuf = NULL;  
+		pBuf = NULL;  
+		return retStr;
+	}  
+
+	std::string utf8_to_string(const std::string& srcStr)  
+	{  
+		if (srcStr.empty()) 
+		{
+			return "";
+		}
+
+		int nwLen = MultiByteToWideChar(CP_UTF8, 0, srcStr.c_str(), -1, NULL, 0);  
+		wchar_t * pwBuf = new wchar_t[nwLen + 1]; 
+		memset(pwBuf, 0, nwLen * 2 + 2);  
+		MultiByteToWideChar(CP_UTF8, 0, srcStr.c_str(), srcStr.length(), pwBuf, nwLen);  
+		int nLen = WideCharToMultiByte(CP_ACP, 0, pwBuf, -1, NULL, NULL, NULL, NULL);  
+		char * pBuf = new char[nLen + 1];  
+		memset(pBuf, 0, nLen + 1);  
+		WideCharToMultiByte(CP_ACP, 0, pwBuf, nwLen, pBuf, nLen, NULL, NULL);  
+		string retStr = pBuf;  
+		delete []pBuf;  
+		delete []pwBuf;  
+		pBuf = NULL;  
+		pwBuf = NULL;  
+		return retStr; 
+	}
+
+	std::wstring UTF8ToWString(const std::string& str)
+	{
+		int len = str.size();
+		int unicodeLen = ::MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, NULL, 0);
+		wchar_t* pUnicode;
+		pUnicode = new wchar_t[unicodeLen + 1];
+		memset((void*)pUnicode, 0, (unicodeLen + 1) * sizeof(wchar_t));
+		::MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, (LPWSTR)pUnicode, unicodeLen);
+		wstring wstrReturn(pUnicode);
+		delete [] pUnicode;
+		return wstrReturn;
+	}
+
+	std::string WStringToUTF8(const std::wstring& str)
+	{
+		char* pElementText = NULL;
+		int iTextLen = ::WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)str.c_str(), -1, NULL, 0, NULL, NULL);
+		pElementText = new char[iTextLen + 1];
+		memset((void*)pElementText, 0, (iTextLen + 1) * sizeof(char));
+		::WideCharToMultiByte(CP_UTF8, 0, (LPWSTR)str.c_str(), -1, pElementText, iTextLen, NULL, NULL);
+		std::string strReturn(pElementText);
+		delete [] pElementText;
+		return strReturn;
+	}
+```
+
+7. 目标是否存在  
+```
+	bool IsTargetExist(const std::string& target)
+	{
+		return 0 == _waccess(UTF8ToWString(target).c_str(), 0);
+	}
+```
+
+8. 递归创建目录  
+```
+	bool CreateDir(std::string& dir)
+	{
+		std::replace(dir.begin(), dir.end(), '/', '\\');
+		if (dir.size() < 3) {
+			return false;
+		}
+
+		if (IsTargetExist(dir)) {
+			return true;
+		}
+
+		int nPosition = dir.rfind("\\");
+		if (-1 != nPosition) {
+			std::string parentDir = dir.substr(0, nPosition);
+			if (!IsTargetExist(parentDir)) {
+				CreateDir(parentDir);
+			}
+		}
+		
+		return 0 == _wmkdir(UTF8ToWString(dir).c_str());
+	}
+```
+
+9. GetLastError转换为字符串信息   
+```
+	std::string getWindowsLastErrString()
+	{
+		DWORD errCode = GetLastError();
+		TCHAR buffer[1024];
+		std::string errString;
+		if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL, errCode, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+			(LPTSTR)&buffer[0],
+			sizeof(buffer), NULL) == 0) {
+				errString = getFormatString("Cannot get text error describing (%u)", errCode);
+		} else {
+			errString = getFormatString("%s (%u)", unicode2ansi(buffer).c_str(), errCode);
+		}
+		return errString;
+	}
+```
+
+10. 可变参数格式化   
+```
+	std::string getFormatString(const char *fmt, ...)
+	{
+		char buffer[1024] = {0};
+		va_list vaList;
+		va_start(vaList, fmt);
+		vsnprintf_s(buffer, _countof(buffer), _TRUNCATE, fmt, vaList);
+		va_end(vaList);
+		return buffer;
+	}
+```
+
+11. 获取当前应用程序目录  
+```
+	std::string GetCurrentAppPath()
+	{
+		wchar_t szFilePath[1024] = {0};
+		GetModuleFileNameW(NULL, szFilePath, 1024);
+		wchar_t* p = wcsrchr(szFilePath, L'\\');
+		if (NULL != p)
+		{
+			*p = 0;
+			return WStringToUTF8(szFilePath);
+		}
+		return "";
+	}
+```
+
+12. 获取当前应用程序名字  
+```
+	std::string GetCurrentAppName()
+	{
+		wchar_t szFilePath[1024] = {0};
+		GetModuleFileNameW(NULL, szFilePath, 1024);
+		std::wstring wstr(szFilePath);
+		if (wstr[wstr.size() - 1] == L'\\') {
+			wstr[wstr.size() - 1] = L'\0';
+		}
+		int pos = wstr.find_last_of(L'\\');
+		if (pos != -1) {
+			wstr = wstr.substr(pos+1);
+		}
+		return WStringToUTF8(wstr);
+	}
+```
+
+13. 字符串的拆分/组合  
+```
+template <typename ITR>
+	static inline void SplitStringToIteratorUsing(const std::string& full, const char* delim, ITR& result)
+	{
+		// Optimize the common case where delim is a single character.
+		if (delim[0] != '\0' && delim[1] == '\0') {
+			char c = delim[0];
+			const char* p = full.data();
+			const char* end = p + full.size();
+			while (p != end) {
+				if (*p == c) {
+					++p;
+				} else {
+					const char* start = p;
+					while (++p != end && *p != c);
+					*result++ = std::string(start, p - start);
+				}
+			}
+			return;
+		}
+
+		std::string::size_type begin_index, end_index;
+		begin_index = full.find_first_not_of(delim);
+		while (begin_index != std::string::npos) {
+			end_index = full.find_first_of(delim, begin_index);
+			if (end_index == std::string::npos) {
+				*result++ = full.substr(begin_index);
+				return;
+			}
+			*result++ = full.substr(begin_index, (end_index - begin_index));
+			begin_index = full.find_first_not_of(delim, end_index);
+		}
+	}
+
+	void SplitStringUsing(const std::string& full, const char* delim, std::vector<std::string>* result)
+	{
+			std::back_insert_iterator< std::vector<std::string> > it(*result);
+			SplitStringToIteratorUsing(full, delim, it);
+	}
+
+	template <typename StringType, typename ITR>
+	static inline void SplitStringToIteratorAllowEmpty(const StringType& full, const char* delim, int pieces, ITR& result) 
+	{
+		std::string::size_type begin_index, end_index;
+		begin_index = 0;
+		for (int i = 0; (i < pieces-1) || (pieces == 0); i++) {
+			end_index = full.find_first_of(delim, begin_index);
+			if (end_index == std::string::npos) {
+				*result++ = full.substr(begin_index);
+				return;
+			}
+			*result++ = full.substr(begin_index, (end_index - begin_index));
+			begin_index = end_index + 1;
+		}
+		*result++ = full.substr(begin_index);
+	}
+
+	void SplitStringAllowEmpty(const std::string& full, const char* delim, std::vector<std::string>* result)
+	{
+		std::back_insert_iterator< std::vector<std::string> > it(*result);
+		SplitStringToIteratorAllowEmpty(full, delim, 0, it);
+	}
+
+	template <class ITERATOR>
+	static void JoinStringsIterator(const ITERATOR& start, const ITERATOR& end, const char* delim, std::string* result)
+	{
+		assert(result != NULL);
+		result->clear();
+		int delim_length = strlen(delim);
+		// Precompute resulting length so we can reserve() memory in one shot.
+		int length = 0;
+		for (ITERATOR iter = start; iter != end; ++iter) {
+			if (iter != start) {
+				length += delim_length;
+			}
+			length += iter->size();
+		}
+		result->reserve(length);
+		// Now combine everything.
+		for (ITERATOR iter = start; iter != end; ++iter) {
+			if (iter != start) {
+				result->append(delim, delim_length);
+			}
+			result->append(iter->data(), iter->size());
+		}
+	}
+
+	void JoinStrings(const std::vector<std::string>& components, const char* delim, std::string * result)
+	{
+		JoinStringsIterator(components.begin(), components.end(), delim, result);
+	}
+
+	char *FastInt64ToBuffer(__int64 i, char* buffer)
+	{
+		// We could collapse the positive and negative sections, but that
+		// would be slightly slower for positive numbers...
+		// 22 bytes is enough to store -2**64, -18446744073709551616.
+		static const int kFastInt64ToBufferOffset = 21;
+		char* p = buffer + kFastInt64ToBufferOffset;
+		*p-- = '\0';
+		if (i >= 0) {
+			do {
+				*p-- = '0' + i % 10;
+				i /= 10;
+			} while (i > 0);
+			return p + 1;
+		} else {
+			// On different platforms, % and / have different behaviors for
+			// negative numbers, so we need to jump through hoops to make sure
+			// we don't divide negative numbers.
+			if (i > -10) {
+				i = -i;
+				*p-- = '0' + (char)i;
+				*p = '-';
+				return p;
+			} else {
+				// Make sure we aren't at MIN_INT, in which case we can't say i = -i
+				i = i + 10;
+				i = -i;
+				*p-- = '0' + i % 10;
+				// Undo what we did a moment ago
+				i = i / 10 + 1;
+				do {
+					*p-- = '0' + i % 10;
+					i /= 10;
+				} while (i > 0);
+				*p = '-';
+				return p;
+			}
+		}
+	}
+```
+
+14. 字符串与整型之间的转换  
+```
+std::string toStr(const ULONG64 &num)
+	{
+		return std::to_string(num);
+	}
+
+	__int64 toInt64(const std::string &str)
+	{
+		if (str.empty()) {
+			return 0;
+		}
+		char *end;
+		return std::strtoll(str.c_str(), &end, 10);
+	}
+
+	ULONG64 fromStr(const std::string &str)
+	{
+		char *end;
+		return std::strtoull(str.c_str(), &end, 10);
+	}
+```
+
+15. 获取系统时间，毫秒  
+```
+	ULONG64 GetMilliseconds()
+	{
+		time_t now = time(0);
+		SYSTEMTIME sys;
+		GetLocalTime( &sys );
+		return 1000 * now + sys.wMilliseconds;
+	}
+```
+
+16. 文件相关函数  
+```
+	UINT32 GetFileSize(const std::string& filePath)
+	{
+		UINT32 size = 0;
+		FILE* pFile = NULL;
+		_wfopen_s(&pFile, UTF8ToWString(filePath).c_str(), L"rb");
+		if (NULL != pFile)
+		{
+			fseek(pFile, 0, SEEK_END);
+			size = ftell(pFile);
+			fclose(pFile);
+		}
+		return size;
+	}
+
+	char* GetFileContent(const std::string& filePath, UINT32& nSize)
+	{
+		FILE* pFile = NULL;
+		_wfopen_s(&pFile, UTF8ToWString(filePath).c_str(), L"rb");
+		if (NULL != pFile)
+		{
+			fseek(pFile, 0, SEEK_END);
+			nSize = ftell(pFile);
+
+			char* pContent = NULL;
+			if (nSize > 0)
+			{
+				pContent = new char[nSize + 1];
+				memset(pContent, 0, nSize + 1);
+				fseek(pFile, 0, SEEK_SET);
+				fread(pContent, 1, nSize, pFile);
+			}
+			fclose(pFile);
+			return pContent;
+		}
+		return NULL;
+	}
+
+	char* GetPartFileContent(FILE* pFile, UINT32 nBegin, UINT32 nSize)
+	{
+		char* pContent = NULL;
+		if (NULL != pFile)
+		{
+			fseek(pFile, nBegin, SEEK_SET);
+			pContent = new char[nSize + 1];
+			memset(pContent, 0, nSize + 1);
+			fread(pContent, 1, nSize, pFile);
+		}
+		return pContent;
+	}
+	void GetFileNameFromPath(const std::string& filePath, std::string& fileName, std::string& fileExt)
+	{
+		UINT32 nSize = filePath.size();
+		UINT32 nBegin = filePath.find_last_of("\\");
+		if(nBegin == -1)
+		{
+			nBegin = filePath.find_last_of("/");
+		}
+		nBegin++;
+		fileName = filePath.substr(nBegin, nSize - nBegin);
+
+		int nPose = filePath.find_last_of(".");
+		if(nPose >= 0)
+		{
+			fileExt = filePath.substr(nPose, nSize - nPose);
+		}
+	}
+	bool GetFileNameFromDir(const std::string& fileDir, const std::string& fileExt, std::vector<std::string>& fileList)
+	{
+		bool ret = false;
+		std::string fileName = fileDir + "*" + fileExt;
+		wchar_t SearchName[256];
+		memset((void*)SearchName, 0, sizeof(SearchName));
+		memcpy(SearchName, util::UTF8ToWString(fileName).c_str(), fileName.length() * sizeof(wchar_t));
+		WIN32_FIND_DATA FileData;
+		HANDLE hFile = FindFirstFile(SearchName, &FileData);
+		if(hFile != INVALID_HANDLE_VALUE)
+		{
+			do
+			{
+				std::string Name = util::unicode2ansi(FileData.cFileName);
+				std::string filePath = fileDir + Name;
+				fileList.push_back(filePath);
+				ret = true;
+			}
+			while (FindNextFile(hFile, &FileData));
+		}
+		return ret;
+	}
+
+    bool ifFileInUse(const STRINGUTF8 &filepath)
+	{
+		HANDLE s_result = CreateFile(UTF8ToWString(filepath).c_str(), GENERIC_READ, 0 , NULL, OPEN_EXISTING, NULL, NULL);
+		if (s_result == INVALID_HANDLE_VALUE)
+		{
+			return true;
+		}
+		CloseHandle(s_result); 
+		return false;
+	}
+
+	bool FileIsExist(const STRINGUTF8 &filepath)
+	{
+		if(_access(filepath.c_str(), 0) != -1)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+```
+
+17. 创建UUID  
+```
+	std::string CreatUUID()
+	{
+		GUID guid;
+		CoCreateGuid(&guid);
+		char buf[64] = {0};
+		sprintf(buf, "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
+			guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1],
+			guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+		return std::string(buf);
+	}
+
+    std::string uuid()
+	{
+		UUID uuid;
+		UuidCreate(&uuid);
+		char *str;
+		UuidToStringA(&uuid, (RPC_CSTR*)&str);
+		std::string result = str;
+		RpcStringFreeA((RPC_CSTR*)&str);
+		return result;
+	}
+```

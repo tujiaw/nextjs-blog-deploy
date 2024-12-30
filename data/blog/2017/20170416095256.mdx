@@ -1,0 +1,228 @@
+---
+title: '类模板之队列'
+date: '2017-04-16'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 这是关于类模板之队列的代码。定义了`Queue`类模板，包含构造、析构、判断空满、获取首尾元素及添加删除元素等操作。在`main`函数中创建`Queue<int>`对象并进行操作演示。 
+---
+
+```
+// Queue.h
+
+#ifndef _QUEUE_H_
+#define _QUEUE_H_
+
+template<class T>
+class Queue
+{
+public:
+	Queue(int size = 10);
+	~Queue();
+
+	bool IsEmpty() const;
+	bool IsFull() const;
+	T First() const;
+	T Last() const;
+	Queue<T>& Add(const T &x);
+	Queue<T>& Delete(T &x);
+
+private:
+	int front;
+	int rear;
+	int MaxSize;
+	T *queue;
+};
+
+#endif // _QUEUE_H_
+
+
+// Queue.cpp
+
+#include "Queue.h"
+#include <iostream>
+using namespace std;
+
+template<class T>
+Queue<T>::Queue(int size = 10)
+{
+	MaxSize = size + 1;
+	queue = new T[MaxSize];
+	front = rear = 0;
+}
+
+template<class T>
+Queue<T>::~Queue()
+{
+	delete [] queue;
+}
+
+template<class T>
+bool Queue<T>::IsEmpty() const
+{
+	return (front == rear);
+}
+
+template<class T>
+bool Queue<T>::IsFull() const
+{
+	return ( ((rear+1) % MaxSize == front) ? 1 : 0 );
+}
+
+template<class T>
+T Queue<T>::First() const
+{
+	if (IsEmpty())
+	{
+		cout << "Queue is empty!" << endl;
+	}
+
+	return queue[(front+1) % MaxSize];
+}
+
+template<class T>
+T Queue<T>::Last() const
+{
+	if (IsEmpty())
+	{
+		cout << "Queue is empty!" << endl;
+	}
+
+	return queue[rear];
+}
+
+template<class T>
+Queue<T>& Queue<T>::Add(const T &x)
+{
+	if (IsFull())
+	{
+		cout << "Queue is full!" << endl;
+		reutrn *this;
+	}
+	rear = (rear+1) % MaxSize;
+	queue[rear] = x;
+
+	return *this;
+}
+
+template<class T>
+Queue<T>& Queue<T>::Delete(T &x)
+{
+	if (IsEmpty())
+	{
+		cout << "Queue is empty!" << endl;
+		return *this;
+	}
+	front = (front+1) % MaxSize;
+	x = queue[front];
+
+	return *this;
+}
+
+
+// Queue.cpp
+
+#include "Queue.h"
+#include <iostream>
+using namespace std;
+
+template<class T>
+Queue<T>::Queue(int size = 10)
+{
+	MaxSize = size + 1;
+	queue = new T[MaxSize];
+	front = rear = 0;
+}
+
+template<class T>
+Queue<T>::~Queue()
+{
+	delete [] queue;
+}
+
+template<class T>
+bool Queue<T>::IsEmpty() const
+{
+	return (front == rear);
+}
+
+template<class T>
+bool Queue<T>::IsFull() const
+{
+	return ( ((rear+1) % MaxSize == front) ? 1 : 0 );
+}
+
+template<class T>
+T Queue<T>::First() const
+{
+	if (IsEmpty())
+	{
+		cout << "Queue is empty!" << endl;
+	}
+
+	return queue[(front+1) % MaxSize];
+}
+
+template<class T>
+T Queue<T>::Last() const
+{
+	if (IsEmpty())
+	{
+		cout << "Queue is empty!" << endl;
+	}
+
+	return queue[rear];
+}
+
+template<class T>
+Queue<T>& Queue<T>::Add(const T &x)
+{
+	if (IsFull())
+	{
+		cout << "Queue is full!" << endl;
+		reutrn *this;
+	}
+	rear = (rear+1) % MaxSize;
+	queue[rear] = x;
+
+	return *this;
+}
+
+template<class T>
+Queue<T>& Queue<T>::Delete(T &x)
+{
+	if (IsEmpty())
+	{
+		cout << "Queue is empty!" << endl;
+		return *this;
+	}
+	front = (front+1) % MaxSize;
+	x = queue[front];
+
+	return *this;
+}
+
+
+// main.cpp
+
+#include "Queue.h"
+#include "Queue.cpp"
+#include <iostream>
+using namespace std;
+
+int main(void)
+{
+	Queue<int> queue(10);
+
+	for (int i = 1; i <= 10; i++)
+	{
+		queue.Add(i);
+	}
+
+	cout << "first = " << queue.First() << endl;
+	cout << "last = " << queue.Last() << endl;
+
+	cin.get();
+	return 0;
+}
+```
+> 2011-08-15

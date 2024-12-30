@@ -1,0 +1,18 @@
+---
+title: 'libcurl静态库编译需要支持XP'
+date: '2017-01-16'
+tags: ['C/C++']
+draft: false
+summary: 介绍 libcurl 静态库编译需支持 XP 的相关内容，给出 github 地址。详细步骤为打开 curl/winbuild/MakefileBuild.vc 文件添加特定内容，在 VS2013 命令提示工具下 cd 到相应目录运行命令，最终在 curl/builds 目录可看到生成文件。 
+---
+
+github地址：[https://github.com/curl/curl.git](https://github.com/curl/curl.git)    
+1. 打开源码中curl/winbuild/MakefileBuild.vc文件  
+2. 在下面三处末尾增加：/D_USING_V110_SDK71_  
+  - 修改：CFLAGS     = /I. /I../lib /I../include /nologo /W3 /GX /DWIN32 /YX /FD /c /DBUILDING_LIBCURL /D_USING_V110_SDK71_  
+  - 修改：CFLAGS      = /I. /I ../lib /I../include /nologo /W3 /EHsc /DWIN32 /FD /c /DBUILDING_LIBCURL /D_USING_V110_SDK71_  
+  - 修改：CURL_CFLAGS   =  /I../lib /I../include /nologo /W3 /EHsc /DWIN32 /FD /c /D_USING_V110_SDK71_  
+3. 打开VS2013开发人员命令提示工具，cd到curl/winbuild目录下运行如下命令:  
+  - 编译debug版本：nmake /f Makefile.vc mode=static debug=yes vc=12  
+  - 编译release版本：nmake /f Makefile.vc mode=static vc=12  
+4. curl/builds目录下就可以看到生成的文件

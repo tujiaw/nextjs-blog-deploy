@@ -1,0 +1,94 @@
+---
+title: 'sigsetjmp用法'
+date: '2017-10-24'
+tags: ['Linux']
+draft: false
+summary: 
+---
+
+相关函数：longjmp, siglongjmp, setjmp 
+
+表头文件：```#include <setjmp.h> ```
+
+函数定义：int sigsetjmp(sigjmp_buf env, int savesigs) 
+
+函数说明：sigsetjmp()会保存目前堆栈环境，然后将目前的地址作一个记号，
+而在程序其他地方调用siglongjmp()时便会直接跳到这个记号位置，然后还原堆栈，继续程序的执行。 
+
+参数env为用来保存目前堆栈环境，一般声明为全局变量 
+
+参数savesigs若为非0则代表搁置的信号集合也会一块保存 
+
+当sigsetjmp()返回0时代表已经做好记号上，若返回非0则代表由siglongjmp（）跳转回来。 
+
+返回：若直接调用则为0，若从siglongjmp调用返回则为非0
+
+实例：
+```
+
+#include <stdio.h>
+#include <signal.h>
+#include <setjmp.h>
+#include <unistd.h>
+#include <sys/time.h>
+
+sigjmp_buf jmp_env;
+
+static void connect_alarm(int)
+{
+    siglongjmp(jmp_env, 1);
+}
+
+int main()
+{
+    // 当超时时间sec_timeout大于等于运行时间run_time时会跳过printf("running...\n");
+    int sec_timeout = 3;
+    int run_time = 2;
+
+    printf("timeout = %d, run time = %d\n", sec_timeout, run_time);
+    if (sec_timeout)
+    {
+        // 超过用alarm函数设置的时间时产生此信号，调用connect_alarm函数
+        signal(SIGALRM, connect_alarm);
+        alarm(sec_timeout);
+        printf("set timeout\n");
+        if (sigsetjmp(jmp_env, 1))
+        {
+            printf("timeout\n");
+            goto out;
+        }
+    }
+
+    sleep(run_time);
+    printf("running...\n");
+
+out:
+    if (sec_timeout)
+    {
+        // 取消先前设置的闹钟
+        alarm(0);
+        printf("cancel timeout\n");
+    }
+
+    return 0;
+}
+
+
+```
+
+
+程序运行：
+```
+当ec_timeout = 3, run_time = 2时：
+timeout = 3, run_time = 2
+set timeout
+running...
+cancel timeout
+
+
+当ec_timeout = 3, run_time = 4时：
+timeout = 3, run_time = 4
+set timeout
+timeout
+cancel timeout
+```

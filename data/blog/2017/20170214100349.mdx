@@ -1,0 +1,90 @@
+---
+title: 'react native 布局头像标题简介'
+date: '2017-02-14'
+tags: ['Mobile']
+draft: false
+summary: 此为 React Native 布局头像标题简介的代码示例。通过`ItemBox`组件展示头像、标题和简介，`App`组件设置相关样式和数据，最后注册组件。整体实现简单的布局展示效果。 
+---
+
+```
+import React from 'react';
+import {
+  registerComponent,
+} from 'react-native-playground';
+import {
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+  Image,
+} from 'react-native';
+
+class ItemBox extends React.Component {
+  render() {
+    return (
+      <View style={styles.itemBox}>
+        <Image
+          style={styles.logo}
+          source={{uri: this.props.uri}}
+        />
+        <View style={styles.right}>
+          <Text style={styles.title}>
+      				{this.props.title}
+          </Text>
+          <Text style={styles.content}>
+      				{this.props.content}
+          </Text>
+        </View>
+      </View>
+    )
+  }
+}
+
+class App extends React.Component {
+  render() {
+    const uri = 'http://facebook.github.io/react/img/logo_og.png'
+    const title = '这是一个标题啊'
+    const content = '这是文章的简介这是文章的简介这是文章的简介'
+    return (
+      <View style={styles.container}>
+      	<ItemBox uri={uri} title={title} content={content} />
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    marginTop: 25,
+  },
+  itemBox: {
+    flexDirection: 'row',
+    height: 100,
+    padding: 10,
+    backgroundColor: '#eee',
+  },
+  logo: {
+		width: 80,
+   height: 80,
+   borderRadius: 40,
+  },
+  right: {
+    flexDirection: 'column',
+    justifyContent: 'space-around',
+    margin: 10,
+  },
+  title: {
+  	fontSize: 20,
+   color: '#000',
+	},
+  content: {
+   fontSize: 16,
+   color: '#f00',
+  },
+});
+
+registerComponent(App);
+
+```

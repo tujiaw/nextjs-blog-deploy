@@ -1,0 +1,141 @@
+---
+title: 'INI文件操作类'
+date: '2017-04-15'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 这是一个 C/C++ 的 INI 文件操作类`CIniFile`，提供了获取和设置 INI 文件中值的各种方法，如获取字符串、整型数值、坐标等，以及写入、删除节等操作。  
+---
+
+```
+
+#ifndef _LEARN_OBJECT_H_
+#define _LEARN_OBJECT_H_
+
+class CIniFile
+{
+public:
+	CIniFile()
+	{
+	}
+	~CIniFile() { }
+
+private:
+	wchar_t		m_path[_MAX_FNAME];
+
+public:
+	void InitConfigPath(const wchar_t *filePath)
+	{
+		memset(m_path, 0, sizeof(m_path));
+		wcscpy(m_path, filePath);
+	}
+
+	// 获取字符串， 返回字符串个数
+	int GetObjValue(const wchar_t *section, const wchar_t *firstKey, wchar_t* outValue, int size)
+	{
+		int nCount = 0;
+
+		if (section && firstKey)
+		{
+			memset(outValue, 0, sizeof(outValue));
+			nCount = GetPrivateProfileString(section, firstKey, L"0", outValue, size, m_path);
+		}
+		
+		return nCount;
+	}
+
+	// 获取int型数值， 返回值即获取值
+	int GetObjValue(const wchar_t *section, const wchar_t *firstKey)
+	{
+		int nRet = 0;
+		if (section && firstKey)
+		{
+			nRet = GetPrivateProfileInt(section, firstKey, 0, m_path);
+		}
+
+		return nRet;
+	}
+
+	// 获取坐标如point=14,13， 返回值高位为x轴坐标，低位为y轴坐标
+	DWORD GetObjValuePoint(const wchar_t *section, const wchar_t *firstKey)
+	{
+		wchar_t			outValue[16] = {0};
+		int				nLen = 0;
+		int				nCurPos = 0;
+		int				x = 0;
+		int				y = 0;
+		DWORD			dwRet = 0;
+
+		GetPrivateProfileString(section, firstKey, L"0", outValue, 16, m_path);
+		nLen = wcslen(outValue);
+
+		for (int i = 0; i < nLen; i++)
+		{
+			if (outValue[i] == ',')
+			{
+				outValue[i] = '\0';
+				break;
+			}
+			nCurPos++;
+		}
+
+		x = _ttoi(outValue);
+		y = _ttoi(&outValue[++nCurPos]);
+
+		dwRet = MAKELONG(y, x);
+		return dwRet;
+	
+	}
+
+	BOOL SetObjValue(const wchar_t *section, const wchar_t *firstKey, const wchar_t* inValue)
+	{
+		BOOL bRet = FALSE;
+
+		if (section && firstKey)
+		{
+			bRet = WritePrivateProfileString(section, firstKey, inValue, m_path);
+		}
+
+		return bRet;
+	}
+
+	BOOL SetObjValue(const wchar_t *section, const wchar_t *firstKey, int nValue)
+	{
+		BOOL bRet = FALSE;
+
+		if (section && firstKey && (nValue > 0))
+		{
+			wchar_t szValue[8] = {0};
+			swprintf(szValue, L"%d", nValue);
+			bRet = WritePrivateProfileString(section, firstKey, szValue, m_path);
+		}
+
+		return bRet;
+	}
+
+	BOOL WriteObjSection(const wchar_t *section, const wchar_t *string)
+	{
+		int bRet = FALSE;
+		if (!(section && string))
+		{
+			return FALSE;
+		}
+
+		bRet = WritePrivateProfileSection(section, string, m_path);
+		return bRet;
+	}
+
+	BOOL DeleteObjSection(const wchar_t *section)
+	{
+		BOOL bRet = FALSE;
+		if (section)
+		{
+			bRet = WritePrivateProfileString(section, NULL, NULL, m_path);
+		}
+
+		return bRet;
+	}
+};
+
+#endif // _LEARN_OBJECT_H_
+```
+> 迁移2011-05-08

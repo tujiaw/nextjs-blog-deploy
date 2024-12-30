@@ -1,0 +1,89 @@
+---
+title: '获取windows桌面所有可见窗口信息'
+date: '2023-05-14'
+tags: ['Windows']
+draft: false
+summary: 本文介绍了如何获取 Windows 桌面上所有可见窗口的信息，包括窗口句柄、标题、类名、区域和 ZOrder（显示层级）。通过使用 C++ 和 Windows API，定义了 `WindowInfo` 结构体来存储窗口信息，并通过 `EnumWindows` 函数枚举所有可见窗口。代码示例展示了如何遍历窗口列表，获取每个窗口的详细信息，并计算其 ZOrder，最终返回包含所有窗口信息的 `QVector<WindowInfo>`。
+---
+
+窗口信息主要有：窗口句柄、标题、类名、区域，还有一个ZOrder，它表示窗口显示在桌面的上下层级，窗口是否被遮盖。
+```
+#include <qt_windows.h>
+#include <QDebug>
+
+int GetWindowZOrder(HWND hwnd);
+
+struct WindowInfo {
+	HWND hWnd;
+	QRect rect;
+	QString title;
+	QString className;
+	int zOrder()
+	{
+		return GetWindowZOrder(hWnd);
+	}
+	QString debugString()
+	{
+		return QString().sprintf("hWnd:0x%x, ", hWnd) +
+			QString("order:%1, title:%2, class:%3, rect:%4,%5,%6,%7").arg(zOrder()).arg(title).arg(className).
+				arg(rect.left()).arg(rect.top()).arg(rect.width()).arg(rect.height());
+	}
+};
+
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
+	std::vector<HWND>* window_list = reinterpret_cast<std::vector<HWND>*>(lParam);
+	if (::IsWindow(hwnd) && ::IsWindowVisible(hwnd)) {
+		window_list->push_back(hwnd);
+	}
+	return TRUE;
+}
+
+QVector<WindowInfo> getAllValidWindows()
+{
+	QVector<WindowInfo> result;
+	std::vector<HWND> window_list;
+	EnumWindows(EnumWindowsProc, reinterpret_cast<LPARAM>(&window_list));
+	const int BUFFER_LEN = 1024;
+	for (auto it = window_list.rbegin(); it != window_list.rend(); ++it) {
+		TCHAR buf[BUFFER_LEN] = { 0 };
+		::GetWindowText(*it, buf, BUFFER_LEN - 1);
+		TCHAR buf2[BUFFER_LEN] = { 0 };
+		::GetClassName(*it, buf2, BUFFER_LEN - 1);
+		RECT rect = { 0 };
+		::GetWindowRect(*it, &rect);
+		QRect qrect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+		if (qrect.isValid()) {
+			WindowInfo info;
+			info.className = QString::fromStdWString(buf2);
+			info.hWnd = *it;
+			info.rect = qrect;
+			info.title = QString::fromStdWString(buf);
+			result.push_back(info);
+		}
+	}
+	return result;
+}
+
+int GetWindowZOrder(HWND hwnd)
+{
+	int zorder = 0;
+	HWND hwndPrev = NULL;
+
+	for (HWND hwndNext = GetTopWindow(NULL); hwndNext != NULL; hwndNext = GetNextWindow(hwndNext, GW_HWNDNEXT))
+	{
+		if (hwndNext == hwnd)
+			return zorder;
+
+		if (IsWindowVisible(hwndNext))
+		{
+			hwndPrev = hwndNext;
+			zorder++;
+		}
+	}
+
+	if (hwndPrev)
+		return zorder;
+
+	return -1;
+}
+```

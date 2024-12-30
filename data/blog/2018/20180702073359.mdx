@@ -1,0 +1,120 @@
+---
+title: 'windows安装包制作'
+date: '2018-07-02'
+tags: ['Windows']
+draft: false
+summary: 本文介绍用 Qt 官方的 qt-installer-framework 制作 Windows 安装包，给出主要目录结构及各文件内容，如 config.xml、package.xml 等，还说明了放置应用程序文件及打包命令等，最后提供目录结构和制作后的安装包下载地址。 
+---
+
+我们使用Qt官方提供的安装包制作框架qt-installer-framework来打包我们的应用程序，同时它支持三个平台：Windows，Linux，OS X。
+
+功能强大，用起来也很方便，这里只介绍一下基本用法，完全能满足我们的要求。
+
+qt-installer-framework下载地址：  
+http://download.qt.io/official_releases/qt-installer-framework/  
+
+文档地址：  
+https://doc.qt.io/qtinstallerframework/index.html  
+
+开始制作安装包吧，如我的项目名为Acc，注意下面所有文件都需要是utf-8编码，否则会有乱码。
+
+# 准备主要目录结构
+```
+Acc
+  config
+    config.xml
+  packages
+    com.vendor.product
+      data
+        ...
+      meta
+        package.xml
+        license.txt
+        installscript.qs
+```
+
+# 创建config.xml文件
+在config目录中创建config.xml文件，包含如下内容：
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<Installer>
+    <Name>Acc</Name>
+    <Version>1.0.0</Version>
+    <Title>Acc安装</Title>
+    <Publisher>tujiaw</Publisher>
+    <StartMenuDir>Acc</StartMenuDir>
+    <TargetDir>@ApplicationsDir@/Acc</TargetDir>
+</Installer>
+```
+Name:应用程序名字  
+Version：应用程序版本号  
+Title：出现在安装包的标题栏  
+Publisher：发布者，在控制面板卸载应用程序窗口会展示发布者  
+StartMenuDir：开始菜单中的目录名  
+TargetDir：默认安装目录  
+
+> 更多配置文件信息看这里：https://doc.qt.io/qtinstallerframework/ifw-globalconfig.html
+
+# 创建package.xml文件
+在简单的只有一个组件com.vendor.product的情况下，在packages->com.vendor.product->meta目录下创建package.xml文件，内容如下：
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>Acc</DisplayName>
+    <Description>安装核心组件。</Description>
+    <Version>0.1.0-1</Version>
+    <ReleaseDate>2018-07-02</ReleaseDate>
+    <Licenses>
+        <License name="License Agreement" file="license.txt" />
+    </Licenses>
+	<Default>true</Default>
+	<Script>installscript.qs</Script>
+</Package>
+```
+DisplayName：显示当前组件的名字  
+Description：简单描述  
+Version：组件版本号  
+ReleaseDate：发布日期
+Licenses：许可证  
+Default：默认勾选  
+Script：执行脚本，创建快捷方式  
+
+license.txt内容：
+```
+This software is licensed under the terms of the GNU General Public License version 3 (GPLv3). 
+```
+
+installscript.qs内容：
+```
+function Component()
+{
+    // default constructor
+}
+
+Component.prototype.createOperations = function()
+{
+    // call default implementation to actually install README.txt!
+    component.createOperations();
+
+    if (systemInfo.productType === "windows") {
+    	component.addOperation("CreateShortcut", "@TargetDir@/Acc.exe", "@HomeDir@/Desktop/Acc.lnk");
+        component.addOperation("CreateShortcut", "@TargetDir@/Acc.exe", "@StartMenuDir@/Acc.lnk");
+	component.addOperation("CreateShortcut", "@TargetDir@/maintenancetool.exe", "@StartMenuDir@/更新或卸载.lnk");
+    }
+}
+```
+
+# 放置应用程序文件
+将应用程序依赖的所有文件放到data目录下
+
+# 打包
+打开命令行工具cd到Acc所在目录，执行如下命令：
+```
+C:/Qt/QtIFW-3.0.4/bin/binarycreator.exe -c config/config.xml -p packages Acc.exe
+```
+执行成功后会在Acc目录生成Acc.exe安装包文件  
+> 注意上面的xml文件需要时utf-8编码
+> qt-installer-framework我的安装路径是：C:/Qt/QtIFW-3.0.4  
+
+目录结构：https://www.ningto.com/program/download/Acc.zip  
+制作后的安装包：https://www.ningto.com/program/download/Acc.exe

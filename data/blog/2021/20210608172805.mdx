@@ -1,0 +1,322 @@
+---
+title: 'robotgo模拟鼠标键盘操作'
+date: '2021-06-08'
+tags: ['Go']
+draft: false
+summary: 文章介绍用 robotgo 库实现自动化过程，包括打开记事本输入当前日期保存并关闭，还可全局监听键盘事件退出程序，以及录入回放功能，可将动作写入本地文件或读取执行。 
+---
+
+用robotgo库来实现一个自动化过程。  
+自动打开一个记事本，输入当前日期并且保存记事本，最后关闭记事本。  
+同时全局监听键盘事件，当按下组合键“ctrl+shift+q”后退出程序。
+
+# 自动化记事本
+```
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/go-vgo/robotgo"
+	hook "github.com/robotn/gohook"
+)
+
+func main() {
+	robotgo.EventHook(hook.KeyDown, []string{"q", "ctrl", "shift"}, func(e hook.Event) {
+		fmt.Println("keydown exit")
+		robotgo.EventEnd()
+	})
+
+	go func() {
+		start()
+	}()
+
+	fmt.Println("waiting, press \"ctrl+shift+q\" Exit")
+	s := robotgo.EventStart()
+	<-robotgo.EventProcess(s)
+	fmt.Println("exit")
+}
+
+func start() {
+	// 鼠标移动到开始菜单并且单击鼠标左键打开菜单（我的开始菜单在右上角）
+	robotgo.MoveClick(1401, 27, "left", false)
+
+	// 输入文字搜索notepad
+	robotgo.TypeStr("notepad", float64(100))
+
+	// 回车打开记事本
+	robotgo.KeyTap("enter")
+	time.Sleep(1 * time.Second)
+
+	// 获取当前时间作为文本内容，写入到记事本中
+	str := "current time:" + time.Now().Format("2006-01-02 15:04:05")
+	robotgo.TypeStr(str, float64(100))
+
+	// 按下Ctrl+s组合键保存
+	robotgo.KeyTap("s", "lctrl")
+	time.Sleep(1 * time.Second)
+
+	// 输入要保存的记事本名字
+	name := fmt.Sprintf("robotgo%s.txt", time.Now().Format("20060102150405"))
+	robotgo.TypeStr(name, float64(100))
+
+	// 回车确认保存
+	robotgo.KeyTap("enter")
+	time.Sleep(1 * time.Second)
+
+	// 按下Alt+f键打开记事本菜单
+	robotgo.KeyTap("f", "alt")
+	time.Sleep(1 * time.Second)
+
+	// 按下菜单中的x键退出记事本
+	robotgo.KeyTap("X")
+}
+
+```
+
+
+# 录入回放
+demo.exe -mode write 录入鼠标、键盘的动作写入到本地文件track.dat中  
+demo.exe -mode read 读取录入的动作，自动化执行， -count指定执行次数，默认是1
+```
+package main
+
+import (
+	"bufio"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/go-vgo/robotgo"
+	hook "github.com/robotn/gohook"
+)
+
+func main() {
+	var mode string
+	var readCount int
+	flag.StringVar(&mode, "mode", "", "mode, read or write")
+	flag.IntVar(&readCount, "count", 1, "read count, default 1")
+	flag.Parse()
+
+	robotgo.EventHook(hook.KeyDown, []string{"q", "ctrl", "shift"}, func(e hook.Event) {
+		fmt.Println("keydown exit")
+		robotgo.EventEnd()
+	})
+
+	if mode == "read" {
+		read(readCount)
+	} else if mode == "write" {
+		write()
+	} else {
+		panic("mode is unkown")
+	}
+}
+
+func Mask2str(mask uint16) string {
+	data := map[uint16]string{
+		0:   "",
+		2:   "ctrl",
+		32:  "ctrl",
+		8:   "alt",
+		128: "alt",
+		1:   "shift",
+		16:  "shift",
+	}
+
+	str, ok := data[mask]
+	if !ok {
+		fmt.Println("Mask2str unkown:", mask)
+	}
+	return str
+}
+
+func Button2str(button uint16) string {
+	data := map[uint16]string{
+		1: "left",
+		2: "right",
+		3: "center",
+	}
+	str, ok := data[button]
+	if !ok {
+		fmt.Println("Button2str unkown:", button)
+	}
+	return str
+}
+
+type Track struct {
+	Tm   time.Time
+	File *os.File
+}
+
+type Item struct {
+	When   uint8
+	X      int16
+	Y      int16
+	Button string
+	Char   string
+	Mask   string
+	Sleep  time.Duration
+}
+
+func NewTrackWrite(filename string, isTrunc bool) *Track {
+	track := &Track{}
+	track.Tm = time.Now()
+	flag := os.O_APPEND | os.O_WRONLY | os.O_CREATE
+	if isTrunc {
+		flag |= os.O_TRUNC
+	}
+	f, err := os.OpenFile(filename, flag, 0600)
+	if err != nil {
+		panic(err)
+	}
+	track.File = f
+	return track
+}
+
+func NewTrackRead(filename string) *Track {
+	track := &Track{}
+	f, err := os.OpenFile(filename, os.O_RDONLY, 0600)
+	if err != nil {
+		panic(err)
+	}
+	track.File = f
+	return track
+}
+
+func (track *Track) Close() {
+	track.File.Close()
+}
+
+func (track *Track) WriteItem(item Item) {
+	b, err := json.Marshal(item)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		track.File.WriteString(string(b) + "\n")
+	}
+}
+
+func (track *Track) ReadItem(handler func(item Item)) error {
+	buf := bufio.NewReader(track.File)
+	for {
+		line, err := buf.ReadString('\n')
+		line = strings.TrimSpace(line)
+		item := Item{}
+		if e := json.Unmarshal([]byte(line), &item); e == nil {
+			handler(item)
+		}
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+	}
+}
+
+func (track *Track) AddMouseMove(x, y int16) {
+	item := Item{}
+	item.When = hook.MouseMove
+	item.X = x
+	item.Y = y
+	item.Sleep = time.Since(track.Tm)
+	track.Tm = time.Now()
+	track.WriteItem(item)
+}
+
+func (track *Track) AddMouseDown(x, y int16, button string) {
+	item := Item{}
+	item.When = hook.MouseDown
+	item.X = x
+	item.Y = y
+	item.Button = button
+	item.Sleep = time.Since(track.Tm)
+	track.Tm = time.Now()
+	track.WriteItem(item)
+}
+
+func (track *Track) AddKeyDown(char, mask string) {
+	fmt.Println("add key down:", char, mask)
+	item := Item{}
+	item.When = hook.KeyDown
+	item.Char = char
+	item.Mask = mask
+	item.Sleep = time.Since(track.Tm)
+	track.Tm = time.Now()
+	track.WriteItem(item)
+}
+
+func write() {
+	track := NewTrackWrite("./track.dat", true)
+	defer track.Close()
+
+	robotgo.EventHook(hook.KeyDown, []string{"q", "ctrl", "shift"}, func(e hook.Event) {
+		fmt.Println("keydown exit")
+		robotgo.EventEnd()
+	})
+
+	robotgo.EventHook(hook.KeyDown, []string{}, func(e hook.Event) {
+		track.AddKeyDown(fmt.Sprintf("%c", e.Keychar), Mask2str(e.Mask))
+	})
+
+	robotgo.EventHook(hook.MouseMove, []string{}, func(e hook.Event) {
+		track.AddMouseMove(e.X, e.Y)
+	})
+
+	robotgo.EventHook(hook.MouseDown, []string{}, func(e hook.Event) {
+		track.AddMouseDown(e.X, e.Y, Button2str(e.Button))
+	})
+
+	s := robotgo.EventStart()
+	fmt.Println("running, press \"ctrl+shift+q\" Exit")
+	<-robotgo.EventProcess(s)
+}
+
+func read(count int) {
+	track := NewTrackRead("./track.dat")
+	defer track.Close()
+
+	items := make(chan Item, 10)
+
+	go func() {
+		for i := 0; i < count; i++ {
+			track.ReadItem(func(item Item) {
+				time.Sleep(item.Sleep)
+				items <- item
+			})
+		}
+		close(items)
+		robotgo.EventEnd()
+	}()
+
+	go func() {
+		for item := range items {
+			if item.When == hook.MouseMove {
+				robotgo.MoveMouse(int(item.X), int(item.Y))
+			} else if item.When == hook.MouseDown {
+				robotgo.MoveClick(int(item.X), int(item.Y), item.Button, false)
+			} else if item.When == hook.KeyDown {
+				if len(item.Mask) == 0 {
+					robotgo.KeyTap(item.Char)
+				} else {
+					robotgo.KeyTap(item.Char, item.Mask)
+				}
+			}
+		}
+	}()
+
+	robotgo.EventHook(hook.KeyDown, []string{"q", "ctrl", "shift"}, func(e hook.Event) {
+		fmt.Println("keydown exit")
+		robotgo.EventEnd()
+	})
+	s := robotgo.EventStart()
+	fmt.Println("running, press \"ctrl+shift+q\" Exit")
+	<-robotgo.EventProcess(s)
+}
+
+```

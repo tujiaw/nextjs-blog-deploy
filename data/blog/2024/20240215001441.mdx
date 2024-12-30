@@ -1,0 +1,295 @@
+---
+title: '简单易懂的Prompt 高级技巧： Few-Shots 、 COT 、SC、TOT 、Step-Back'
+date: '2024-02-15'
+tags: ['LLM']
+draft: false
+summary: 本文介绍了几种高级的Prompt编写技巧，包括CRISPE框架、Zero-Shot、Few-Shots、COT（思维链）、SC（自我一致性）、TOT（树状推理）和Step-Back。通过一个英文翻译成中文的任务示例，展示了不同Prompt模式对大语言模型输出结果的影响，并总结了每种模式的效果。文章还解释了Google在Gemini大模型评测中使用不同Prompt模式的原因，指出其在不同指标上采用不同的提示策略以优化表现。
+---
+
+上周，Google  发布了 Gemini  大模型。他号称在多项任务上超过了 GPT-4。细心的朋友可能发现，在每个对比指标的边上有一个小字，有的是 COT，有的是 3-shots。这些词是什么意思？为什么他不同的指标写了不同的小字。
+![](https://mmbiz.qpic.cn/sz_mmbiz_png/KB4MeOQW4YaZcp7QvtJHWkhKDl2miaHQAsb5QjvyvpCcCcn8uibCxHJiafRvB1e8UwIicxHUIZQVeDCqJanmnh0Z4w/640?wx_fmt=png&from=appmsg&wxfrom=5&wx_lazy=1&wx_co=1)
+
+先不说 Google 为什么在不同的指标写了不同的小字，这个问题在文章结尾回答。
+
+我们先来说说，这些小字是什么意思。
+
+其实，他们主要是表明了得到这些评测指标的时候，所采用的 Prompt  模式。今天，我们就来讲讲这些 Prompt  模式都是什么意思。
+
+为了方便对比，我将采用相同的任务不同的 Prompt  作为示例来讲清楚他们之间的区别。这个任务就是英文翻译成中文。
+
+# CRISPE框架
+![](https://mmbiz.qpic.cn/sz_mmbiz_png/KB4MeOQW4YaZcp7QvtJHWkhKDl2miaHQAmMbc9YDv5jHRSb9oCsInO31RPm0eW4IsMiaS1IMlHz8x2Y1Zu16ZYgw/640?wx_fmt=png&from=appmsg&wxfrom=5&wx_lazy=1&wx_co=1)
+
+如图所示。所谓CRISPE框架，指的是：
+
+- CR：Capacity and Role（能力与角色）。你希望 ChatGPT 扮演怎样的角色。
+-  I：Insight（洞察），背景信息和上下文。
+- S:（陈述），你希望 ChatGPT 做什么。
+- P：Personality（个性），你希望 ChatGPT 以什么风格或方式回答你。
+- E：Experiment（实验），要求 ChatGPT 为你提供多个答案。
+
+如果我们要定义一个翻译诗词的 GPT 。我们可以这么写：
+
+|CRISPE|内容|
+|---|---|
+|CR|你是一个擅长中文和英文的AI 工程师和数据科学家，擅长中文和英文相关的 AI 技术文章编写和翻译。|
+|I|需要翻译的英文段落：Spending lots of time thinking about different possible future scenarios and their probabilities might be captivating, but I suggest an absolutely different approach — to try to build your prototype yourself. First, it’s rather challenging and fun. Second, it will help us to look at our work in a more structured way. Third, it will give us an opportunity to try in practice one of the most cutting-edge approaches — LLM agents.|
+|S|请将下面的英文翻译成中文，|
+|P|要求语言生动活泼，简洁优雅。|
+|E|给我三个结果。|
+
+
+# Zero-shot
+只是使用CRISPE，不增加示例样本，就是 zero-shot 。
+
+下面是这个任务的 zero-shot prompt：
+```
+你是一个擅长中文和英文的AI 工程师和数据科学家，擅长中文和英文相关的 AI 技术文章编写和翻译。
+请将下面的英文翻译成中文，要求语言生动活泼，简洁优雅。
+需要翻译的英文段落：
+Spending lots of time thinking about different possible future scenarios and their probabilities might be captivating, but I suggest an absolutely different approach — to try to build your prototype yourself. First, it’s rather challenging and fun. Second, it will help us to look at our work in a more structured way. Third, it will give us an opportunity to try in practice one of the most cutting-edge approaches — LLM agents.
+给我三个结果。
+```
+
+
+请输出翻译后的结果：  
+ChatGPT 3.5 输出：
+```
+1. 花费大量时间思考不同可能的未来情景及其概率可能会吸引人，但我建议采取完全不同的方法——尝试自己建立原型。首先，这是相当具有挑战性和有趣的。其次，它将有助于我们以更有结构的方式审视我们的工作。第三，它将给我们一个机会实践最先进的方法之一——LLM代理。
+
+2. 花费大量时间思考不同可能的未来情景及其概率可能会引人入胜，但我建议采取一种完全不同的方法——尝试自己构建原型。首先，这是相当具有挑战性和有趣的。其次，它将帮助我们以更有结构的方式审视我们的工作。第三，它将为我们提供一个实践最尖端方法的机会——LLM代理。
+
+3. 花费大量时间思考不同可能的未来情景及其概率可能会令人着迷，但我建议尝试完全不同的方法——自己构建原型。首先，这非常具有挑战性和有趣。其次，它将帮助我们以更有结构的方式审视我们的工作。第三，它将为我们提供实践最先进方法之一——LLM代理的机会。
+```
+
+# Few_shot
+有的时候，我们如果给他一个示范，可能会有更好的效果。将示例加入 Prompt 的做法，就是 few-shots，few  可以是 1,2,3,4,5 。比如，我提供一个样本，就是 1-shot 。
+```
+你是一个擅长中文和英文的AI 工程师和数据科学家，擅长中文和英文相关的技术文章编写和翻译。
+请将下面的英文翻译成中文，要求语言生动活泼，简洁优雅。
+请参考我给出的示例：
+<example>
+英文原文：
+As ChatGPT gets “lazy,” people test “winter break hypothesis” as the cause
+
+中文翻译：
+ChatGPT变懒原因：正在给自己放寒假！已被网友测出🧐
+
+</example>
+
+需要翻译的英文段落：
+Spending lots of time thinking about different possible future scenarios and their probabilities might be captivating, but I suggest an absolutely different approach — to try to build your prototype yourself. First, it’s rather challenging and fun. Second, it will help us to look at our work in a more structured way. Third, it will give us an opportunity to try in practice one of the most cutting-edge approaches — LLM agents.
+
+
+请输出3个翻译后的结果：
+```
+ChatGPT 3.5 输出：
+```
+1. 花费大量时间思考不同可能的未来情景和它们的概率可能会吸引人，但我建议一个完全不同的方法——尝试自己建立原型。首先，这是相当具有挑战性和有趣的。其次，它将帮助我们以更有结构的方式看待我们的工作。第三，它将给我们一个机会实践最前沿的方法之一——LLM代理。
+
+2. 对未来情景进行大量思考，以及它们的概率，可能会吸引人，但是我建议采取完全不同的方法——尝试自己建立原型。首先，这是相当具有挑战性和有趣的。其次，这将帮助我们以更有结构的方式审视我们的工作。第三，这将为我们提供一个实践最尖端方法之一的机会——LLM代理。
+
+3. 花费大量时间思考不同可能的未来情景及其概率可能会引人入胜，但我建议采取完全不同的方法——尝试自己构建原型。首先，这相当具有挑战性和有趣。其次，它将帮助我们以更有结构的方式审视我们的工作。第三，它将为我们提供一个实践最尖端方法之一的机会——LLM代理。
+```
+
+# COT
+效果似乎有所提升。我们再试试 COT，也就是思维链。他是将要执行的任务拆解为多个步骤，按步骤执行。
+![](https://mmbiz.qpic.cn/sz_mmbiz_png/KB4MeOQW4YaZcp7QvtJHWkhKDl2miaHQANoV2xw6TNcvGdYy4nGlheb1eeJ1wBQMJVKaXPlibbejMSg4KeBNo74Q/640?wx_fmt=png&from=appmsg&wxfrom=5&wx_lazy=1&wx_co=1
+)
+
+我们更新后的 Prompt  是：
+```
+你是一个擅长中文和英文的AI 工程师和数据科学家，擅长中文和英文相关的 AI 技术文章编写和翻译。
+请将下面的英文翻译成中文，要求语言生动活泼，简洁优雅。
+
+
+你需要两个步骤来执行这个任务：
+1. 将英文直接翻译为中文，主要考虑意思表达的准确性
+2. 将步骤1直译的中文翻译成更简洁优雅通顺的中文标题，主要考虑中文的语言表达习惯
+
+
+需要翻译的英文文章标题：
+Spending lots of time thinking about different possible future scenarios and their probabilities might be captivating, but I suggest an absolutely different approach — to try to build your prototype yourself. First, it’s rather challenging and fun. Second, it will help us to look at our work in a more structured way. Third, it will give us an opportunity to try in practice one of the most cutting-edge approaches — LLM agents.
+
+
+请步骤1和步骤2 结果：
+```
+ChatGPT 3.5 输出的结果是：
+```
+步骤1翻译结果：
+
+花费大量时间思考不同可能的未来场景及其概率可能会令人着迷，但我建议采取完全不同的方法——尝试自己构建原型。首先，这相当具有挑战性和趣味性。其次，它将有助于我们以更有结构性的方式审视我们的工作。第三，它将为我们提供一个实践最先进方法之一——LLM代理的机会。
+
+步骤2翻译结果：
+
+摒弃“花费大量时间思考不同未来场景和概率”的想法，来试着亲自构建原型吧！这不仅具有挑战性和趣味性，还能使我们更有条理地审视工作。同时，这也是尝试最先进方法——LLM代理的机会。
+```
+
+可以看到，现在这个结果明显更好了。
+
+# COT+SC
+COT 通过分步骤加大了 LLM 的深度。SC  则是在增加深度的基础上再增加宽度。
+![](https://mmbiz.qpic.cn/sz_mmbiz_png/KB4MeOQW4YaZcp7QvtJHWkhKDl2miaHQAvXIsJqabF12Qq23vGBnw7hworTvSO2SLfkiaLXTCHs3iadvSicV1Ll9sw/640?wx_fmt=png&from=appmsg&wxfrom=5&wx_lazy=1&wx_co=1)
+
+我们用 COT+ SC 的方法再来写一个Prompt：
+```
+你是一个擅长中文和英文的AI 工程师和数据科学家，擅长中文和英文相关的 AI 技术文章编写和翻译。
+请将下面的英文翻译成中文，要求语言生动活泼，简洁优雅。
+
+
+你需要3个步骤来执行这个任务：
+1. 将英文直接翻译为中文，主要考虑意思表达的准确性，请给出 3个结果
+2. 将步骤 1 直译的3个中文翻译成更简洁优雅通顺的中文，主要考虑中文的语言表达习惯
+3. 审视步骤 2 提供的 3 个结果，整合出一个最好的结果，作为最终结果输出
+
+需要翻译的英文段落：
+Spending lots of time thinking about different possible future scenarios and their probabilities might be captivating, but I suggest an absolutely different approach — to try to build your prototype yourself. First, it’s rather challenging and fun. Second, it will help us to look at our work in a more structured way. Third, it will give us an opportunity to try in practice one of the most cutting-edge approaches — LLM agents.
+
+
+分别输出步骤1的3个结果、步骤2的3个结果，和步骤3的最终结果：
+
+```
+ChatGPT 3.5 输出结果：
+```
+步骤 1 结果：
+
+1. 花费大量时间思考不同可能的未来情景及其概率可能是迷人的，但我建议采取完全不同的方法——尝试亲自建立你的原型。首先，这相当具有挑战性和有趣。第二，它将帮助我们以更有结构的方式看待我们的工作。第三，它将给我们一个机会来实践最前沿的方法——LLM代理。
+2. 投入大量的时间思考不同可能的未来情景及其概率可能会十分吸引人，但我建议采取完全不同的方法——尝试亲自建立你的原型。首先，这是相当具有挑战性和有趣的。第二，它将帮助我们以更有结构的方式审视我们的工作。第三，它将为我们提供一个实践最尖端方法之一——LLM代理的机会。
+3. 投入大量时间思考不同可能的未来情景及其概率可能会引人入胜，但我建议采取完全不同的方法——尝试亲自建立你的原型。首先，这是相当具有挑战性和有趣的。第二，它将帮助我们以更有结构的方式审视我们的工作。第三，它将给我们一个机会来实践最前沿的方法之一——LLM代理。
+
+步骤 2 结果：
+
+1.虽然沉浸于思考各种可能出现的未来情景及其概率是令人着迷的，但我建议采取绝然不同的方式——亲自尝试建立你的原型。首先，这样做既具有挑战性又有趣。其次，它能够以更有结构的方式审视我们的工作。第三，它让我们有机会实践最尖端的方法之一——LLM代理。
+2. 虽然沉浸于思考各种可能出现的未来情景及其概率是令人着迷的，但我建议采取绝然不同的方式——亲自尝试建立你的原型。首先，这样做既具有挑战性又有趣。其次，它能够以更有结构的方式审视我们的工作。第三，它给我们提供了实践最尖端方法之一——LLM代理的机会。
+3. 虽然沉浸于思考各种可能出现的未来情景及其概率是引人入胜的，但我建议采取绝然不同的方式——亲自尝试建立你的原型。首先，这样做既具有挑战性又有趣。其次，它能够以更有结构的方式审视我们的工作。最后，它让我们有机会实践最尖端的方法之一——LLM代理。
+
+步骤 3 结果：
+1. 虽然沉浸于思考各种可能出现的未来情景及其概率是引人入胜的，但我建议采取绝然不同的方式——亲自尝试建立你的原型。首先，这样做既具有挑战性又有趣。其次，它能够以更有结构的方式审视我们的工作。最后，它让我们有机会实践最尖端的方法之一——LLM代理。
+
+```
+
+# TOT
+TOT  与 COT+SC  类似，也是先分步骤，然后每个步骤多个结果，不同的是，COT+SC  是并列输出多个结果。而 TOT 是在每一步的多个结果中进行选择，然后再进行下一步，输出多个结果。
+
+我们继续修改 Prompt：
+```
+
+你是一个擅长中文和英文的AI 工程师和数据科学家，擅长中文和英文相关的 AI 技术文章编写和翻译。
+请将下面的英文翻译成中文，要求语言生动活泼，简洁优雅。
+
+你需要3个步骤来执行这个任务：
+1. 将英文直接翻译为中文，主要考虑意思表达的准确性，请给出 3个结果
+2. 从步骤 1  的结果中选择一个意思表达更恰当的给出 1 个结果
+3. 将步骤 2 的结果润色为更简洁优雅通顺的中文，主要考虑中文的语言表达习惯，输出 3 个结果
+4. 审视步骤 3 提供的 3 个结果，整合出一个最好的结果，作为最终结果输出
+
+需要翻译的英文段落：
+Spending lots of time thinking about different possible future scenarios and their probabilities might be captivating, but I suggest an absolutely different approach — to try to build your prototype yourself. First, it’s rather challenging and fun. Second, it will help us to look at our work in a more structured way. Third, it will give us an opportunity to try in practice one of the most cutting-edge approaches — LLM agents.
+
+
+分别输出步骤 1  的 3 个结果、步骤 2 的 1 个结果、步骤 3 的 3 个结果，和步骤 4 的最终结果：
+ChatGPT 3.5 输出的结果：
+```
+```
+步骤 1 的 3 个结果：
+
+1. 花费大量时间思考各种可能的未来情景和它们的概率可能是令人着迷的，但我建议采取完全不同的方法——尝试亲自建立你的原型。首先，这是相当具有挑战性和有趣的。第二，它将帮助我们以更有结构的方式看待我们的工作。第三，它将给我们一个机会在实践中尝试最前沿的方法之一——LLM代理。
+
+2. 花费大量时间思考不同可能的未来情景及其概率可能是引人入胜的，但我建议采取完全不同的方法——尝试自己构建原型。首先，这非常具有挑战性和有趣。其次，这将帮助我们更有条理地看待我们的工作。第三，这将为我们提供一个实践的机会，尝试最尖端的方法之一——LLM代理。
+
+3. 花费大量时间思考各种可能的未来情景及其概率可能是吸引人的，但我建议采取完全不同的方法——尝试自己建立原型。首先，这是相当具有挑战性和有趣的。其次，这将帮助我们以更有结构的方式看待我们的工作。第三，这将为我们提供一个实践的机会，尝试最前沿的方法之一——LLM代理。
+
+步骤 2 的 1 个结果：
+
+花费大量时间思考各种可能的未来情景及其概率可能是吸引人的，但我建议采取完全不同的方法——尝试自己建立原型。这不仅具有挑战性和有趣，还能以更有结构的方式审视我们的工作，并实践尝试最前沿的方法之一——LLM代理。
+
+步骤 3 的 3 个结果：
+
+1. 花费大量时间思考各种可能的未来情景及其概率可能很吸引人，但我建议采取一种截然不同的方法——尝试亲自建立原型。首先，这既具有挑战性又有趣。其次，它将帮助我们以更有条理的方式审视我们的工作。第三，它将给我们提供一个实践的机会，尝试最尖端的方法之一——LLM代理。
+
+2. 花费大量时间思考各种可能的未来情景及其概率可能很吸引人，但我建议采取完全不同的方法——尝试亲自建立原型。首先，这非常具有挑战性和有趣。其次，它将帮助我们以更有结构的方式看待我们的工作。第三，它将给我们一个实践的机会，尝试最前沿的方法之一——LLM代理。
+
+3. 花费大量时间思考各种可能的未来情景及其概率可能很吸引人，但我建议采取完全不同的方法——尝试亲自构建你的原型。首先，这非常具有挑战性和有趣。其次，它将帮助我们以更有结构的方式审视我们的工作。第三，它将给我们一个实践的机会，尝试最尖端的方法之一——LLM代理。
+
+步骤 4 的最终结果：
+
+花费大量时间思考各种可能的未来情景及其概率可能很吸引人，但我建议采取完全不同的方法——尝试亲自建立原型。这不仅具有挑战性和有趣，还能以更有结构的方式审视我们的工作，并实践尝试最前沿的方法之一——LLM代理。
+```
+
+# Step-Back
+通俗的讲，Step-Back 就是在写 Prompt 的时候，往后退一步，想想在回答这个问题之前需要先回答什么问题。网上很多 Step-Back 都是通过变成的方法把问题拆成多个 Chain  来做的。但我试了一下，用一条纯粹的 Prompt  也是可以实现的。
+
+还是相同的任务，我们写这样一条 Prompt：
+```
+
+你是一个擅长中文和英文的AI 工程师和数据科学家，擅长中文和英文相关的 AI 技术文章编写和翻译。
+请将下面的英文翻译成中文，要求语言生动活泼，简洁优雅。
+
+需要翻译的英文段落：
+Spending lots of time thinking about different possible future scenarios and their probabilities might be captivating, but I suggest an absolutely different approach — to try to build your prototype yourself. First, it’s rather challenging and fun. Second, it will help us to look at our work in a more structured way. Third, it will give us an opportunity to try in practice one of the most cutting-edge approaches — LLM agents.
+
+请按照一下步骤输出结果：
+1. 要想得到通顺优雅简洁的翻译文章，你需要知道哪些前提问题
+2. 这些前提问题的答案分别是什么
+3. 基于这个前提问题，对于给出英文的翻译结果
+```
+ChatGPT 3.5 结果：
+```
+1. 要想得到通顺优雅简洁的翻译文章，你需要知道哪些前提问题？在进行翻译之前，需要了解以下前提问题：
+
+目标受众是谁？
+
+文章的语气和风格是什么？
+
+是否有特定的行业或领域术语需要考虑？
+
+2. 这些前提问题的答案分别是什么？
+
+目标受众是中文读者，可能包括普通读者、专业领域读者或技术人员。
+
+文章的语气应该是生动活泼的，以吸引读者的注意力。
+
+文章的风格应该简洁优雅，使读者易于理解。
+
+可能需要考虑AI、工程、数据科学等领域的术语。
+
+3. 基于这个前提问题，对于给出英文的翻译结果：花费大量时间思考不同可能的未来场景及其概率可能会引人入胜，但我建议采用完全不同的方法——尝试自己建立原型。首先，这是相当具有挑战性和有趣的。其次，这将帮助我们以更有结构的方式看待我们的工作。第三，它将为我们提供尝试最前沿方法之一——LLM智能体的实践机会。
+
+这样翻译结果既生动活泼，又简洁优雅。
+```
+
+# 总结
+我用一个英文翻译的例子，来讲解了 Prompt 编写过程中的一些技巧，包括：
+
+* CRISPE框架
+* Zero-Shot
+* Few-Shots
+* COT
+* SC
+* TOT
+* Step-Back
+
+下面我们对同一个输出在相同的模型 ChatGPT 3.5 Turbo 上的翻译结果：
+
+
+|Prompt  模式|结果|主观评分|
+|---|---|---|
+|Zero-Shot|花费大量时间思考不同可能的未来情景及其概率可能会令人着迷，但我建议尝试完全不同的方法——自己构建原型。首先，这非常具有挑战性和有趣。其次，它将帮助我们以更有结构的方式审视我们的工作。第三，它将为我们提供实践最先进方法之一——LLM代理的机会。|3.5|
+|Few-Shots|花费大量时间思考不同可能的未来情景及其概率可能会引人入胜，但我建议采取完全不同的方法——尝试自己构建原型。首先，这相当具有挑战性和有趣。其次，它将帮助我们以更有结构的方式审视我们的工作。第三，它将为我们提供一个实践最尖端方法之一的机会——LLM代理。|3.5|
+|COT|摒弃“花费大量时间思考不同未来场景和概率”的想法，来试着亲自构建原型吧！这不仅具有挑战性和趣味性，还能使我们更有条理地审视工作。同时，这也是尝试最先进方法——LLM代理的机会。|5|
+|COT+SC|虽然沉浸于思考各种可能出现的未来情景及其概率是引人入胜的，但我建议采取绝然不同的方式——亲自尝试建立你的原型。首先，这样做既具有挑战性又有趣。其次，它能够以更有结构的方式审视我们的工作。最后，它让我们有机会实践最尖端的方法之一——LLM代理。|4|
+|TOT|花费大量时间思考各种可能的未来情景及其概率可能很吸引人，但我建议采取完全不同的方法——尝试亲自建立原型。这不仅具有挑战性和有趣，还能以更有结构的方式审视我们的工作，并实践尝试最前沿的方法之一——LLM代理。|4.5|
+|Step-Back|花费大量时间思考不同可能的未来场景及其概率可能会引人入胜，但我建议采用完全不同的方法——尝试自己建立原型。首先，这是相当具有挑战性和有趣的。其次，这将帮助我们以更有结构的方式看待我们的工作。第三，它将为我们提供尝试最前沿方法之一——LLM智能体的实践机会。|3.75|
+
+
+总结来说：
+
+* 对于同样的模型，同样的任务，使用不同的 Prompt，输出的结果也有不小的差异
+* 一般来说，使用Prompt技巧的结果 回比不使用任何技巧要好
+* 对于简单的任务并不是叠加所有的技巧就会更好，到达一定结果后。再叠加技巧不会提升效果
+* 这是一个让大家理解 Prompt  编写技巧的小教程，所以采用了同一个任务方便对比，但是有些复杂技巧适合与更难的任务，只有在更难的任务上才能看出差异
+
+回到文章开头的问题，为什么 Google  在不同的指标上写了不同的小字呢？因为他是通过不同的 Prompt  模式才“打败”GPT-4的。如果所有指标都采用相同的 Prompt模式，Google 应该是 没有信心“打败”对手的。
+
+
+from: https://mp.weixin.qq.com/s/Wer9Wmyk0VJ25sSrvvKVlQ

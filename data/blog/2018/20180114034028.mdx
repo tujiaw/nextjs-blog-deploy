@@ -1,0 +1,111 @@
+---
+title: '腾讯云服务器CVM上部署nodejs服务'
+date: '2018-01-14'
+tags: ['Node.js', 'Web']
+draft: false
+summary: '介绍了如何解决GitHub下载速度慢的问题。通过查询GitHub域名对应的IP地址并将其添加到Windows系统的hosts文件中，可以显著提高下载速度。文章同样提供了在MAC操作系统上进行相同操作的方法。测试结果显示，修改后的下载速度可达到400~500kiB/s。'
+---
+
+之前使用的阿里云快到期的，了解了下腾讯云价格比较合算而且对新用户有代金券，选了一个云服务器CVM，主机类型是标准型S2，配置1核 1GB 1Mbps普通云硬盘，买了三年的总共1080元，再加上满1000元有500元的代金券可以使用，所以实际花费了580元就可以使用三年了，感觉蛮划算的。
+
+下面是我在云服务器上部署nodejs服务的过程
+# 登录服务器
+```
+ssh root@111.230.231.33
+```
+输入密码
+
+# 安装nodejs
+使用下面命令安装和查看安装后的nodejs版本，npm也会自动安装好
+```
+yum install nodejs
+node -v
+npm -v
+```
+
+# 升级nodejs
+如果上面安装好的nodejs比较旧或者不是你想要的，你可以通过下面方式来升级
+1. 安装n这个工具，点击查看[官方介绍](https://github.com/tj/n)
+```
+npm install -g n
+```
+如果安装失败请先更新openssl
+```
+yum update openssl
+```
+
+2. 安装稳定版nodejs
+使用下面命令即可
+```
+n stable
+```
+
+3. 切换到新版本
+使用node -v查看版本如果发现还是之前的老版本，使用下面命令使之立即生效
+```
+source /etc/profile
+```
+再次查看版本应该切换到新版本来了
+
+# 安装git
+```
+yum install git
+```
+
+# 运行nodejs服务
+下载代码到本地
+```
+git clone https://github.com/tujiaw/3inns.cn.git
+```
+
+安装依赖库
+```
+npm install
+```
+
+安装新版mongodb并运行
+1. 下载
+```
+wget https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-rhel70-3.6.2.tgz
+```
+2. 解压安装包
+tar zxvf mongodb-linux-x86_64-rhel70-3.6.2.tgz  
+mv mongodb-linux-x86_64-rhel70-3.6.2 mongodb  
+cd mongodb  
+
+3. 新建数据和日志目录
+mkdir db  
+mkdir logs  
+
+4. 编写mongodb配置文件
+cd bin  
+vi mongodb.conf  
+拷贝以下内容：  
+```
+dbpath=/root/mongodb/db
+logpath=/root/mongodb/logs/mongodb.log
+port=27017
+fork=true
+```
+
+5. 启动mongodb
+```
+./mongod -f mongodb.conf 
+```
+
+到项目目录启动项目
+```
+npm start
+```
+
+# 测试
+项目运行起来后在本地机器的浏览器上输入服务器公网IP地址和端口号，如：
+```
+http://111.230.231.33:3000/
+```
+发现访问不了，大概有两个原因：  
+1. 检查防火墙是否开放了端口  
+2. 我用的是腾讯云，在他的安全组中要进行设置，登录腾讯云，找到安全组添加如下规则  
+```
+来源：0.0.0.0/0，协议端口：ALL， 策略：允许
+```

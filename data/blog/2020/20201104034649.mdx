@@ -1,0 +1,72 @@
+---
+title: 'golang接口型函数作用'
+date: '2020-11-04'
+tags: ['Go']
+draft: false
+summary: Golang 中 http.Handle 用到接口型函数，定义了 ServeHTTP 接口及实现它的 HandlerFunc 函数。通过示例展示用户使用灵活，有 struct 对象、匿名函数、普通函数三种方式，清楚体现其好处。 
+---
+
+在我们使用golang写http服务的时候通常会使用http.Handle来注册pattern对应的Handler，其实这里就使用到了接口型函数，源码定义如下：
+```
+type Handler interface {
+	ServeHTTP(ResponseWriter, *Request)
+}
+
+type HandlerFunc func(ResponseWriter, *Request)
+
+func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {
+	f(w, r)
+}
+```
+首先是定义了ServeHTTP接口，根据这个接口又定义了一个HandlerFunc普通函数，同时这个函数又实现了ServerHTTP接口，直接调用函数本身，所以在这里称之为接口型函数。
+
+
+这样做的好处是，用户使用起来非常灵活，我们自己来模仿写个简单的例子：
+```
+package main
+
+import (
+	"fmt"
+)
+
+type Service interface {
+	Call(key string)
+}
+
+type ServiceFunc func(key string)
+
+func (s ServiceFunc) Call(key string) {
+	s(key)
+}
+
+type EchoService struct {
+}
+
+func (echo EchoService) Call(key string) {
+	fmt.Println("echo service call, key:", key)
+}
+
+func PrintKey(key string) {
+	fmt.Println("print key:", key)
+}
+
+func Foo(s Service, key string) {
+	s.Call(key)
+}
+
+func main() {
+	Foo(new(EchoService), "object")
+
+	Foo(ServiceFunc(func(key string) {
+		fmt.Println("service func, key:", key)
+	}), "lambda expression")
+
+	Foo(ServiceFunc(PrintKey), "normal function")
+}
+```
+在使用的时候我们有三种方式：  
+1. struct对象  
+2. 匿名函数  
+3. 普通函数  
+
+最后，大家应该清楚这种写法的好处了吧。

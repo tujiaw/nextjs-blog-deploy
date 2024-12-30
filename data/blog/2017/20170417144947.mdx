@@ -1,0 +1,34 @@
+---
+title: 'Robomongo连接远程MongoDB数据库'
+date: '2017-04-17'
+tags: ['Windows', 'MongoDB', 'Database']
+draft: false
+summary: 文章介绍 Robomongo 连接远程 MongoDB 数据库的步骤，包括修改远程服务器 mongodb 配置、创建管理员用户并重启服务，还展示了 Robomongo 连接远程服务的截图以及备份还原数据库的方法，如 mongodump 和 mongorestore。 
+---
+
+## 修改远程服务器上mongodb配置
+打开/etc/mongodb.conf配置文件将bind_ip注释起来，如：
+```
+#bind_ip = 127.0.0.1
+```
+
+## 创建管理员用户
+```
+mongo
+use admin
+db.createUser({user:"admin",pwd:"admin",roles:[{"role":"userAdminAnyDatabase","db":"admin"}]})
+// 重启服务
+sudo service mongodb stop
+sudo service mongodb start
+```
+
+## Robomongo连接远程mongodb服务
+![connection](/upload/o_1bdu5292pjtv33q1isl17bu1gv4c.png)
+![auth](/upload/o_1bdu5292ptd87iphuigb01vlvb.png)
+
+## 备份还原数据库
+备份
+> mongodump -o ./                             #导出到当前路径
+
+恢复
+> mongorestore /home/zhangy/mongodb/        #这里的路径是所有库的备份路径

@@ -1,0 +1,58 @@
+---
+title: 'protobuf反射'
+date: '2017-09-30'
+tags: ['C/C++']
+draft: false
+summary: C++本身无反射，protobuf 可实现。介绍其两种用途：通过 proto 对象名字创建对象，通过 Message 初始化和获取成员变量值，不知具体子类时可通过 key 获取或设置值，如获取 int32 值和设置 int32 值，其他类型同理。 
+---
+
+C++本身是不支持反射的，但protobuf可以，下面介绍反射的两种主要用途。
+
+# 通过proto对象的名字来创建一个对象
+```
+google::protobuf::Message* ProtoHelp::createMessage(const std::string &typeName)
+{
+	google::protobuf::Message *message = nullptr;
+	const google::protobuf::Descriptor* desc = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(typeName);
+	if (desc) {
+		const google::protobuf::Message *prototype = google::protobuf::MessageFactory::generated_factory()->GetPrototype(desc);
+		if (prototype) {
+			message = prototype->New();
+		}
+	}
+	return message;
+}
+```
+
+# 通过Message初始化和获取成员变量的值
+我们知道Message是基类要给它初始化成员变量一般先转型为具体的子类对象（也就是我们在proto文件中定义的类），这时候就能调用set_xxx或者mutable_xxxx来设置值，反过来直接通过名字就能获取值。
+
+但是，当我们不知道这个Message具体是哪个子类时怎么获取值呢？
+
+## 通过Message的key获取值
+下面举个例子只是获取int类型的值
+```
+bool getInt32(google::protobuf::Message& msg, int key, int &out)
+{
+	const google::protobuf::FieldDescriptor* field = msg.GetDescriptor()->FindFieldByNumber(key);
+	if (field && field->type() == google::protobuf::FieldDescriptor::TYPE_INT32 && !field->is_repeated()) {
+		out = msg.GetReflection()->GetInt32(msg, field);
+		return true;
+	}
+	return false;
+}
+```
+
+## 通过key给Message设置值
+```
+void setInt32(google::protobuf::Message& msg, int key, int value)
+{
+	const google::protobuf::FieldDescriptor* field = msg.GetDescriptor()->FindFieldByNumber(key);
+	if (field && field->type() == google::protobuf::FieldDescriptor::TYPE_INT32 && !field->is_repeated())
+	{
+		msg.GetReflection()->SetInt32(&msg, field, value);
+	}
+}
+```
+
+上面只是演示了最简单的类型，其他类型同理。

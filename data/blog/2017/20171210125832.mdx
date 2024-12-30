@@ -1,0 +1,28 @@
+---
+title: 'Qt解决：warning   Z-order assignment'
+date: '2017-09-14'
+tags: ['Qt']
+draft: false
+summary: 在 Qt 调整 UI 布局时易出现“Z-order assignment”警告，虽运行无问题但影响代码洁癖。解决办法是用文本编辑器打开 ui 文件，删除含警告的 zroder 行，重新编译后警告消失。 
+---
+
+Qt中调整UI布局的时候，很容易出现如下警告：
+```
+warning : Z-order assignment: '' is not a valid widget.
+warning : Z-order assignment: 'verticalSpacer' is not a valid widget.
+```
+
+虽然编译后运行看起来没什么问题，但是对于有轻微代码洁癖的人肯定是忍受不了的，解决办法也很简单，如下步骤：
+* 用文本编辑器（记事本，ultraedit, notepad++等）打开刚才布局的ui文件；
+* 找到里面的zroder行删除对应警告的就行了，如：
+```
+        <zorder>label_7</zorder>
+        <zorder>checkBox</zorder>
+        <zorder>checkBox_2</zorder>
+        <zorder>comboBox</zorder>
+        <zorder></zorder>
+        <zorder></zorder>
+        <zorder>verticalSpacer</zorder>
+```
+
+重新编译一下警告应该就消失了。

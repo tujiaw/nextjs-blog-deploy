@@ -1,0 +1,33 @@
+---
+title: 'WebBrowser控件判断页面加载完毕'
+date: '2017-04-15'
+tags: ['Windows']
+draft: false
+summary: 文章介绍 WebBrowser 控件判断页面加载完毕的方法。DWebBrowserEvents2 Members 的 DocumentComplete 成员可用于此，但直接处理不行，需做处理。给出具体代码示例，在特定条件下进行页面加载完成的处理。 
+---
+
+大家都知道DWebBrowserEvents2 Members的DocumentComplete（Fires when a document is completely loaded and initialized)成员的作用。但是实际上直接在它里面处理加载完成后的事件是不行的， 我们还需要做一些处理才行。直接看代码：
+
+```
+//CComPtr<IWebBrowser2> m_spWebBrowser;
+void __stdcall OnEventDocumentComplete(IDispatch* /*pDisp*/, VARIANT* /*URL*/)
+{
+	ATLASSERT(m_spWebBrowser != NULL);
+	IDispatch *p_disp = NULL;
+	m_spWebBrowser->get_Document(&p_disp);
+	if (p_disp)
+	{
+		ATL::CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> spDoc2 = p_disp;
+		BSTR bs_readyState;
+		spDoc2->get_readyState(&bs_readyState);
+		CString str;
+		str.Format(_T("%s"), bs_readyState);
+		if (str.Compare(_T("complete")) == 0)
+		{
+			// 这里才是处理页面最终加载完成的地方
+		}
+	}
+}
+```
+
+> 2011-07-14

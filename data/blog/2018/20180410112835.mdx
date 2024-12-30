@@ -1,0 +1,81 @@
+---
+title: '我的云服务器开机自启动所有服务'
+date: '2018-04-10'
+tags: ['Linux']
+draft: false
+summary: '本文介绍了在腾讯云服务器CVM上部署Node.js服务的全过程，包括环境准备、软件安装、项目部署和问题排查。'
+---
+
+我的云服务器上目前部署的是我的博客，每次重启服务器都要重启一下所有程序蛮麻烦的，所以这次把它自动化了。重启系统后自动执行脚本部署所有服务。
+
+目前服务器上如下服务需要重启：
+* nginx：反向代理
+* mongodb：数据库
+* 3inns：我的博客
+* ningto：新版博客（react）
+* NodeChat：websocket聊天室
+
+# mongodb启停脚本
+mongodb启动脚本：/root/mongodb/start.sh
+```
+cd /root/mongodb/bin
+./mongod -f mongodb.conf
+```
+
+mongodb停止脚本：/root/mongodb/stop.sh
+```
+cd /root/mongodb
+pkill -F mongod.pid
+sleep 1s
+ps -ef | grep mongod
+```
+
+mongodb启动配置：/root/mongodb/bin/mongodb.conf
+```
+dbpath=/root/mongodb/db
+logpath=/root/mongodb/logs/mongodb.log
+pidfilepath=/root/mongodb/mongod.pid
+port=27017
+fork=true
+bind_ip=127.0.0.1
+```
+
+# 自启动脚本
+包含所有需要启动的程序  
+/root/autostart.sh
+```
+pm2 delete 3inns
+pm2 delete ningto
+pm2 delete NodeChat
+
+echo '------start mongodb------'
+cd /root/mongodb
+./start.sh
+
+sleep 3s
+echo '------start 3inns------'
+cd /root/3inns.cn
+npm start
+
+sleep 2s
+echo '------start ningto------'
+cd /root/ningto
+npm run deploy
+
+sleep 2s
+echo '------start NodeChat------'
+cd /root/NodeChat
+npm start
+
+echo 'successfully'
+```
+
+# 写入rc.local
+把nginx和autostart.sh加入到末尾即可  
+vi /etc/rc.d/rc.local
+```
+nginx
+/root/autostart.sh
+```
+
+> 注意，上面所有需要执行的脚本都要赋予可执行权限，包括：rc.local

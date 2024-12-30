@@ -1,0 +1,33 @@
+---
+title: 'STL 什么时候用哪种容器'
+date: '2017-10-24'
+tags: ['C/C++']
+draft: false
+summary: 'STL 什么时候用哪种容器'
+---
+
+![STL 什么时候用哪种容器](http://hi.csdn.net/attachment/201202/12/8605981_1329056420L5o2.png)
+
+As a supplement to the table, the following rules of thumb might help:
+
+By default, you should use a vector. It has the simplest internal data structure and provides random access. Thus, data access is convenient and flexible, and data processing is often fast enough.
+
+If you insert and/or remove elements often at the beginning and the end of a sequence, you should use a deque. You should also use a deque if it is important that the amount of internal memory used by the container shrinks when elements are removed. Also, because a vector usually uses one block of memory for its elements, a deque might be able to contain more elements because it uses several blocks.
+
+If you insert, remove, and move elements often in the middle of a container, consider using a list. Lists provide special member functions to move elements from one container to another in constant time. Note, however, that because a list provides no random access, you might suffer significant performance penalties on access to elements inside the list if you only have the beginning of the list.
+
+Like all node-based containers, a list doesn't invalidate iterators that refer to elements, as long as those elements are part of the container. Vectors invalidate all of their iterators, pointers, and references whenever they exceed their capacity, and part of their iterators, pointers, and references on insertions and deletions. Deques invalidate iterators, pointers, and references when they change their size, respectively.
+
+If you need a container that handles exceptions in a way that each operation either succeeds or has no effect, you should use either a list (without calling assignment operations and sort() and, if comparing the elements may throw, without calling merge (), remove(), remove_if(), and unique(); see page 172) or an associative container (without calling the multiple-element insert operations and, if copying/assigning the comparison criterion may throw, without calling swap()). See Section 5.11.2, for a general discussion of exception handling in the STL and Section 6.10.10, for a table of all container operations with special guarantees in face of exceptions.
+
+If you often need to search for elements according to a certain criterion, use a set or a multiset that sorts elements according to this sorting criterion. Keep in mind that the logarithmic complexity involved in sorting 1,000 elements is in principle ten times better than that with linear complexity. In this case, the typical advantages of binary trees apply.
+
+A hash table commonly provides five to ten times faster lookup than a binary tree. So if a hash container is available, you might consider using it even though hash tables are not standardized. However, hash containers have no ordering, so if you need to rely on element order they're no good. Because they are not part of the C++ standard library, you should have the source code to stay portable.
+
+To process key/value pairs, use a map or a multimap (or the hash version, if available).
+
+If you need an associative array, use a map.
+
+If you need a dictionary, use a multimap.
+
+from: [http://www.cppblog.com/mzty/archive/2005/12/14/1727.html](http://www.cppblog.com/mzty/archive/2005/12/14/1727.html)

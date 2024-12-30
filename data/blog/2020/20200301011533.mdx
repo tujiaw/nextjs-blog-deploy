@@ -1,0 +1,97 @@
+---
+title: 'go拓扑排序'
+date: '2020-03-01'
+tags: ['Go']
+draft: false
+summary: 拓扑排序用于确定依赖关系集中事物的发生顺序。文中以计算机课程学习为例，通过`topoSort`函数对课程前置关系进行排序，输出了学习课程的顺序，展示了拓扑排序在实际中的应用。 
+---
+
+拓扑排序常用来确定一个依赖关系集中，事物发生的顺序。例如，在日常工作中，可能会将项目拆分成A、B、C、D四个子部分来完成，但A依赖于B和D，C依赖于D。为了计算这个项目进行的顺序，可对这个关系集进行拓扑排序，得出一个线性的序列，则排在前面的任务就是需要先完成的任务。
+
+注意：这里得到的排序并不是唯一的！就好像你早上穿衣服可以先穿上衣也可以先穿裤子，只要里面的衣服在外面的衣服之前穿就行。
+
+考虑这样一个问题：
+给定一些计算机课程，每个课程都有前 置课程，只有完成了前置课程才可以开始当前课程的学习；我们的目标是选择出一组课程，这组课程必 须确保按顺序学习时，能全部被完成。每个课程的前置课程如下：
+```
+var prereqs = map[string][]string{
+	"algorithms": {"data structures"},
+	"calculus": {"linear algebra"},
+	"compilers": { "data structures", "formal languages", "computer organization", },
+	"data structures": {"discrete math"},
+	"databases": {"data structures"},
+	"discrete math": {"intro to programming"},
+	"formal languages": {"discrete math"},
+	"networks": {"operating systems"},
+	"operating systems": {"data structures", "computer organization"},
+	"programming languages": {"data structures", "computer organization"},
+}
+```
+
+必须先学完右边的课程才能学习左边的课程，如果右边有多门课程的话学习顺序不固定只要都学完就可以。现在我们用拓扑排序算出学习课程的顺序。
+```
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+var prereqs = map[string][]string{
+	"algorithms": {"data structures"},
+	"calculus": {"linear algebra"},
+	"compilers": { "data structures", "formal languages", "computer organization", },
+	"data structures": {"discrete math"},
+	"databases": {"data structures"},
+	"discrete math": {"intro to programming"},
+	"formal languages": {"discrete math"},
+	"networks": {"operating systems"},
+	"operating systems": {"data structures", "computer organization"},
+	"programming languages": {"data structures", "computer organization"},
+}
+
+func topoSort(m map[string][]string)[]string {
+	order := []string{}
+	seen := make(map[string]bool)
+	var visitAll func(items []string)
+	visitAll = func(items []string) {
+		for _, item := range items {
+			if !seen[item] {
+				seen[item] = true
+				visitAll(m[item])
+				order = append(order, item)
+			}
+		}
+	}
+	keys := []string{}
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	visitAll(keys)
+	return order
+}
+
+func main() {
+	order := topoSort(prereqs)
+	for i, v := range order {
+		fmt.Printf("%d: %s\n", i, v)
+	}
+}
+
+```
+输出如下：
+```
+0: intro to programming
+1: discrete math
+2: data structures
+3: algorithms
+4: linear algebra
+5: calculus
+6: formal languages
+7: computer organization
+8: compilers
+9: databases
+10: operating systems
+11: networks
+12: programming languages
+```

@@ -1,0 +1,61 @@
+---
+title: 'nginx配置nodejs服务二级域名'
+date: '2017-04-09'
+tags: ['Node.js', 'Linux']
+draft: false
+summary: 文章介绍 nginx 配置 nodejs 服务二级域名，先在阿里云中添加 sanjiadian.net 的二级域名 tools、api、chat 解析，然后在 nginx/conf.d 下分别增加 sanjiadian.conf 和 chat.conf 配置文件指向不同端口的 nodejs 服务，最后重启 nginx 。 
+---
+
+目前有一个域名sanjiadian.net在它的基础上增加几个二级域名，通过二级域名访问新的nodejs服务。
+
+## 增加二级域名
+在阿里云中的域名服务中找到sanjiadian.net域名点击后面的解析，添加解析，tools,api,chat就是二级域名
+![二级域名列表](/upload/o_1bd8ngr471lgv151k1iv11t5on6sa.png)
+
+## nginx配置主域名
+指向端口为3000的nodejs服务，在nginx/conf.d下增加文件sanjiadian.conf（一定要使用conf后缀名），内容如下：
+```
+server {
+    listen 80;
+
+    server_name www.sanjiadian.net sanjiadian.net;
+
+    location / {
+             proxy_pass http://127.0.0.1:3000;
+             proxy_http_version 1.1;
+             proxy_set_header Upgrade $http_upgrade;
+             proxy_set_header Connection 'upgrade';
+             proxy_set_header Host $host;
+             proxy_cache_bypass $http_upgrade;
+    }
+}
+
+```
+
+## nginx配置chat二级域名
+指向端口为3200的nodejs服务，在nginx/conf.d下增加文件chat.conf，内容如下：
+```
+server {
+    listen 80;
+
+    server_name www.chat.sanjiadian.net chat.sanjiadian.net;
+
+    location / {
+             proxy_pass http://127.0.0.1:3200;
+             proxy_http_version 1.1;
+             proxy_set_header Upgrade $http_upgrade;
+             proxy_set_header Connection 'upgrade';
+             proxy_set_header Host $host;
+             proxy_cache_bypass $http_upgrade;
+   }
+}
+
+```
+> 注意nginx/nginx.conf文件中的http下包含：include /etc/nginx/conf.d/*.conf;实际根据自己的nginx安装目录
+
+## 重启nginx
+```
+ps -ef | grep nginx // 查看nginx进程ID
+kill -9 9162 9163 // 杀死所有nginx进程
+nginx -c /etc/nginx/nginx.conf // 具体根据自己的nginx安装目录
+```

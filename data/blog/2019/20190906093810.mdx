@@ -1,0 +1,49 @@
+---
+title: 'go 分批读取http应答数据'
+date: '2019-09-06'
+tags: ['Go']
+draft: false
+summary: 本文介绍 go 分批读取 http 应答数据的方法。通常用`ioutil.ReadAll`，但大文件时内存大且慢，需分批读。给出代码`ReadChunk`，注意读到`io.EOF`时继续读，用`chan`可单独开启 goroutine 下载并处理数据。 
+---
+
+我们读取http应答通常用：
+```
+ioutil.ReadAll(resp.Body)
+```
+很好用也很方便，但是如果应答的包很大时（下载文件），不仅会分配很大的内存而且慢。
+所以我们需要分批读取，每次读取一块直到所有应答读取完成。
+
+代码如下：
+```
+func ReadChunk(r io.Reader, maxChunkSize int, chanChunk chan<- []byte) {
+	for {
+		buf := make([]byte, maxChunkSize)
+		n, err := r.Read(buf)
+		if n < 0 {
+			break
+		}
+		if err != nil && err != io.EOF {
+			break
+		}
+		chanChunk <- buf[:n]
+		if err == io.EOF {
+			break
+		}
+	}
+	close(chanChunk)
+}
+```
+* 注意当读到io.EOF时不能立马退出，它还是会返回一部分数据的；
+* 用chan的好处是可以单独开启goroutine下载，一边读一边写；
+
+如下，可以这样处理数据：
+```
+	chanChunk := make(chan []byte, 5)
+	go ReadChunk(resp.Body, maxUploadSize/2, chanChunk)
+	total := 0
+	for chunk := range chanChunk {
+		total += len(chunk)
+		goutil.PanicIfErr(goutil.WriteFileAppend(to, chunk))
+		fmt.Printf("\r%d %s\t", total, goutil.FormatBytes(float64(total)))
+	}
+```

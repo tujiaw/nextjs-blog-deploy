@@ -1,0 +1,350 @@
+---
+title: '100行代码复现Langchain'
+date: '2024-02-26'
+tags: ['LLM']
+draft: false
+summary: 本文通过约100行代码复现了LangChain的核心功能，展示了如何利用LLM（如GPT）和工具（如搜索引擎、计算器）构建智能对话界面。作者详细介绍了从问题解析、工具调用到结果反馈的实现过程，并探讨了其背后的提示设计与推理机制。尽管简单，该实现已能处理多轮对话和复杂查询，但也揭示了当前技术的局限性。
+---
+
+[LangChain](https://github.com/hwchase17/langchain) 已成为一个非常流行的工具包，用于构建各种由LLM支持的应用程序，包括聊天、问答和文档搜索。 在这篇博文中，我重新实现了一些新颖的 LangChain 功能作为学习，查看它用于创建这些高级功能的低级提示。
+
+任何使用过 GPT 或其他大型语言模LLM型 (LLM) 的人都会熟悉提示工程的概念，即创建正确的措辞以引导这些语言模型实现预期行为的艺术。 然而，随着标准提示模式的出现，我们看到提示工程逐渐淡出背景，被传统的、更熟悉的 API 所取代。 LangChain 就是一个很好的例子，它允许你构建一系列令人印象深刻的由 LLM 支持的应用程序，而无需直接构建提示。 显然对此有很大的需求，该项目吸引了 3 万 GitHub 星和数百万的风险投资。
+
+我最近开始使用 LangChain，并发现自己想知道它的幕后工作原理。 我想知道它向 GPT 发送什么提示？
+
+我发现理解特定技术或框架的一个好方法是尝试自己重新实现它。 目标不是覆盖所有功能，或创建完全可用的 API。 相反，它是专注于有趣的部分，这些部分通常可以相对轻松地实现。 你从这个过程中获得的理解非常有用，特别是对于新兴技术（例如LangChain），其优点和缺点尚不完全清楚。
+
+因此，如果你想了解 LangChain 的底层工作原理，请继续阅读……
+
+1、主问题循环
+-------
+
+LangChain我最感兴趣的具体部分是Agent模型。 该 API 允许你创建复杂的对话界面，使用各种工具（例如 Google 搜索、计算器）来回答问题。 这种方法克服了使用LLM回答问题的一些最重要的问题； 产生幻觉的倾向（创造可信但完全错误的答案），以及缺乏最新数据（由于他们的训练有截止日期）。 从广义上讲，通过代理模型，LLM成为一个协调者，提出问题，将其分解成块，然后使用适当的工具来组合答案。
+
+深入研究LangChain代码库，我们发现这个编排是通过以下提示执行的：
+```
+    Answer the following questions as best you can. You have access to the following tools:
+    
+    search: a search engine. useful for when you need to answer questions about current events. input should be a search query.
+    calculator: useful for getting the result of a math expression. The input to this tool should be a valid mathematical expression that could be executed by a simple calculator.
+    
+    Use the following format:
+    
+    Question: the input question you must answer
+    Thought: you should always think about what to do
+    Action: the action to take, should be one of [search, calculator]
+    Action Input: the input to the action
+    Observation: the result of the action
+    ... (this Thought/Action/Action Input/Observation can repeat N times)
+    Thought: I now know the final answer
+    Final Answer: the final answer to the original input question
+    
+    Begin!
+    
+    Question: ${question}
+    Thought:
+```
+这是令人着迷的东西！ 该提示分为几个部分：
+
+*   明确表达总体目标“回答以下问题……”
+*   工具列表，及其功能的简要描述
+*   解决问题应该使用的步骤，可能涉及迭代
+*   问题，后面是第一个想法：，这是 GPT 将开始添加文本（即补全）的地方
+
+第 (3) 部分特别有趣，这是我们通过单个示例（即一次性学习）“教导”GPT 作为协调器的地方。 这里教授的编排方法是通过思想链进行推理，将问题分解为更小的组件，研究人员发现这可以提供更好的结果并实现可以被视为推理的效果。
+
+这就是提示设计的艺术！
+
+不管怎样，按照承诺，我们将重新实现LangChain。 那么让我们执行上面的提示。
+
+以下代码发送上述提示，并提出问题“昨天 SF 的高温是多少华氏度？” 通过 OpenAI API 升级到 GPT-3.5：
+```
+    import fs from "fs";
+    
+    // construct the prompt, using our question
+    const prompt = fs.readFileSync("prompt.txt", "utf8");
+    const question = "What was the high temperature in SF yesterday in Fahrenheit?";
+    const promptWithQuestion = prompt.replace("${question}", question);
+    
+    // use GPT-3.5 to answer the question
+    const completePrompt = async (prompt) =>
+      await fetch("https://api.openai.com/v1/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + process.env.OPENAI_API_KEY,
+        },
+        body: JSON.stringify({
+          model: "text-davinci-003",
+          prompt,
+          max_tokens: 256,
+          temperature: 0.7,
+          stream: false,
+        }),
+      })
+      .then((res) => res.json());
+      .then((res) => res.choices[0].text);
+    
+    const response = await completePrompt(promptWithQuestion);
+    console.log(response.choices[0].text);
+```
+最终的完成结果（至少当我运行它时！）如下：
+
+    Question: What was the high temperature in SF yesterday in Fahrenheit?
+    Thought: I can try searching the answer
+    Action: search
+    Action Input: "high temperature san francisco yesterday fahrenheit"
+    Observation: Found an article from the San Francisco Chronicle forecasting
+                 a high of 69 degrees
+    Thought: I can use this to determine the answer
+    Final Answer: The high temperature in SF yesterday was 69 degrees Fahrenheit.
+
+我们可以看到，GPT 已经确定（即想法：）为了回答这个问题，它应该使用术语“昨天旧金山高温华氏度”来执行搜索。 有趣的是，它已经“想象”了这次搜索的结果可能是什么，并返回了 69 度的答案。
+
+令人印象深刻的是，鉴于这个简单的提示，GPT 已经“推理”出回答这个问题的最佳方法是通过某种搜索。 如果你直接问 GPT 以下问题“问：昨天旧金山的高温是多少华氏度？”，它会很高兴地回答 - 对我来说它回答“昨天旧金山的高温（2019 年 8 月 28 日）是 76°F”。 显然那不是昨天，但令人惊讶的是，该日期报告的温度是正确的！
+
+为了停止 GPT 想象整个对话，我们只需指定 `Observation:` 作为停止序列。
+
+2、一个搜索工具
+--------
+
+随着完成在正确的点停止，我们现在需要创建我们的第一个“工具”，它执行 Google 搜索。 我将使用 [SerpApi](https://serpapi.com/) 来抓取 Google，以简单的 SON 格式提供响应。
+
+以下定义了我们的工具。 这里只有一个，名为 `search`：
+```
+    const googleSearch = async (question) =>
+      await fetch(
+        `https://serpapi.com/search?api_key=${process.env.SERPAPI_API_KEY}&q=${question}`
+      )
+        .then((res) => res.json())
+        .then((res) => res.answer_box?.answer || res.answer_box?.snippet);
+    
+    const tools = {
+      search: {
+        description:
+          `a search engine. useful for when you need to answer questions about
+           current events. input should be a search query.`,
+        execute: googleSearch,
+      },
+    };
+```
+`execute`函数使用 SerpApi，在本例中依赖于通过页面的“答案框”组件可见的结果。 这是让 Google 提供答案而不仅仅是网页结果列表的巧妙方法。
+
+更新提示模板以动态添加工具：
+```
+    let prompt = promptTemplate
+      .replace("${question}", question)
+      .replace("${tools}",
+        Object.keys(tools)
+          .map((toolname) => `${toolname}: ${tools[toolname].description}`)
+          .join("\n")
+      );
+```
+现在，有趣的部分是，我们希望基于给定的操作迭代执行工具，为它们提供操作输入，并将结果作为观察附加到提示中。 此过程将持续进行，直到 LLM 协调器确定其拥有足够的信息并返回最终答案：
+```
+    const answerQuestion = async (question) => {
+      
+      let prompt = // ... see above
+    
+      // allow the LLM to iterate until it finds a final answer
+      while (true) {
+        const response = await completePrompt(prompt);
+        // add this to the prompt
+        prompt += response;
+    
+        const action = response.match(/Action: (.*)/)?.[1];
+        if (action) {
+          // execute the action specified by the LLMs
+          const actionInput = response.match(/Action Input: "?(.*)"?/)?.[1];
+          const result = await tools[action.trim()].execute(actionInput);
+          prompt += `Observation: ${result}\n`;
+        } else {
+          return response.match(/Final Answer: (.*)/)?.[1];
+        }
+      }
+    };
+```
+让我们试一下：
+```
+    const answer = await
+        answerQuestion("What was the temperature in Newcastle (England) yesterday?")
+    console.log(answer)
+```
+当我运行上面的内容时，给出的答案是“纽卡斯尔（英格兰）昨天的最高气温是 56°F，最低气温是 46°F。”，这是完全正确的。
+
+查看迭代增长的提示，我们可以看到工具调用链：
+
+    Question: what was the temperature in Newcastle (England) yesterday?
+    Thought: This requires looking up current information about the weather.
+    Action: search
+    Action Input: "Newcastle (England) temperature yesterday"
+    Observation: Newcastle Temperature Yesterday. Maximum temperature yesterday:
+                 56 °F (at 6:00 pm) Minimum temperature yesterday: 46 °F
+                 (at 11:00 pm) Average temperature ...
+    Final Answer: The maximum temperature in Newcastle (England) yesterday was 56°F
+                  and the minimum temperature was 46°F.
+
+我们可以看到它成功调用了搜索工具，并且从结果观察中确定它有足够的信息并提供了总结的响应。
+
+3、一个计算器工具
+---------
+
+让我们通过添加一个计算器工具来使其更强大
+```
+    import { Parser } from "expr-eval";
+    
+    const tools = {
+      search: { ... },
+      calculator: {
+        description:
+          `Useful for getting the result of a math expression. The input to this
+           tool should be a valid mathematical expression that could be executed
+           by a simple calculator.`,
+        execute: (input) => Parser.evaluate(input).toString(),
+      },
+    };
+```
+通过 [expr-eval](https://blog.scottlogic.com/2023/05/04/langchain-mini.html#:~:text=With%20the%20expr%2Deval%20module%20doing%20all%20the%20hard%20work%2C%20this%20is%20an%20easy%20addition%2C%20and%20the%20we%20can%20now%20do%20some%20maths.%20Again%2C%20looking%20at%20the%20prompt%20to%20understand%20the%20internal%20workings%2C%20rather%20than%20just%20look%20at%20the%20result%3A) 模块完成所有艰苦的工作，这是一个简单的添加，我们现在可以做一些数学运算。 再次强调，查看提示来了解内部工作原理，而不是仅仅查看结果：
+
+    Question: what is the square root of 25?
+    Thought: I need to use a calculator for this
+    Action: calculator
+    Action Input: 25^(1/2)
+    Observation: 5
+    Thought: I now know the final answer
+    Final Answer: The square root of 25 is 5.
+
+这里LLM已经成功确定这道题需要计算器。 它还发现，对于计算器来说，“25 的平方根”更典型地表示为“25^(1/2)”，从而达到了预期的结果。
+
+当然，现在可以提出需要搜索网络和计算的问题。 当被问到“昨天 SF 的最高气温是多少华氏度？ 摄氏度的值也一样吗？” 它更正回应：“昨天，SF 的最高气温为 54°F 或 12.2°C。”。
+
+让我们看看它是如何实现这一目标的：
+
+    Question: What was the high temperature in SF yesterday in Fahrenheit? And the same value in celsius?
+    Thought: I need to find the temperature for yesterday
+    Action: search
+    Action Input: "High temperature in San Francisco yesterday" 
+    Observation: San Francisco Weather History for the Previous 24 Hours ; 54 °F · 54 °F
+    Thought: I should convert to celsius
+    Action: calculator
+    Action Input: (54-32)*5/9
+    Observation: 12.222222222222221
+    Thought: I now know the final answer
+    Final Answer: Yesterday, the high temperature in SF was 54°F or 12.2°C.
+
+在第一次迭代中，它像以前一样执行 Google 搜索。 然而，它没有提供最终答案，而是认为需要将该温度转换为摄氏度。 有趣的是，LLM已经知道这种转换的公式，可以立即应用计算器。 最终答案得到了简洁的总结 - 请注意摄氏值的非常合理的舍入。
+
+考虑到这只有大约 80 行代码，其功能相当令人印象深刻。 然而，我们可以做更多……
+
+4、对话式界面
+-------
+
+当前版本的代码提供了一个问题的答案。 在上面的例子中，我们必须将两个问题捆绑在一起作为一个句子。 更令人愉快的界面将是对话式的，允许用户在保留上下文的同时提出后续问题（即不要忘记对话中的先前步骤）。
+
+如何使用 GPT 实现这一目标并不是立即显而易见的，交互是无状态的，你提供提示，模型提供完成。 创建长时间运行的对话需要一些非常聪明的提示工程。 深入研究LangChain我发现它使用了一种有趣的技术......
+
+以下提示需要聊天历史记录和后续问题，要求 GPT 将问题改写为独立问题：
+```
+    Given the following conversation and a follow up question, rephrase the
+    follow up question to be a standalone question.
+    Chat History:
+    ${history}
+    Follow Up Input: ${question}
+    Standalone question:
+```
+以下代码使用我们之前的 `answerQuestion` 函数，将其包装在允许正在进行的对话的进一步循环中。 每次迭代时，聊天历史记录都会附加到“日志”中，并使用上述提示来确保每个后续问题作为独立问题运行。
+```
+    const mergeTemplate = fs.readFileSync("merge.txt", "utf8");
+    
+    // merge the chat history with a new question
+    const mergeHistory = async (question, history) => {
+      const prompt = mergeTemplate
+        .replace("${question}", question)
+        .replace("${history}", history);
+      return await completePrompt(prompt);
+    };
+    
+    // main loop - answer the user's questions
+    let history = "";
+    while (true) {
+      const question = await rl.question("How can I help? ");
+      if (history.length > 0) {
+        question = await mergeHistory(question, history);
+      }
+      const answer = await answerQuestion(question);
+      console.log(answer);
+      history += `Q:${question}\nA:${answer}\n`;
+    }
+```
+让我们看看前面示例中的合并过程，其中用户首先询问“昨天 SF 的高温是多少华氏度？” 接下来是“摄氏温度是多少？”。
+
+当被问到第一个问题时，LLM协调员搜索了谷歌并回答“昨天，旧金山的高温是 54°F”。 这就是聊天历史记录的合并方式，以便后续问题变得独立：
+
+    Given the following conversation and a follow up question, rephrase the
+    follow up question to be a standalone question.
+    Chat History:
+    Q: What was the high temperature in SF yesterday in Fahrenheit?
+    A: Yesterday, the high temperature in SF was 54°F
+    Follow Up Input: what is that in celsius?
+    Standalone question:
+
+根据上述提示，GPT 返回“54°F 摄氏度是多少？”，这正是我们想要的 - 对原始问题的修改以包含聊天历史记录中的重要上下文。 总而言之，对话的流程如下：
+
+    Q: What was the high temperature in SF yesterday in Fahrenheit?
+    Yesterday, the high temperature in SF was 54°F
+    Q: What is that in celsius?
+    53°F is equal to 11.6°C
+
+我们现在有一个由LLM精心设计的对话界面，它利用其推理能力来适当使用工具，所有这些都只需 100 行代码。
+
+5、进一步的例子
+--------
+
+一旦我建造了这个，我就无法停止玩它！ 以下是一些对话示例：
+
+    Q: What is the world record for solving a rubiks cube?
+    The world record for solving a Rubik's Cube is 4.69 seconds, held by Yiheng
+    Wang (China).
+    Q: Can a robot solve it faster?
+    The fastest time a robot has solved a Rubik's Cube is 0.637 seconds.
+    Q: Who made this robot?
+    Infineon created the robot that solved a Rubik's Cube in 0.637 seconds.
+    Q: What time would an average human expect for solving?
+    It takes the average person about three hours to solve a Rubik's cube for the
+    first time.
+
+深入研究这些问题背后的推理逻辑是很有趣的。 在此示例中，搜索工具返回结果，但由于某种原因，LLM 决定需要使用稍作修改的查询来确认答案
+
+    Question:  What is the fastest time a robot has solved a Rubik's Cube?
+    Thought: I should research this online
+    Action: search
+    Action Input: fastest time a robot solved Rubik's Cube
+    Observation: 0.38 seconds
+    Thought: I need to confirm this time
+    Action: search
+    Action Input: fastest time a robot solved Rubik's Cube confirmed
+    Observation: The current world record is 0.637 seconds, which was set by
+    German engineer Albert Beer and his robot Sub1 Reloaded.
+    The researchers realised they could solve the cube more quickly by using
+    a different type of motor in their robot.
+
+正如您所看到的，没过多久它就开始提供矛盾的答案！
+
+7、结束语
+-----
+
+我真的很喜欢这个过程，并且学到了很多关于链接调用到LLM的总体概念。 我也很惊讶这一切是如此简单，尤其是核心编排/推理，你给模型一个简单的例子，然后它就开始了……
+
+然而，通过构建这个，也让我意识到了目前的弱点。 我上面提供的例子都是幸福的道路。 我发现它在大多数情况下都能回答我的问题，并正确使用工具。 但它肯定不会 100% 有效，而且当它失败时，对于与聊天交互的用户来说并不总是显而易见的。 我确实发现自己必须经常调整问题才能达到所需的结果。
+
+我对Langchain本身也有过类似的经历，有时你必须小心如何表达问题才能得到想要的结果。 了解其幕后工作原理确实有助于解释意想不到的结果。 例如，有时 LLM 协调器简单地决定不需要使用计算器，并且可以自行执行给定的计算。 我鼓励任何使用此工具的人获得这种理解。 这是对精心设计的提示的抽象，但这些并不完美。 用乔尔·斯波尔斯基（Joel Spolsky）的话来说，这种抽象在某些地方[有点漏洞](https://en.wikipedia.org/wiki/Leaky_abstraction)！
+
+如果你想尝试一下 LangChain-mini，可以在 [GitHub](https://github.com/ColinEberhardt/langchain-mini) 上找到代码。
+
+* * *
+
+原文链接：[Re-implementing LangChain in 100 lines of code](https://blog.scottlogic.com/2023/05/04/langchain-mini.html)
+
+BimAnt翻译整理，转载请标明出处
+
+[生成式AI](/blog/tag/sheng-cheng-shi-ai/ "生成式AI")

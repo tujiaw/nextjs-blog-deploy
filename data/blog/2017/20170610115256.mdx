@@ -1,0 +1,29 @@
+---
+title: '给UITableView增加拷贝'
+date: '2017-06-10'
+tags: ['Mobile']
+draft: false
+summary: 文章介绍给 UITableView 增加拷贝功能。通过两个函数实现，一个用于执行拷贝操作（若满足条件则将对应内容的 url 拷贝到粘贴板），另一个用于判断是否可执行拷贝动作，还设置了应显示菜单的条件为 true。 
+---
+
+```
+
+    func tableView(tableView: UITableView, performAction action: Selector, forRowAtIndexPath indexPath: NSIndexPath, withSender sender: AnyObject?) {
+        if action == Selector("copy:") {
+            if indexPath.row < Data.sharedManager.goodArticle.contentlist.count {
+                UIPasteboard.generalPasteboard().string = Data.sharedManager.goodArticle.contentlist[indexPath.row].url
+            }
+        }
+    }
+    
+    func tableView(tableView: UITableView, canPerformAction action: Selector, forRowAtIndexPath indexPath: NSIndexPath, withSender sender: AnyObject?) -> Bool {
+        return action == Selector("copy:")
+    }
+    
+    func tableView(tableView: UITableView, shouldShowMenuForRowAtIndexPath indexPath: NSIndexPath) -> Bool {
+        return true
+    }
+
+
+
+```

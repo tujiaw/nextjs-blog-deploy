@@ -1,0 +1,45 @@
+---
+title: '隐式共享的QJsonArray对象，非const遍历会导致一次内存拷贝'
+date: '2021-11-17'
+tags: ['Qt']
+draft: false
+summary: 
+---
+
+隐式共享的QJsonArray对象，非const遍历会导致一次内存拷贝
+
+直接看一个例子，先初始化一个大的arr，然后将其赋值给arr2和arr3，此时我们观察对象的d指针所指向的内存。
+arr2和arr指向的内存是一致的，arr3和obj["arr"]指向的内存是一致的，所以arr2和arr3都是隐式共享的对象。
+
+对于隐式共享的对象如果要修改的时候会拷贝一份数据，所以对于非const遍历隐式共享的数组会造成一次拷贝，非隐式共享对象没有这个问题。
+
+所以，对比const和非const遍历，arr都不会造成拷贝；
+arr2和arr3非const遍历时会造成内存拷贝，可以观察遍历前和遍历后的d指针。
+
+对于不需要修改的数据我们应该尽可能的去使用const遍历。
+
+```
+		qDebug() << "1";
+		QJsonObject obj;
+		QJsonArray arr;
+		for (int i = 0; i < 100000; i++) {
+			QJsonObject obj;
+			obj["text"] = "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111";
+			arr.append(obj);
+		}
+		obj["arr"] = arr;
+		QJsonArray arr2 = arr;
+		QJsonArray arr3 = obj["arr"].toArray();
+		qDebug() << "2";
+		for (QJsonArray::const_iterator itor = arr.constBegin(); itor != arr.constEnd(); ++itor) {
+			const QJsonObject &in = itor->toObject();
+			QString vvv = getValue(in, "text").toString();
+		}
+
+		qDebug() << "3";
+		for (QJsonArray::const_iterator itor = arr.begin(); itor != arr.end(); ++itor) {
+			const QJsonObject &in = itor->toObject();
+			QString vvv = getValue(in, "text").toString();
+		}
+		qDebug() << "4";
+```

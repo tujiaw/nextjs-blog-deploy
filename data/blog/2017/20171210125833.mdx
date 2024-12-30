@@ -1,0 +1,108 @@
+---
+title: 'std  move和右值引用'
+date: '2017-09-21'
+tags: ['C/C++']
+draft: false
+summary: 右值引用可避免不必要内存拷贝提高性能。如 std::string 示例，push_back 时加 std::move 避免深拷贝。自定义类需实现右值引用相关函数，std::move 只是返回右值类型调用类中操作，虽增加写库工作量，但方便用户且提升程序性能。 
+---
+
+右值引用允许编程人员去避免不必要的内存拷贝，从而提高性能。  
+我们知道如果一个类A的成员变量中有指针，那么就要考虑深拷贝和浅拷贝了，深拷贝通常要实现下面几个函数：
+* 构造函数
+* 拷贝构造
+* 赋值操作符
+
+这样做是没问题的，但是会带来一个问题，会造成一些没必要的拷贝，如：
+```
+std::string str("hello");
+str.resize(1024 * 1024 * 100);
+
+std::vector<std::string> v;
+v.push_back(str);
+```
+
+str这里故意给它分配了100M，把它push到vector中的时候其实又做了一次额外的拷贝（也就是深拷贝），
+我们通过任务管理器中的内存也可以看出来有200多兆了，拷贝是非常高昂的开销，使用下面方法来解决这个问题：
+```
+std::string str("hello");
+str.resize(1024 * 1024 * 100);
+
+std::vector<std::string> v;
+v.push_back(std::move(str));
+```
+
+我们再通过任务管理器看程序运行后的内存大小发现就100兆多一点，说明上面方法避免了深拷贝。  
+其实它是用了类似浅拷贝的方式直接把str中的内存地址给拷贝过来了，同时把str指向nullptr，所以，此时
+打印str的内容发现它是空的。这样做是非常有必要的，否则两个指针指向同一块内存会造成更严重的危害，
+况且std::move通常针对的是右值（相当于临时值），所以move之后我们不太可能会再去使用它。
+
+
+上面我们就加了一个std::move就有这么大的优化，看起来很容易的。  
+其实不然，因为我演示用的是STL中的string在c++11中它自身就支持右值引用  
+截取一段源码，&&就是右值引用
+```
+basic_string(_Myt&& _Right) _NOEXCEPT
+: _Mybase(_Right._Getal())
+{	// construct by moving _Right
+_Tidy();
+_Assign_rv(_STD forward<_Myt>(_Right));
+}
+```
+
+所以，如果是我们自定义的类要想使用右值引用就要像实现拷贝构造，赋值操作符那样去实现右值引用了，举个例子：
+```
+template <class T>
+class clone_ptr
+{
+private:
+    T* ptr;
+public:
+    // 构造函数
+    explicit clone_ptr(T* p = 0) 
+    : ptr(p) 
+    {}
+
+    // 析构函数
+    ~clone_ptr() 
+    {
+      delete ptr;
+    }
+
+    // 拷贝构造
+    clone_ptr(const clone_ptr& p)
+        : ptr(p.ptr ? p.ptr->clone() : 0) 
+    {}
+
+    // 赋值操作符
+    clone_ptr& operator=(const clone_ptr& p)
+    {
+        if (this != &p)
+        {
+            delete ptr;
+            ptr = p.ptr ? p.ptr->clone() : 0;
+        }
+        return *this;
+    }
+
+    // 拷贝构造，move语法，右值引用
+    clone_ptr(clone_ptr&& p)
+        : ptr(p.ptr) 
+    {
+	p.ptr = 0;
+    }
+
+    // 赋值操作符，move语法，右值引用
+    clone_ptr& operator=(clone_ptr&& p)
+    {
+        std::swap(ptr, p.ptr);
+        return *this;
+    }
+
+    // Other operations
+    T& operator*() const {return *ptr;}
+    // ...
+};
+
+```
+std::move只是返回一个右值类型，从而调用类中实现的对右值的操作。所以关键还是类的实现，对写库的人而言增加了工作量，
+但是对用户而言还是很容易使用的，而且极大的提高了程序性能。

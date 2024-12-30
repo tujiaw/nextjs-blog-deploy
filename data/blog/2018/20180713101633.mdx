@@ -1,0 +1,61 @@
+---
+title: 'AStyle格式化代码'
+date: '2018-07-13'
+tags: ['Windows']
+draft: false
+summary: '本文介绍了一种使用Node.js脚本调用AStyle.exe来格式化代码的方法。通过配置源代码目录、AStyle参数、过滤目录列表和文件名正则表达式，可以批量格式化指定目录下的C/C++代码文件。'
+---
+
+通过Node.js脚本来调用AStyle.exe格式化代码。  
+src：需要格式化的代码目录  
+params：AStyle参数，默认使用linux风格  
+filterNameList：不进行格式化的目录，跳过这些目录  
+regSuffix：需要格式化的文件名正则  
+
+```
+const fs = require('fs')
+const path = require('path')
+const { exec } = require('child_process');
+
+/**
+ * 通过配置这几个参数来更改行为
+ */
+const src = path.normalize(__dirname)
+const params = '--style=linux --align-reference=type --align-pointer=type --pad-header --pad-comma --pad-oper --indent-preproc-block'
+const filterNameList = ['3rd', 'protobuf', 'tinyxml', 'websocket', 'win32']
+const regSuffix = /\.(h|cpp)/
+
+function syncReadAllFile(dir, cb) {
+  const subDir = fs.readdirSync(dir);
+  for (let dirName of subDir) {
+    const subPath = path.normalize(dir + '/' + dirName);
+    if (fs.lstatSync(subPath).isDirectory()) {
+      syncReadAllFile(subPath, cb);
+    } else {
+      cb(subPath)
+    }
+  }
+}
+
+let count = 0;
+syncReadAllFile(src, function(subpath) {
+  const dirname = path.dirname(subpath);
+  const basename = path.basename(subpath);
+  let isFilter = false;
+  for (let filterName of filterNameList) {
+    if (dirname.indexOf(filterName) >= 0) {
+      isFilter = true;
+      break;
+    }
+  }
+  if (!isFilter && regSuffix.test(subpath)) {
+    ++count;
+    console.log(subpath)
+    exec(path.normalize(src + '/AStyle.exe') + ' ' + subpath + ' ' + params)
+  }
+})
+
+console.log('finished total:' + count)
+
+```
+[AStyle.exe下载地址](https://www.ningto.com/astyle.rar)

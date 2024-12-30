@@ -1,0 +1,97 @@
+---
+title: 'react native中使用protobufjs'
+date: '2018-02-25'
+tags: ['React', 'Javascript']
+draft: false
+summary: 文章介绍 react native 中使用 protobufjs，需将 proto 文件转换为 json 载入，注意 lookupTypeOrEnum 查找 message 时 proto 中 enum 枚举类型会失败，还提到在不同系统降级 protobuf.js 版本的情况及相关代码片段。 
+---
+
+javascript使用protobuf google官方已经支持了可以看[这里](https://github.com/google/protobuf/tree/master/js)，我只是简单的试用了下没有深究，这篇文章介绍的是dcodeIOde的[protobuf.js](https://github.com/dcodeIO/protobuf.js)库，web端使用还是蛮方便的，但在react native中遇到了一些坑。
+
+# 载入proto文件
+使用如下代码载入proto文件是不行的
+```
+var protobuf = require("protobufjs");
+protobuf.load(protoFilePath)
+```
+
+可以用这个库自身提供的工具将proto文件转换为json文件，如：
+```
+pbjs -t json file1.proto file2.proto > bundle.json
+```
+然后，使用json的相对路径就可以load成功了
+
+# lookupTypeOrEnum
+载入proto文件成功后会返回一个root对象(代表了整个proto中的package)，使用root.lookupTypeOrEnum查找package中的message，如果proto中有enum枚举类型会失败，翻看了一些Issues才找到解决办法，作者的回复如下：
+> I see. There have been similar issues in the past and iirc these are caused by recursive dependencies in the sources (enum.js requires something that again requires enum.js) that only react native isn't able to solve for some reason. This can be solved, usually, but requires checking all the dependencies and some reordering. Have you tried using the dist files instead?
+
+讨论的地址：https://github.com/dcodeIO/protobuf.js/issues/964
+
+
+我试过使用dist遇到了一些问题没有成功，根据其中一位用户的回复，在mac上将protobuf.js降级到6.8.0版本是可以的，后来我在windows上又不能使用了，折腾一番将其降级是6.7.0又可以了。
+
+# 代码片段
+```
+/**
+     * 构建一个protobuf包
+     */
+    buildProtoPackage: function(proto_package) {
+      return new Promise((resolve, reject) => {
+        // 缓存load后的proto对象
+        if (protobufBuilders[proto_package]) {
+          return resolve(protobufBuilders[proto_package])
+        }
+
+        if (PROTO_FILE_DIR[PROTO_FILE_DIR.length - 1] !== '/') {
+          PROTO_FILE_DIR += '/'
+        }
+        const protoFilePath = PROTO_FILE_DIR + proto_package + ".proto"
+        ProtoBuf.load(protoFilePath).then((root) => {
+          protobufBuilders[proto_package] = root;
+          return resolve(root)
+        }).catch((err) => {
+          console.error('buildProtoPackage ', proto_package, err, protoFilePath)
+          return reject(err)
+        });
+      })
+    },
+    /**
+     * 构建一个protobuf对象
+     */
+    buildProtoObject: function(proto_package, proto_objectname) {
+      return new Promise((resolve, reject) => {
+        const packageName = proto_package
+        const objectName = proto_objectname
+        return this.buildProtoPackage(packageName).then((root) => {
+          const obj = root.lookupTypeOrEnum(objectName)
+          if (obj) {
+            // console.log('buildProtoObject', proto_package, proto_objectname)
+            return resolve(obj)
+          }
+          const errStr = 'builerProtoObject ' + objectName + ' failed'
+          console.error(errStr)
+          return reject(errStr)
+        })
+      })
+    },
+    request: function(cmd, proto_package, proto_request, proto_response, callback) {
+      return this.buildProtoObject(proto_package, proto_request).then((obj) => {
+        var payload = {}
+        // 在上层填充数据
+        callback.fillRequest(payload);
+        // 验证填充的数据是否有效
+        var errMsg = obj.verify(payload);
+        if (errMsg) {
+          console.error('requestOnce verify err', errMsg)
+          throw Error(errMsg);
+        }
+        // 创建消息对象
+        var message = obj.create(payload); // or use .fromObject if conversion is necessary
+        // 编码二进制流
+        var buffer = obj.encode(message).finish();
+        // 包装成ByteBuffer
+        buffer = ByteBuffer.wrap(buffer, "binary");
+        this.sendmsg(cmd, buffer, proto_package, proto_response, callback, false);
+      })
+    },
+```

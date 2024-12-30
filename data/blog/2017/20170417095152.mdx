@@ -1,0 +1,172 @@
+---
+title: '常见排序算法'
+date: '2017-04-17'
+tags: ['Windows', 'C/C++']
+draft: false
+summary: 本文介绍了常见排序算法，包括插入排序、及时终止的冒泡排序、终止不必要的选择排序和快速排序。分别给出了各算法的代码实现，通过模板函数提高通用性。 
+---
+
+```
+/*插入排序*/
+
+#include <iostream>
+using namespace std;
+
+template <class T>
+void SWAP(T &x, T &y)
+{
+	T t;
+	t = x;
+	x = y;
+	y = t;
+}
+
+template <class T>
+void Insert(T a[], int n, const T x)
+{
+	int i;
+	for (i = n-1; i >= 0 && x < a[i]; i--)
+	{
+		a[i+1] = a[i];
+	}
+	a[i+1] = x;
+}
+
+template <class T>
+void InsertionSort(T a[], int n)
+{
+	for (int i = 1; i < n; i++)
+	{
+		T t = a[i];
+		Insert(a, i, t);
+	}
+}
+```
+
+```
+/*及时终止的冒泡排序*/
+
+#include "stdafx.h"
+#include <iostream>
+using namespace std;
+
+template <class T>
+void SWAP(T &x, T &y)
+{
+	T t;
+	t = x;
+	x = y;
+	y = t;
+}
+
+template <class T>
+bool Bubble(T a[], int n)
+{
+	bool isSwapped = false;
+
+	for (int i = 0; i < n - 1; i++)
+	{
+		if (a[i] > a[i+1])
+		{
+			SWAP(a[i], a[i+1]);
+			isSwapped = true;
+		}
+	}
+	return isSwapped;
+}
+
+template <class T>
+void BubbleSort(T a[], int n)
+{
+	for (int i = n; i > 1 && Bubble(a, i); i--);
+}
+```
+
+```
+/*终止不必要的选择排序*/
+
+#include "stdafx.h"
+#include <iostream>
+using namespace std;
+
+template <class T>
+void SWAP(T &x, T &y)
+{
+	T t;
+	t = x;
+	x = y;
+	y = t;
+}
+
+template<class T>
+void SelectionSort(T a[], int n)
+{
+	bool sorted = false;
+
+	for (int size = n; !sorted && (size > 1); size--)
+	{
+		int pos = 0;
+		sorted = true;
+		for (int i = 1; i < size; i++)
+		{
+			if (a[pos] <= a[i])
+			{
+				pos = i;
+			}
+			else
+			{
+				sorted = false;
+			}
+		}
+		SWAP(a[pos], a[size-1]);
+	}
+}
+```
+
+```
+// 快速排序
+
+template <class T>
+void SWAP(T &x, T &y)
+{
+	T t;
+	t = x;
+	x = y;
+	y = t;
+}
+
+template <class T>
+int partition(T a[], int lower, int upper)
+{
+	T pivot = a[lower]; // 注意这里不要写成了a[0]
+	while (lower < upper)
+	{
+		while (lower < upper && a[upper] >= pivot) // 不要忘了加=
+		{
+			upper--;
+		}
+		SWAP(a[lower], a[upper]);
+
+		while (lower < upper && a[lower] <= pivot)
+		{
+			lower++;
+		}
+		SWAP(a[lower], a[upper]);
+	}
+
+	return lower;
+}
+
+template <class T>
+void quicksort(T a[], int lower, int upper)
+{
+	int flag;
+	if (lower < upper)
+	{
+		flag = partition(a, lower, upper);
+		quicksort(a, lower, flag - 1);
+		quicksort(a, flag + 1, upper);
+	}
+}
+```
+> 2011-08-12
