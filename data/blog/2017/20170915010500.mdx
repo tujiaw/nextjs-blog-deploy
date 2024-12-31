@@ -71,7 +71,8 @@ db.posts.count({pv: {$gt: 100}})
 ```
 db.posts.find({pv: {$gt: 100}, title:/mongo/}).pretty()  
 ```
-查询操作符  
+查询操作符
+```  
 $eq:等于  
 $gt:大于  
 $gte:大于等于  
@@ -83,7 +84,7 @@ $nin:不匹配数组中指定的值
 $size:数量为n的数组  
 $exists:查询存在某个字段  
 $type:检索集合中匹配的数据类型  
-
+```
 ## 删除记录
 删除title大于等于2000的  
 ```
