@@ -1,0 +1,101 @@
+# Start of Selection
+---
+title: '使用 Python 进行内网穿透调试'
+date: '2025-02-06'
+tags: ['Python']
+draft: false
+summary: 本文介绍如何使用 Python 结合内网穿透工具 natapp 进行本地调试，解决 XXL-Job 调度中心无法直接访问本地开发机器的问题。
+---
+
+# 使用 Python pyxxl 进行本地调试
+
+## 背景说明
+在使用 XXL-Job 进行任务调度开发时，我们经常需要在本地环境调试任务执行。当 XXL-Job 调度中心部署在云服务器上时，由于网络限制，调度中心无法直接访问本地开发机器。本文将介绍如何通过内网穿透工具解决这个问题，实现本地任务调试。
+
+## 内网穿透配置
+
+### 工具选择
+本文使用 natapp 作为内网穿透工具，它配置简单且有免费额度。当然你也可以选择其他类似工具如 ngrok、frp 等。
+
+### 启动步骤
+1. 访问 [natapp官网](https://natapp.cn) 注册账号
+2. 创建免费隧道，获取 authtoken
+3. 下载对应系统的客户端
+4. 执行以下命令启动隧道：
+```bash
+./natapp --authtoken=8004136ec904b9c1
+```
+
+成功启动后，控制台会显示如下信息：
+```
+Powered By NATAPP       Please visit https://natapp.cn                             (Ctrl+C to Quit)
+
+Tunnel Status           Online
+Version                 2.4.0
+Forwarding             http://gsx4xd.natappfree.cc -> 127.0.0.1:9999
+Web Interface          http://127.0.0.1:4040
+Total Connections      0
+```
+
+注意：确保转发端口(9999)与后续 pyxxl 配置的端口一致。
+
+## XXL-Job 执行器配置 
+
+### 执行器管理
+1. 登录 XXL-Job 调度中心管理界面
+2. 进入"执行器管理"页面
+3. 找到已有执行器或创建新执行器
+4. 修改关键配置：
+   - 注册方式：选择"手动录入"
+   - 机器地址：填写 natapp 生成的域名地址（如：http://bndfgq.natappfree.cc）
+
+## PyXXL 配置实现
+
+### 环境变量配置
+创建 `.env.dev` 文件，添加以下配置：
+```ini
+# XXL-Job 调度中心配置
+XXL_JOB_BASE_URL=http://xxl-job.dev.xxx
+XXL_JOB_ADMIN_USER=admin
+XXL_JOB_ADMIN_PASSWORD=123456
+
+# 执行器配置
+XXL_JOB_EXECUTOR_APP_NAME=myapp
+XXL_JOB_EXECUTOR_APP_ID=1
+```
+
+### 代码实现
+```python
+from pyxxl import ExecutorConfig
+
+def init_xxl_job():
+    config = ExecutorConfig(
+        xxl_admin_baseurl=f"{base_url}/api/",
+        executor_app_name=os.getenv("XXL_JOB_EXECUTOR_APP_NAME"),
+        executor_host=os.getenv("XXL_JOB_EXECUTOR_IP", "") or get_local_ip(),
+        executor_port=os.getenv("XXL_JOB_EXECUTOR_PORT", 9999),
+        executor_listen_port=9999,
+        executor_listen_host="0.0.0.0",  # 允许外部访问
+        # debug=True,  # 开启调试模式可以看到更多日志
+    )
+    return config
+```
+
+## 调试验证
+1. 确保 natapp 隧道正常运行
+2. 启动本地 Python 服务
+3. 在 XXL-Job 调度中心测试执行任务
+4. 查看本地日志确认任务是否正常执行
+
+## 常见问题
+1. 端口冲突：确保 9999 端口未被其他服务占用
+2. 连接超时：检查 natapp 隧道状态和网络连接
+3. 认证失败：验证 XXL-Job 的用户名密码配置是否正确
+
+## 注意事项
+1. natapp 免费版的域名是临时的，每次重启可能会变化
+2. 建议仅在开发测试环境使用内网穿透方案
+3. 生产环境应该使用正式的网络配置
+
+## 总结
+通过配置内网穿透和正确的 PyXXL 配置，我们可以方便地在本地开发环境调试 XXL-Job 任务。这大大提高了开发效率，使得任务开发和调试变得更加便捷。
