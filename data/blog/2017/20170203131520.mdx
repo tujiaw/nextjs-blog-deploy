@@ -3,7 +3,7 @@ title: 'Qt5.6支持高分辨率'
 date: '2017-02-03'
 tags: ['Qt']
 draft: false
-summary: Qt5.6 支持高分辨率，创建 QApplication 前加入特定代码即可。高分辨电脑需注意：别混用获取尺寸位置 API，nativeEvent 中 MSG 的 x,y 坐标需除以缩放比获取正确值。 
+summary: Qt5.6 支持高分辨率，创建 QApplication 前加入特定代码即可。高分辨电脑需注意：别混用获取尺寸位置 API，nativeEvent 中 MSG 的 x,y 坐标需除以缩放比获取正确值。
 ---
 
 Qt5.6及以后版本支持高分辨率很容易，在QApplication创建之前加入如下代码：
@@ -14,4 +14,4 @@ QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 打开这个设置之后在高分辨率的电脑上注意：
 * 不要混用获取尺寸位置相关的windows API，否则你会发现GetWindowRect获取的窗口宽高和使用QWidget函数width()，height()得到的值是不一样的；
 * 如我在程序中使用到了nativeEvent，从MSG中得到x,y坐标也不是我想要的；
-  > 目前我的解决办法的是：通过widet->devicePixelRatioF()得到在高分辨显示器上的缩放比ratio，然后MSG中的x,y坐标除以ratio就可以得到正确的值
+  > 目前我的解决办法的是：通过wiget->devicePixelRatioF()得到在高分辨显示器上的缩放比ratio，然后MSG中的x,y坐标除以ratio就可以得到正确的值
