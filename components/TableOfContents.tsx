@@ -35,8 +35,23 @@ const TableOfContents = (props: TableOfContentsProps) => {
       threshold: 0.1,
     });
 
+    // 安全获取元素函数，处理无效的选择器
+    const safelyGetElement = (url: string) => {
+      try {
+        // 如果是 ID 选择器但不合法（例如以数字开头或包含特殊字符）
+        if (url.startsWith('#')) {
+          const id = url.substring(1); // 去掉 # 符号
+          return document.getElementById(id);
+        }
+        return document.querySelector(url);
+      } catch (error) {
+        console.error('Invalid selector:', url, error);
+        return null;
+      }
+    };
+
     toc.forEach(({ url }) => {
-      const element = document.querySelector(url);
+      const element = safelyGetElement(url);
 
       if (element) {
         observer.observe(element);
@@ -45,7 +60,7 @@ const TableOfContents = (props: TableOfContentsProps) => {
 
     return () => {
       toc.forEach(({ url }) => {
-        const element = document.querySelector(url);
+        const element = safelyGetElement(url);
 
         if (element) {
           observer.unobserve(element);
@@ -58,10 +73,10 @@ const TableOfContents = (props: TableOfContentsProps) => {
     <details className={clsx('space-y-4 [&_.chevron-right]:open:rotate-90', className)} open>
       <summary className="flex cursor-pointer items-center gap-1 marker:content-none">
         <ChevronRight size={20} strokeWidth={1.5} className="chevron-right rotate-0 transition-transform" />
-        <span className="text-base font-medium">目录</span>
+        <span className="text-base font-medium">Table of Contents</span>
       </summary>
 
-      <ul className="flex flex-col space-y-2">
+      <ul className="flex flex-col space-y-2 pr-2 scrollbar-hidden">
         {toc.map(({ value, depth, url }) => (
           <li
             key={url}
@@ -77,5 +92,24 @@ const TableOfContents = (props: TableOfContentsProps) => {
     </details>
   );
 };
+
+// Add custom scrollbar styles at the end of the file
+const styleElement = typeof document !== 'undefined' ? 
+  document.createElement('style') : null;
+
+if (styleElement) {
+  styleElement.textContent = `
+    .scrollbar-hidden {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+    
+    .scrollbar-hidden::-webkit-scrollbar {
+      display: none;  /* Chrome, Safari and Opera */
+    }
+  `;
+  
+  document.head.appendChild(styleElement);
+}
 
 export default TableOfContents;

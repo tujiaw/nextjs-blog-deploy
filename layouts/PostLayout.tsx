@@ -41,23 +41,28 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
         <div className="xl:divide-y xl:divide-gray-200 xl:dark:divide-gray-700">
           <header className="pt-6 xl:pb-6">
             <div className="space-y-1 text-center">
-              <dl className="space-y-10">
-                <div>
-                  <dt className="sr-only">Published on</dt>
-                  <dd className="text-base font-medium leading-6 text-gray-500 dark:text-gray-400">
-                    <time dateTime={date}>
-                      {new Date(date).toLocaleDateString(siteMetadata.locale, postDateTemplate)}
-                    </time>
-                  </dd>
-                </div>
-              </dl>
               <div>
-                <PageTitle>{title}</PageTitle>
+                <h1 className="text-2xl font-bold leading-9 tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl sm:leading-10 md:text-4xl md:leading-13">
+                  {title}
+                </h1>
+              </div>
+              <div className="flex flex-row items-center justify-center gap-4 pt-1">
+                <div className="flex flex-wrap justify-center gap-2">
+                  {tags && tags.map((tag) => (
+                    <Tag key={tag} text={tag} />
+                  ))}
+                </div>
+                <div className="text-gray-500 dark:text-gray-400 text-lg font-bold">•</div>
+                <div>
+                  <time className="text-base font-medium text-gray-500 dark:text-gray-400" dateTime={date}>
+                    {new Date(date).toLocaleDateString(siteMetadata.locale, postDateTemplate)}
+                  </time>
+                </div>
               </div>
             </div>
           </header>
           <div className="grid-rows-[auto_1fr] divide-y divide-gray-200 pb-8 dark:divide-gray-700 xl:grid xl:grid-cols-4 xl:gap-x-6 xl:divide-y-0">
-            <TableOfContents toc={toc} className="xl:sticky xl:top-[10rem] xl:max-h-[calc(100vh-6rem)] xl:overflow-auto" />
+            <TableOfContents toc={toc} className="xl:sticky xl:top-[0rem] xl:max-h-[calc(100vh-2rem)] pt-8 xl:pt-10 xl:pr-4 overflow-hidden" />
             <div className="divide-y divide-gray-200 dark:divide-gray-700 xl:col-span-3 xl:row-span-2 xl:pb-0">
               <div className="prose max-w-none pb-8 pt-10 dark:prose-invert">{children}</div>
               
@@ -68,7 +73,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                     {next && next.path ? (
                       <div>
                         <h2 className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
-                          下一篇文章
+                          上一篇文章
                         </h2>
                         <div className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400">
                           <Link href={`/${next.path}`}>{next.title}</Link>
@@ -81,7 +86,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                     {prev && prev.path ? (
                       <div>
                         <h2 className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
-                          上一篇文章
+                          下一篇文章
                         </h2>
                         <div className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400">
                           <Link href={`/${prev.path}`}>{prev.title}</Link>
@@ -92,19 +97,6 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                 </div>
                 
                 <div className="flex flex-col items-center border-t border-gray-200 dark:border-gray-700 py-4">
-                  {tags && (
-                    <div className="w-full mb-4 text-center">
-                      <h2 className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
-                        标签
-                      </h2>
-                      <div className="flex flex-wrap justify-center">
-                        {tags.map((tag) => (
-                          <Tag key={tag} text={tag} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
                   <div className="mt-4">
                     <Link
                       href={`/${basePath}`}
