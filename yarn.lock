@@ -5426,6 +5426,11 @@ lru-cache@^5.1.1:
   dependencies:
     yallist "^3.0.2"
 
+lucide-react@^0.483.0:
+  version "0.483.0"
+  resolved "https://registry.npmmirror.com/lucide-react/-/lucide-react-0.483.0.tgz#036c538173a8c310ac6b7d6af150543e5ecdf116"
+  integrity sha512-WldsY17Qb/T3VZdMnVQ9C3DDIP7h1ViDTHVdVGnLZcvHNg30zH/MTQ04RTORjexoGmpsXroiQXZ4QyR0kBy0FA==
+
 markdown-extensions@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npmmirror.com/markdown-extensions/-/markdown-extensions-2.0.0.tgz"
