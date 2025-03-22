@@ -21,6 +21,36 @@ const projectsData: Project[] = [
     href: '/projects/hash-tool',
   },
   {
+    title: 'IP地址查询',
+    description: `IP地址查询工具，支持IPv4和IPv6地址查询，显示地理位置、ISP信息、时区等详细信息。`,
+    href: '/projects/ip-tool',
+  },
+  {
+    title: 'UUID生成器',
+    description: `生成UUID v1/v4，支持批量生成、复制、大小写切换，支持多种格式输出。`,
+    href: '/projects/uuid-tool',
+  },
+  {
+    title: 'XML格式化',
+    description: `XML格式化工具，支持格式化、压缩、美化，支持XML验证。`,
+    href: '/projects/xml-tool',
+  },
+  {
+    title: 'CSS格式化',
+    description: `CSS格式化工具，支持格式化、压缩、美化，支持CSS验证。`,
+    href: '/projects/css-tool',
+  },
+  {
+    title: 'JavaScript格式化',
+    description: `JavaScript格式化工具，支持格式化、压缩、美化，支持ESLint规则。`,
+    href: '/projects/js-tool',
+  },
+  {
+    title: 'SQL格式化',
+    description: `SQL格式化工具，支持格式化、压缩、美化，支持多种SQL方言。`,
+    href: '/projects/sql-tool',
+  },
+  {
     title: 'Acc',
     description: `快速找到你要打开的应用程序。不用为了找到某个程序的启动图标而烦恼，不用在任务栏摆一堆的快捷方式。`,
     href: 'https://github.com/tujiaw/acc',

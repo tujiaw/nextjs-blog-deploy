@@ -1,29 +1,104 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { createHash } from 'crypto'
+
+type HashType = 'md5' | 'sha1' | 'sha256' | 'sha512' | 'crc32'
+
+interface HashResult {
+  value: string
+  name: string
+  length: number
+}
 
 export default function HashTool() {
   const [input, setInput] = useState('')
-  const [md5, setMd5] = useState('')
-  const [sha1, setSha1] = useState('')
+  const [hashes, setHashes] = useState<HashResult[]>([])
   const [uppercase, setUppercase] = useState(false)
   const [error, setError] = useState('')
   const [copySuccess, setCopySuccess] = useState('')
 
+  // 计算CRC32
+  const calculateCRC32 = (text: string): string => {
+    // 预计算 CRC32 表以提高性能
+    const crc32Table = new Uint32Array(256)
+    for (let i = 0; i < 256; i++) {
+      let crc = i
+      for (let j = 0; j < 8; j++) {
+        crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0)
+      }
+      crc32Table[i] = crc
+    }
+
+    let crc = 0xffffffff
+    for (let i = 0; i < text.length; i++) {
+      crc = (crc >>> 8) ^ crc32Table[(crc ^ text.charCodeAt(i)) & 0xff]
+    }
+    return (crc ^ 0xffffffff).toString(16).padStart(8, '0')
+  }
+
+  // 测试用例
+  const testCRC32 = () => {
+    const testCases = [
+      { input: '', expected: '00000000' },
+      { input: 'The quick brown fox jumps over the lazy dog', expected: '414fa339' },
+      { input: '123456789', expected: 'cbf43926' },
+      { input: 'Hello, World!', expected: 'ebe6c6e6' }
+    ]
+
+    testCases.forEach(({ input, expected }) => {
+      const result = calculateCRC32(input)
+      console.log(`Input: "${input}"`)
+      console.log(`Expected: ${expected}`)
+      console.log(`Got: ${result}`)
+      console.log(`Match: ${result === expected}`)
+    })
+  }
+
+  // 在组件加载时运行测试
+  useEffect(() => {
+    testCRC32()
+  }, [])
+
   // 计算哈希值
   const calculateHash = useCallback((text: string) => {
     try {
-      const md5Hash = createHash('md5').update(text).digest('hex')
-      const sha1Hash = createHash('sha1').update(text).digest('hex')
-      
-      setMd5(uppercase ? md5Hash.toUpperCase() : md5Hash)
-      setSha1(uppercase ? sha1Hash.toUpperCase() : sha1Hash)
+      const results: HashResult[] = [
+        {
+          name: 'MD5',
+          value: createHash('md5').update(text).digest('hex'),
+          length: 32
+        },
+        {
+          name: 'SHA1',
+          value: createHash('sha1').update(text).digest('hex'),
+          length: 40
+        },
+        {
+          name: 'SHA256',
+          value: createHash('sha256').update(text).digest('hex'),
+          length: 64
+        },
+        {
+          name: 'SHA512',
+          value: createHash('sha512').update(text).digest('hex'),
+          length: 128
+        },
+        {
+          name: 'CRC32',
+          value: calculateCRC32(text),
+          length: 8
+        }
+      ]
+
+      setHashes(results.map(hash => ({
+        ...hash,
+        value: uppercase ? hash.value.toUpperCase() : hash.value
+      })))
       setError('')
     } catch (err) {
       setError('计算哈希值时出错')
-      setMd5('')
-      setSha1('')
+      setHashes([])
     }
   }, [uppercase])
 
@@ -34,8 +109,7 @@ export default function HashTool() {
     if (text) {
       calculateHash(text)
     } else {
-      setMd5('')
-      setSha1('')
+      setHashes([])
     }
   }
 
@@ -51,8 +125,7 @@ export default function HashTool() {
       calculateHash(text)
     } catch (err) {
       setError('读取文件时出错')
-      setMd5('')
-      setSha1('')
+      setHashes([])
     }
   }
 
@@ -110,36 +183,26 @@ export default function HashTool() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <h2 className="text-xl font-semibold mb-2">MD5</h2>
-          <div className="flex gap-2">
-            <div className="flex-1 p-4 bg-gray-50 rounded-lg font-mono break-all">
-              {md5}
+      <div className="grid grid-cols-1 gap-4">
+        {hashes.map((hash) => (
+          <div key={hash.name}>
+            <div className="flex items-center gap-2 mb-2">
+              <h2 className="text-xl font-semibold">{hash.name}</h2>
+              <span className="text-sm text-gray-500">({hash.length}位)</span>
             </div>
-            <button
-              onClick={() => copyToClipboard(md5)}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors whitespace-nowrap"
-            >
-              {copySuccess === '已复制' ? '已复制' : '复制'}
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <h2 className="text-xl font-semibold mb-2">SHA1</h2>
-          <div className="flex gap-2">
-            <div className="flex-1 p-4 bg-gray-50 rounded-lg font-mono break-all">
-              {sha1}
+            <div className="flex gap-2">
+              <div className="flex-1 p-4 bg-gray-50 rounded-lg font-mono break-all">
+                {hash.value}
+              </div>
+              <button
+                onClick={() => copyToClipboard(hash.value)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors whitespace-nowrap"
+              >
+                {copySuccess === '已复制' ? '已复制' : '复制'}
+              </button>
             </div>
-            <button
-              onClick={() => copyToClipboard(sha1)}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors whitespace-nowrap"
-            >
-              {copySuccess === '已复制' ? '已复制' : '复制'}
-            </button>
           </div>
-        </div>
+        ))}
       </div>
 
       {error && (
