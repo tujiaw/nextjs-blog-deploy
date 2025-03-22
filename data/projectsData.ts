@@ -16,6 +16,11 @@ const projectsData: Project[] = [
     href: '/projects/timestamp-tool',
   },
   {
+    title: '哈希工具',
+    description: `支持MD5、SHA1等哈希算法，支持文本和文件哈希计算，支持大小写切换。`,
+    href: '/projects/hash-tool',
+  },
+  {
     title: 'Acc',
     description: `快速找到你要打开的应用程序。不用为了找到某个程序的启动图标而烦恼，不用在任务栏摆一堆的快捷方式。`,
     href: 'https://github.com/tujiaw/acc',
