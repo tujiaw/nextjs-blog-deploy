@@ -1,3 +1,5 @@
 node_modules
 .contentlayer
 .next
+app/tag-data.json
+public/search.json
