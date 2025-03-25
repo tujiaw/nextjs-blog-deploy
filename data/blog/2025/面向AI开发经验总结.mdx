@@ -1,0 +1,72 @@
+---
+title: '面向AI开发经验总结'
+date: '2025-03-25'
+tags: ['AI', 'LLM']
+draft: false
+summary: 总结在AI驱动开发过程中的经验和最佳实践，包括如何更好地利用AI助手进行开发。
+---
+
+# 面向AI开发经验总结
+
+作为一个技术人员，我完成了一个100%由AI生成代码的项目。以下是12个快速经验总结：
+
+使用工具：Claude进行软件开发
+
+使用Cursor和Windsurf配合Claude Sonnet，我构建了一个NodeJS和MongoDB项目 - 作为一个技术人员。
+
+# 1- 从结构开始，而不是代码
+最重要的步骤是建立清晰的项目结构。在开始写代码之前就要想清楚。
+
+# 2- Ask、Edit、Agent
+我使用Ask进行头脑风暴和研究，使用Edit修改局部代码，使用Agent编写整体项目代码。
+
+# 3- 根据进展定制你的AI
+创建"AI规则"自定义指令来随着项目进展修改代理的行为，或者维护一个RulesForAI.md文件。
+```
+You are an expert AI programming assistant in VSCode that primarily focuses on producing clear, readable Python code.
+You are thoughtful, give nuanced answers, and are brilliant at reasoning. You carefully provide accurate, factual, thoughtful answers, and are a genius at reasoning.
+
+Follow the user's requirements carefully & to the letter.
+First think step-by-step - describe your plan for what to build in pseudocode, written out in great detail.
+Confirm, then write code!
+Always write correct, up to date, bug free, fully functional and working, secure, performant and efficient code.
+Focus on readability over being performant.
+Fully implement all requested functionality.
+Leave NO todo's, placeholders or missing pieces.
+Ensure code is complete! Verify thoroughly finalized.
+Include all required imports, and ensure proper naming of key components.
+Be concise. Minimize any other prose.
+If you think there might not be a correct answer, you say so. If you do not know the answer, say so instead of guessing.
+```
+
+# 4- 分解复杂问题
+不要直接说"从PDF提取文本并生成摘要"。这是两个问题！先提取文本，再生成摘要。一次解决一个问题。
+
+# 5- 编码前先头脑风暴
+与AI分享你对解决问题的想法。一旦它的解决步骤看起来不错，再让它写代码。
+
+# 6- 文件命名和模块化很重要
+由于像Cursor/Windsurf这样的工具不会包含所有文件在上下文中（以降低成本），准确的文件命名可以防止代码重复。确保文件名清楚地描述其职责。
+
+# 7- 始终编写测试
+当你的项目还小时可能感觉不必要，但当它成长时，测试将成为你的救星。
+
+# 8- 经常提交！
+如果不这样做，你会像这个Reddit帖子中的人一样失去4个月的工作。
+
+# 9- 保持聊天聚焦
+当你想解决新问题时，开始新的聊天。
+
+# 10- 不要仅仅接受能工作的代码
+很容易接受能工作的代码就继续前进。但会有AI无法修复你的bug的时候 - 这就是为什么非技术人员仍然需要开发者的主要原因。
+
+# 11- AI在新技术上会困难
+当我尝试集成新的支付网关时，它出现了幻觉。但一旦我提供了文档，它就做对了。
+
+# 12- 摆脱困境
+如果AI找不到代码中的问题并陷入循环，请让它插入调试语句。AI在调试方面很出色，但有时需要你的帮助来指出正确的方向。
+
+> 虽然我不建议让AI生成100%的代码库，但在一个不是很重要的新项目上经历类似的经验是很好的，你将实际学习如何有效地利用AI。
+
+* 这是一个训练项目，不是一个有用的产品。
+
