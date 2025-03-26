@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
 import { Menu, RadioGroup, Transition } from '@headlessui/react'
+import FairyDustCursor from './FairyDustCursor'
 
 const Sun = () => (
   <svg
@@ -49,9 +50,21 @@ const Blank = () => <svg className="h-6 w-6" />
 const ThemeSwitch = () => {
   const [mounted, setMounted] = useState(false)
   const { theme, setTheme, resolvedTheme } = useTheme()
+  const [isFairyDustEnabled, setIsFairyDustEnabled] = useState(false)
 
   // When mounted on client, now we can show the UI
-  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    setMounted(true)
+    // 从localStorage获取仙尘光标状态
+    const isEnabled = localStorage.getItem('fairyDustCursor') === 'true'
+    setIsFairyDustEnabled(isEnabled)
+  }, [])
+
+  const toggleFairyDust = () => {
+    const newState = !isFairyDustEnabled
+    setIsFairyDustEnabled(newState)
+    localStorage.setItem('fairyDustCursor', newState.toString())
+  }
 
   return (
     <div className="mr-5 flex items-center">
@@ -121,11 +134,27 @@ const ThemeSwitch = () => {
                     )}
                   </Menu.Item>
                 </RadioGroup.Option>
+                <Menu.Item>
+                  {({ active }) => (
+                    <button
+                      onClick={toggleFairyDust}
+                      className={`${
+                        active ? 'bg-primary-600 text-white' : ''
+                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                    >
+                      <div className="mr-2">
+                        <span className="text-lg">✨</span>
+                      </div>
+                      {isFairyDustEnabled ? '关闭仙尘' : '开启仙尘'}
+                    </button>
+                  )}
+                </Menu.Item>
               </div>
             </RadioGroup>
           </Menu.Items>
         </Transition>
       </Menu>
+      <FairyDustCursor />
     </div>
   )
 }
