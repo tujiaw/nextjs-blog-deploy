@@ -65,7 +65,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
           <div className="grid-rows-[auto_1fr] divide-y divide-gray-200 pb-8 dark:divide-gray-700 xl:grid xl:grid-cols-4 xl:gap-x-6 xl:divide-y-0">
             <TableOfContents
               toc={toc}
-              className="overflow-hidden pt-8 xl:sticky xl:top-[0rem] xl:max-h-[calc(100vh-2rem)] xl:pr-4 xl:pt-10"
+              className="overflow-hidden pt-8 xl:sticky xl:top-[8rem] xl:max-h-[calc(100vh-8rem)] xl:pr-4 xl:pt-10"
             />
             <div className="divide-y divide-gray-200 dark:divide-gray-700 xl:col-span-3 xl:row-span-2 xl:pb-0">
               <div className="prose max-w-none pb-8 pt-10 dark:prose-invert">{children}</div>

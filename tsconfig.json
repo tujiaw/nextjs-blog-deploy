@@ -40,7 +40,8 @@
     ".contentlayer/generated",
     ".contentlayer/generated/**/*.json",
     ".next/types/**/*.ts",
-    "components/**/*.tsx"
+    "components/**/*.tsx",
+    "layouts/**/*.tsx"
   ],
   "exclude": ["node_modules"]
 }
