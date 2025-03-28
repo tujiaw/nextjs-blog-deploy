@@ -45,6 +45,28 @@ const Monitor = () => (
     <line x1="10" y1="13" x2="10" y2="17"></line>
   </svg>
 )
+
+const FairyWand = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="group:hover:text-gray-100 h-6 w-6"
+  >
+    {/* 星星 */}
+    <path d="M10 2L12 7L17 7L13 10L15 15L10 12L5 15L7 10L3 7L8 7L10 2Z" />
+    {/* 棒身 */}
+    <path d="M10 12L10 18" strokeWidth="2" />
+    {/* 装饰 */}
+    <circle cx="10" cy="14" r="1" fill="currentColor" />
+    <circle cx="10" cy="16" r="0.5" fill="currentColor" />
+  </svg>
+)
+
 const Blank = () => <svg className="h-6 w-6" />
 
 const ThemeSwitch = () => {
@@ -143,9 +165,9 @@ const ThemeSwitch = () => {
                       } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                     >
                       <div className="mr-2">
-                        <span className="text-lg">✨</span>
+                        <FairyWand />
                       </div>
-                      {isFairyDustEnabled ? '关闭仙尘' : '开启仙尘'}
+                      {isFairyDustEnabled ? 'Fairy Dust' : 'Fairy Dust'}
                     </button>
                   )}
                 </Menu.Item>
@@ -154,7 +176,7 @@ const ThemeSwitch = () => {
           </Menu.Items>
         </Transition>
       </Menu>
-      <FairyDustCursor />
+      <FairyDustCursor isEnabled={isFairyDustEnabled} />
     </div>
   )
 }

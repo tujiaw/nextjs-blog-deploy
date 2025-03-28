@@ -43,5 +43,5 @@
     "components/**/*.tsx",
     "layouts/**/*.tsx"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", ".contentlayer", ".next", ".husky"]
 }

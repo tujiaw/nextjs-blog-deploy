@@ -135,22 +135,25 @@ function fairyDustCursor(isStart: boolean) {
   if (!('ontouchstart' in window || navigator.maxTouchPoints > 0)) init()
 }
 
-export default function FairyDustCursor() {
-  const [isEnabled, setIsEnabled] = useState(false)
+export default function FairyDustCursor({ isEnabled }: { isEnabled: boolean }) {
   const cursorContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // 创建光标容器
-      const container = document.createElement('div')
-      container.className = 'js-cursor-container'
-      document.body.appendChild(container)
+      // 先清理现有的容器和效果
+      const existingContainer = document.querySelector('.js-cursor-container')
+      if (existingContainer) {
+        existingContainer.remove()
+      }
+      fairyDustCursor(false)
 
-      // 从localStorage获取状态
-      const savedState = localStorage.getItem('fairyDustCursor')
-      const initialState = savedState === 'true'
-      setIsEnabled(initialState)
-      fairyDustCursor(initialState)
+      // 如果需要启用，创建新容器并初始化
+      if (isEnabled) {
+        const container = document.createElement('div')
+        container.className = 'js-cursor-container'
+        document.body.appendChild(container)
+        fairyDustCursor(true)
+      }
 
       return () => {
         // 清理
@@ -161,21 +164,7 @@ export default function FairyDustCursor() {
         fairyDustCursor(false)
       }
     }
-  }, [])
+  }, [isEnabled])
 
-  const toggleFairyDust = () => {
-    const newState = !isEnabled
-    setIsEnabled(newState)
-    localStorage.setItem('fairyDustCursor', String(newState))
-    fairyDustCursor(newState)
-  }
-
-  return (
-    <button
-      onClick={toggleFairyDust}
-      className="fixed bottom-4 right-4 z-50 rounded-lg bg-gray-800 px-4 py-2 text-white shadow-lg transition-colors hover:bg-gray-700"
-    >
-      {isEnabled ? '关闭仙尘' : '开启仙尘'}
-    </button>
-  )
+  return null
 }
