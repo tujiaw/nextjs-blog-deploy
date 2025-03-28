@@ -7,7 +7,7 @@ module.exports = {
     '@typescript-eslint/no-unsafe-member-access': 'off',
     '@typescript-eslint/no-unsafe-call': 'off',
     '@typescript-eslint/no-unsafe-return': 'off',
-    'prettier/prettier': 'off'
+    'prettier/prettier': 'off',
   },
-  ignorePatterns: ['components/FairyDustCursor.tsx']
-} 
+  ignorePatterns: ['components/FairyDustCursor.tsx'],
+}
