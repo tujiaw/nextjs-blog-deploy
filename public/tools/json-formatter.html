@@ -298,6 +298,16 @@
             cursor: default; /* 改为默认光标，因为只有三角形可点击 */
         }
         
+        /* 添加右括号对齐样式 */
+        .json-item-wrapper {
+            position: relative;
+        }
+        
+        .json-item-wrapper .closing-brace {
+            padding-left: 0; /* 移除左边距使其与左括号对齐 */
+            line-height: 1.5;
+        }
+        
         .json-children {
             display: none;
             padding-left: 20px;
@@ -695,6 +705,21 @@
             
             // 递归构建 JSON 结构
             function buildJsonItem(obj, key = null) {
+                // 确保样式只添加一次
+                if (!document.getElementById('json-tree-styles')) {
+                    const styleElement = document.createElement('style');
+                    styleElement.id = 'json-tree-styles';
+                    styleElement.textContent = `
+                        .json-item-wrapper .closing-brace {
+                            display: none;
+                        }
+                        .json-item-wrapper .json-item.expanded + .closing-brace {
+                            display: block;
+                        }
+                    `;
+                    document.head.appendChild(styleElement);
+                }
+                
                 const isArray = Array.isArray(obj);
                 const isObject = obj !== null && typeof obj === 'object';
                 const itemDiv = document.createElement('div');
@@ -767,19 +792,32 @@
                         });
                     }
                     
-                    // 添加右括号
-                    childrenDiv.innerHTML += `<div class="json-item"><span class="brace">${isArray ? ']' : '}'}</span></div>`;
+                    // 移除旧的右括号添加方式
+                    // childrenDiv.innerHTML += `<div class="json-item"><span class="brace">${isArray ? ']' : '}'}</span></div>`;
                     
                     // 为外部容器添加右括号（在折叠时显示）
                     const closeBrace = document.createElement('span');
                     closeBrace.className = 'brace collapsed-brace';
                     closeBrace.textContent = isArray ? ']' : '}';
+                    
+                    // 添加子项容器
                     itemDiv.appendChild(childrenDiv);
                     itemDiv.appendChild(closeBrace);
                     
+                    // 创建一个与左括号对齐的右括号元素
+                    const closingBraceDiv = document.createElement('div');
+                    closingBraceDiv.className = 'json-item closing-brace';
+                    closingBraceDiv.innerHTML = `<span class="brace">${isArray ? ']' : '}'}</span>`;
+                    
+                    // 将对齐的右括号元素添加到父元素中
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'json-item-wrapper';
+                    wrapper.appendChild(itemDiv);
+                    wrapper.appendChild(closingBraceDiv);
+                    
                     itemDiv.classList.add('expanded'); // 默认展开
                     
-                    return itemDiv;
+                    return wrapper;
                 } else {
                     // 基本类型值的处理
                     const valueType = (obj === null) ? 'null' : typeof obj;
