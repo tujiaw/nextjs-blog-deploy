@@ -429,6 +429,7 @@
             <div class="buttons">
                 <button class="ui tiny primary button" id="format-btn">Format</button>
                 <button class="ui tiny button" id="minify-btn">Minify</button>
+                <button class="ui tiny button" id="sort-btn">Sort</button>
                 <button class="ui tiny button" id="validate-btn">Validate</button>
                 <button class="ui tiny button" id="copy-btn">Copy</button>
                 <button class="ui tiny button" id="clear-btn">Clear</button>
@@ -850,6 +851,7 @@
                 const textViewContainer = $('#text-view');
                 const formatBtn = $('#format-btn');
                 const minifyBtn = $('#minify-btn');
+                const sortBtn = $('#sort-btn');
                 const validateBtn = $('#validate-btn');
                 const errorMessage = $('#error-message');
                 const indentDropdown = $('#indent-dropdown');
@@ -990,6 +992,12 @@
                 validateBtn.on('click', function() {
                     if ($(this).hasClass('disabled')) return; // 阻止树模式下的操作
                     validateJson();
+                });
+                
+                // Sort JSON
+                sortBtn.on('click', function() {
+                    if ($(this).hasClass('disabled')) return; // 阻止树模式下的操作
+                    sortJson();
                 });
                 
                 // Clear input
@@ -1164,6 +1172,74 @@
                         currentJson = null; // Invalidate JSON on error
                         treeViewContainer.html(''); // Clear tree on error
                     }
+                }
+                
+                // Sort JSON function
+                function sortJson() {
+                    try {
+                        const startTime = performance.now();
+                        const content = jsonInput.val().trim();
+                        
+                        // Apply JSON repair if checkbox is checked
+                        const shouldRepair = $('#fix-json-checkbox input').is(':checked');
+                        if (shouldRepair && content) {
+                            const repaired = repairJson(content);
+                            currentJson = JSON.parse(repaired);
+                        } else {
+                            currentJson = JSON.parse(content);
+                        }
+                        
+                        // Sort the JSON object
+                        const sorted = sortObject(currentJson);
+                        
+                        // Update the textarea with sorted JSON
+                        const indent = getIndentation();
+                        jsonInput.val(JSON.stringify(sorted, null, indent));
+                        errorMessage.addClass('hidden');
+
+                        // Set text to not wrap in formatted mode
+                        document.getElementById('json-input').style.whiteSpace = 'pre';
+
+                        const endTime = performance.now();
+                        statusMessage.text(`Sorted in ${(endTime - startTime).toFixed(2)}ms`);
+                        updateCharCount();
+                        updateLineNumbers();
+                        
+                        // Success animation for button
+                        sortBtn.addClass('positive').delay(1000).queue(function(){
+                            $(this).removeClass('positive').dequeue();
+                        });
+                        
+                        renderTreeView(); // Update tree view
+                    } catch (e) {
+                        showError(e.message);
+                        currentJson = null; // Invalidate JSON on error
+                        treeViewContainer.html(''); // Clear tree on error
+                    }
+                }
+                
+                // Sort object keys recursively
+                function sortObject(obj) {
+                    // If not an object or null, return the same value
+                    if (obj === null || typeof obj !== 'object') {
+                        return obj;
+                    }
+                    
+                    // Handle arrays - sort each element but keep array order
+                    if (Array.isArray(obj)) {
+                        return obj.map(item => sortObject(item));
+                    }
+                    
+                    // Create a new object with sorted keys
+                    const sorted = {};
+                    const keys = Object.keys(obj).sort();
+                    
+                    // Add each key-value pair in sorted order
+                    for (const key of keys) {
+                        sorted[key] = sortObject(obj[key]);
+                    }
+                    
+                    return sorted;
                 }
                 
                 // Repair JSON function to fix common syntax errors
