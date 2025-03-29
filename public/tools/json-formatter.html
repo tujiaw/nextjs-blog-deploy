@@ -262,7 +262,7 @@
         .json-item {
             white-space: nowrap;
             margin: 2px 0;
-            cursor: pointer;
+            cursor: default; /* 改为默认光标，因为只有三角形可点击 */
         }
         
         .json-children {
@@ -741,40 +741,30 @@
                             const treeHtml = createTreeView(currentJson);
                             treeViewContainer.html(treeHtml);
                             
-                            // 添加点击json-item的事件，点击item时也触发展开/折叠
+                            // 删除在json-item上的点击事件，只保留expand-icon上的点击事件
                             if (typeof $ !== 'undefined') {
-                                // 绑定到整个容器而不是单个项目，以便动态处理
-                                $('#json-tree').off('click').on('click', '.json-item[data-expandable="true"]', function(e) {
-                                    // 检查点击是否发生在 expand-icon 上，如果是，不做任何事情
-                                    // 因为 expand-icon 有它自己的点击处理程序
-                                    const target = e.target;
-                                    if (target.classList.contains('expand-icon')) {
-                                        return;
-                                    }
-                                    
-                                    // 如果点击在任何其他元素上，切换展开状态
-                                    $(this).toggleClass('expanded');
+                                // 确保只有三角形图标可以触发展开/折叠
+                                $('#json-tree').off('click');
+                                // 为expand-icon重新绑定事件，确保它正常工作
+                                $('#json-tree').on('click', '.expand-icon', function(e) {
+                                    const parentItem = this.parentNode;
+                                    parentItem.classList.toggle('expanded');
                                     e.stopPropagation();
                                 });
                             } else {
                                 // 原生 JavaScript 回退
                                 const container = document.getElementById('json-tree');
-                                container.addEventListener('click', function(e) {
-                                    // 递归查找最近的 json-item 父元素
-                                    let target = e.target;
-                                    while (target && target !== container) {
-                                        if (target.classList.contains('json-item') && 
-                                            target.getAttribute('data-expandable') === 'true') {
-                                            // 不处理 expand-icon 点击
-                                            if (!e.target.classList.contains('expand-icon')) {
-                                                target.classList.toggle('expanded');
-                                                e.stopPropagation();
-                                            }
-                                            break;
-                                        }
-                                        target = target.parentNode;
+                                container.removeEventListener('click', container.clickHandler);
+                                
+                                // 添加专门针对expand-icon的点击处理
+                                container.clickHandler = function(e) {
+                                    if (e.target.classList.contains('expand-icon')) {
+                                        const parentItem = e.target.parentNode;
+                                        parentItem.classList.toggle('expanded');
+                                        e.stopPropagation();
                                     }
-                                });
+                                };
+                                container.addEventListener('click', container.clickHandler);
                             }
 
                             const endTime = performance.now();
