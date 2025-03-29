@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timestamp Converter</title>
+    <!-- Semantic UI CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <!-- Semantic UI JS -->
+    <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>
+    <!-- Moment.js for timestamp handling -->
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <!-- Moment Timezone -->
+    <script src="https://cdn.jsdelivr.net/npm/moment-timezone@0.5.37/builds/moment-timezone-with-data.min.js"></script>
+    <style>
+        body {
+            padding: 2em;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .result-section {
+            margin-top: 2em;
+        }
+        .timezone-dropdown {
+            margin-top: 1em;
+        }
+        .ui.card {
+            width: 100%;
+        }
+        .history-item {
+            cursor: pointer;
+        }
+        #currentTime {
+            margin-bottom: 1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="ui header">
+            <i class="clock outline icon"></i>
+            <div class="content">
+                Timestamp Converter
+                <div class="sub header">Convert between timestamps and human-readable dates</div>
+            </div>
+        </h1>
+
+        <div id="currentTime" class="ui message">
+            <div class="header">Current Time</div>
+            <p id="currentTimeValue"></p>
+        </div>
+
+        <div class="ui top attached tabular menu">
+            <a class="active item" data-tab="timestamp-to-date">Timestamp to Date</a>
+            <a class="item" data-tab="date-to-timestamp">Date to Timestamp</a>
+        </div>
+
+        <!-- Timestamp to Date Tab -->
+        <div class="ui bottom attached active tab segment" data-tab="timestamp-to-date">
+            <div class="ui form">
+                <div class="field">
+                    <label>Enter Timestamp (seconds or milliseconds)</label>
+                    <div class="ui action input">
+                        <input type="text" id="timestampInput" placeholder="e.g., 1634567890 or 1634567890000">
+                        <button class="ui button" id="nowButton">Now</button>
+                        <button class="ui primary button" id="convertTimestampButton">Convert</button>
+                    </div>
+                </div>
+                
+                <div class="inline fields">
+                    <label>Timestamp Format:</label>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="timestampFormat" id="secondsFormat" checked>
+                            <label>Seconds</label>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="timestampFormat" id="millisecondsFormat">
+                            <label>Milliseconds</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field timezone-dropdown">
+                    <label>Timezone</label>
+                    <select class="ui dropdown" id="timezoneSelect">
+                        <!-- Will be populated by JavaScript -->
+                    </select>
+                </div>
+            </div>
+
+            <div class="result-section" id="dateResult" style="display: none;">
+                <div class="ui card">
+                    <div class="content">
+                        <div class="header">Converted Date</div>
+                        <div class="description">
+                            <table class="ui celled table">
+                                <tbody id="dateResultTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Date to Timestamp Tab -->
+        <div class="ui bottom attached tab segment" data-tab="date-to-timestamp">
+            <div class="ui form">
+                <div class="fields">
+                    <div class="twelve wide field">
+                        <label>Enter Date and Time</label>
+                        <input type="datetime-local" id="datetimeInput">
+                    </div>
+                    <div class="four wide field">
+                        <label>&nbsp;</label>
+                        <button class="ui fluid primary button" id="convertDateButton">Convert</button>
+                    </div>
+                </div>
+
+                <div class="field timezone-dropdown">
+                    <label>Timezone</label>
+                    <select class="ui dropdown" id="timezoneSelectDate">
+                        <!-- Will be populated by JavaScript -->
+                    </select>
+                </div>
+            </div>
+
+            <div class="result-section" id="timestampResult" style="display: none;">
+                <div class="ui card">
+                    <div class="content">
+                        <div class="header">Converted Timestamp</div>
+                        <div class="description">
+                            <table class="ui celled table">
+                                <tbody id="timestampResultTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversion History -->
+        <div class="ui segment" style="margin-top: 2em;">
+            <h3 class="ui header">Conversion History</h3>
+            <div class="ui divided list" id="historyList">
+                <!-- History items will be added here -->
+            </div>
+            <button class="ui small button" id="clearHistoryButton">Clear History</button>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Initialize Semantic UI components
+            $('.ui.dropdown').dropdown();
+            $('.tabular.menu .item').tab();
+            $('.ui.checkbox').checkbox();
+            
+            // Populate timezone dropdown
+            const timezones = moment.tz.names();
+            const localTimezone = moment.tz.guess();
+            
+            const populateTimezoneDropdown = (elementId) => {
+                const select = document.getElementById(elementId);
+                select.innerHTML = '';
+                
+                // Add local timezone first
+                const localOption = document.createElement('option');
+                localOption.value = localTimezone;
+                localOption.textContent = `${localTimezone} (Local)`;
+                localOption.selected = true;
+                select.appendChild(localOption);
+                
+                // Common timezones
+                const commonTimezones = [
+                    'UTC', 
+                    'America/New_York', 
+                    'America/Los_Angeles', 
+                    'Europe/London', 
+                    'Europe/Paris', 
+                    'Asia/Tokyo', 
+                    'Asia/Shanghai'
+                ];
+                
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = 'Common Timezones';
+                
+                commonTimezones.forEach(tz => {
+                    if (tz !== localTimezone) {
+                        const option = document.createElement('option');
+                        option.value = tz;
+                        option.textContent = tz;
+                        optgroup.appendChild(option);
+                    }
+                });
+                
+                select.appendChild(optgroup);
+                
+                // All other timezones
+                const allOtherGroup = document.createElement('optgroup');
+                allOtherGroup.label = 'All Timezones';
+                
+                timezones.forEach(tz => {
+                    if (!commonTimezones.includes(tz) && tz !== localTimezone) {
+                        const option = document.createElement('option');
+                        option.value = tz;
+                        option.textContent = tz;
+                        allOtherGroup.appendChild(option);
+                    }
+                });
+                
+                select.appendChild(allOtherGroup);
+            };
+            
+            populateTimezoneDropdown('timezoneSelect');
+            populateTimezoneDropdown('timezoneSelectDate');
+            
+            // Update current time
+            function updateCurrentTime() {
+                const now = moment();
+                $('#currentTimeValue').html(`
+                    <strong>Local:</strong> ${now.format('YYYY-MM-DD HH:mm:ss')} | 
+                    <strong>UTC:</strong> ${now.utc().format('YYYY-MM-DD HH:mm:ss')} | 
+                    <strong>Unix Timestamp:</strong> ${Math.floor(now.valueOf() / 1000)}
+                `);
+            }
+            
+            setInterval(updateCurrentTime, 1000);
+            updateCurrentTime();
+            
+            // Set Now button
+            $('#nowButton').click(function() {
+                const now = moment();
+                const format = $('#secondsFormat').prop('checked') ? 'seconds' : 'milliseconds';
+                $('#timestampInput').val(format === 'seconds' ? Math.floor(now.valueOf() / 1000) : now.valueOf());
+            });
+            
+            // Convert timestamp to date
+            $('#convertTimestampButton').click(function() {
+                const timestampInput = $('#timestampInput').val().trim();
+                if (!timestampInput) return;
+                
+                let timestamp = parseInt(timestampInput);
+                if (isNaN(timestamp)) return;
+                
+                // Auto-detect or use selected format
+                let format;
+                if (timestampInput.length > 10) {
+                    format = 'milliseconds';
+                    $('#millisecondsFormat').prop('checked', true);
+                } else {
+                    format = 'seconds';
+                    $('#secondsFormat').prop('checked', true);
+                }
+                
+                // Convert to milliseconds if in seconds
+                if (format === 'seconds') {
+                    timestamp *= 1000;
+                }
+                
+                const timezone = $('#timezoneSelect').val();
+                const date = moment(timestamp).tz(timezone);
+                
+                if (!date.isValid()) {
+                    $('#dateResult').hide();
+                    return;
+                }
+                
+                // Display results
+                const resultTable = $('#dateResultTable');
+                resultTable.empty();
+                
+                const formats = [
+                    { label: 'ISO 8601', value: date.format() },
+                    { label: 'Date & Time', value: date.format('YYYY-MM-DD HH:mm:ss') },
+                    { label: 'Date', value: date.format('YYYY-MM-DD') },
+                    { label: 'Time', value: date.format('HH:mm:ss') },
+                    { label: 'Day of Week', value: date.format('dddd') },
+                    { label: 'Timezone', value: timezone },
+                    { label: 'UTC Offset', value: date.format('Z') },
+                    { label: 'Relative', value: date.fromNow() }
+                ];
+                
+                formats.forEach(item => {
+                    resultTable.append(`
+                        <tr>
+                            <td class="four wide"><strong>${item.label}</strong></td>
+                            <td class="twelve wide">${item.value}</td>
+                        </tr>
+                    `);
+                });
+                
+                $('#dateResult').show();
+                
+                // Add to history
+                addToHistory('timestamp', timestampInput, date.format('YYYY-MM-DD HH:mm:ss'), timezone);
+            });
+            
+            // Convert date to timestamp
+            $('#convertDateButton').click(function() {
+                const datetimeInput = $('#datetimeInput').val();
+                if (!datetimeInput) return;
+                
+                const timezone = $('#timezoneSelectDate').val();
+                const date = moment.tz(datetimeInput, timezone);
+                
+                if (!date.isValid()) {
+                    $('#timestampResult').hide();
+                    return;
+                }
+                
+                // Display results
+                const resultTable = $('#timestampResultTable');
+                resultTable.empty();
+                
+                const formats = [
+                    { label: 'Unix Timestamp (seconds)', value: Math.floor(date.valueOf() / 1000) },
+                    { label: 'Unix Timestamp (milliseconds)', value: date.valueOf() },
+                    { label: 'ISO 8601', value: date.format() },
+                    { label: 'UTC', value: date.utc().format('YYYY-MM-DD HH:mm:ss') },
+                    { label: 'Timezone', value: timezone },
+                    { label: 'Relative', value: date.fromNow() }
+                ];
+                
+                formats.forEach(item => {
+                    resultTable.append(`
+                        <tr>
+                            <td class="four wide"><strong>${item.label}</strong></td>
+                            <td class="twelve wide">${item.value}</td>
+                        </tr>
+                    `);
+                });
+                
+                $('#timestampResult').show();
+                
+                // Add to history
+                addToHistory('date', datetimeInput, Math.floor(date.valueOf() / 1000), timezone);
+            });
+            
+            // History functionality
+            function loadHistory() {
+                const history = JSON.parse(localStorage.getItem('timestampConverterHistory') || '[]');
+                const historyList = $('#historyList');
+                historyList.empty();
+                
+                history.forEach((item, index) => {
+                    historyList.append(`
+                        <div class="item history-item" data-index="${index}">
+                            <div class="right floated content">
+                                <div class="ui small label">${item.timezone}</div>
+                            </div>
+                            <i class="clock outline icon"></i>
+                            <div class="content">
+                                <div class="header">${item.from} → ${item.to}</div>
+                                <div class="description">${moment(item.timestamp).format('YYYY-MM-DD HH:mm:ss')}</div>
+                            </div>
+                        </div>
+                    `);
+                });
+            }
+            
+            function addToHistory(type, from, to, timezone) {
+                const history = JSON.parse(localStorage.getItem('timestampConverterHistory') || '[]');
+                history.unshift({
+                    type,
+                    from,
+                    to,
+                    timezone,
+                    timestamp: Date.now()
+                });
+                
+                // Limit history to 10 items
+                if (history.length > 10) {
+                    history.pop();
+                }
+                
+                localStorage.setItem('timestampConverterHistory', JSON.stringify(history));
+                loadHistory();
+            }
+            
+            // Load history on page load
+            loadHistory();
+            
+            // Handle history item clicks
+            $(document).on('click', '.history-item', function() {
+                const index = $(this).data('index');
+                const history = JSON.parse(localStorage.getItem('timestampConverterHistory') || '[]');
+                const item = history[index];
+                
+                if (item.type === 'timestamp') {
+                    // Switch to timestamp tab
+                    $('.tabular.menu .item[data-tab="timestamp-to-date"]').tab('change tab', 'timestamp-to-date');
+                    $('#timestampInput').val(item.from);
+                    $('#timezoneSelect').dropdown('set selected', item.timezone);
+                    $('#convertTimestampButton').click();
+                } else {
+                    // Switch to date tab
+                    $('.tabular.menu .item[data-tab="date-to-timestamp"]').tab('change tab', 'date-to-timestamp');
+                    $('#datetimeInput').val(item.from);
+                    $('#timezoneSelectDate').dropdown('set selected', item.timezone);
+                    $('#convertDateButton').click();
+                }
+            });
+            
+            // Clear history
+            $('#clearHistoryButton').click(function() {
+                localStorage.removeItem('timestampConverterHistory');
+                loadHistory();
+            });
+            
+            // Auto-fill current date on page load
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            $('#datetimeInput').val(`${year}-${month}-${day}T${hours}:${minutes}`);
+        });
+    </script>
+</body>
+</html> 

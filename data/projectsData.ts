@@ -7,8 +7,14 @@ interface Project {
 
 const projectsData: Project[] = [
   {
+    title: 'Timestamp Converter',
+    description: `时间戳转换工具，支持毫秒/秒级时间戳与日期的双向转换，多时区支持，提供历史记录功能。在浏览器中完全本地运行，数据不会发送到服务器。`,
+    imgSrc: '/static/images/timestamp-converter.png',
+    href: '/tools/timestamp-converter.html',
+  },
+  {
     title: 'JSON Formatter',
-    description: `纯HTML实现的JSON格式化工具，支持格式化、压缩、验证JSON数据，可自定义缩进方式，一键复制结果。完全在浏览器中运行，数据不会发送到服务器。`,
+    description: `JSON格式化工具，支持格式化、压缩、验证JSON数据，可自定义缩进方式，一键复制结果。完全在浏览器中运行，数据不会发送到服务器。`,
     imgSrc: '/static/images/json-formatter.png',
     href: '/tools/json-formatter.html',
   },
