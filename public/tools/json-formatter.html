@@ -254,8 +254,7 @@
             color: #888;
         }
         
-        .expanded > .expand-icon::before,
-        .expanded .expand-icon::before {
+        .expanded > .expand-icon::before {
             content: "▼";
             color: #333;
         }
@@ -263,6 +262,7 @@
         .json-item {
             white-space: nowrap;
             margin: 2px 0;
+            cursor: pointer;
         }
         
         .json-children {
@@ -272,6 +272,17 @@
         
         .expanded > .json-children {
             display: block;
+        }
+        
+        .collapsed-indicator {
+            display: none;
+            color: #888;
+            padding: 0 3px;
+            font-style: italic;
+        }
+        
+        .json-item:not(.expanded) > .collapsed-indicator {
+            display: inline-block;
         }
         
         /* 为不同类型的值添加颜色 */
@@ -521,6 +532,11 @@
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'json-item';
                 
+                // 为对象和数组添加可点击属性
+                if (isObject) {
+                    itemDiv.setAttribute('data-expandable', 'true');
+                }
+                
                 // 生成行号
                 lineNumbersDiv.innerHTML += lineNum + '<br>';
                 
@@ -542,12 +558,17 @@
                     expandIcon.className = 'expand-icon';
                     expandIcon.onclick = function(e) {
                         e.stopPropagation(); // 防止事件冒泡
-                        itemDiv.classList.toggle('expanded');
+                        const parentItem = this.parentNode;
+                        parentItem.classList.toggle('expanded');
                     };
                     itemDiv.appendChild(expandIcon);
                     
                     // 添加左括号（与文本视图格式一致）
                     content += `<span class="brace">${isArray ? '[' : '{'}</span>`;
+                    
+                    // 添加折叠时显示的省略号
+                    content += `<span class="collapsed-indicator">...</span>`;
+                    
                     itemDiv.innerHTML += content;
                     
                     // 创建子项的容器
@@ -580,7 +601,13 @@
                     lineNumbersDiv.innerHTML += lineNum + '<br>';
                     childrenDiv.innerHTML += `<div class="json-item"><span class="brace">${isArray ? ']' : '}'}</span></div>`;
                     
+                    // 为外部容器添加右括号（在折叠时显示）
+                    const closeBrace = document.createElement('span');
+                    closeBrace.className = 'brace';
+                    closeBrace.textContent = isArray ? ']' : '}';
                     itemDiv.appendChild(childrenDiv);
+                    itemDiv.appendChild(closeBrace);
+                    
                     itemDiv.classList.add('expanded'); // 默认展开
                     lineNum++;
                     
@@ -716,22 +743,37 @@
                             
                             // 添加点击json-item的事件，点击item时也触发展开/折叠
                             if (typeof $ !== 'undefined') {
-                                $('.json-item').on('click', function(e) {
-                                    // 只有点击在.json-item上，而不是子元素上时才展开/折叠
-                                    if (e.target === this) {
-                                        $(this).toggleClass('expanded');
-                                        e.stopPropagation();
+                                // 绑定到整个容器而不是单个项目，以便动态处理
+                                $('#json-tree').off('click').on('click', '.json-item[data-expandable="true"]', function(e) {
+                                    // 检查点击是否发生在 expand-icon 上，如果是，不做任何事情
+                                    // 因为 expand-icon 有它自己的点击处理程序
+                                    const target = e.target;
+                                    if (target.classList.contains('expand-icon')) {
+                                        return;
                                     }
+                                    
+                                    // 如果点击在任何其他元素上，切换展开状态
+                                    $(this).toggleClass('expanded');
+                                    e.stopPropagation();
                                 });
                             } else {
-                                const items = document.querySelectorAll('.json-item');
-                                items.forEach(item => {
-                                    item.addEventListener('click', function(e) {
-                                        if (e.target === this) {
-                                            this.classList.toggle('expanded');
-                                            e.stopPropagation();
+                                // 原生 JavaScript 回退
+                                const container = document.getElementById('json-tree');
+                                container.addEventListener('click', function(e) {
+                                    // 递归查找最近的 json-item 父元素
+                                    let target = e.target;
+                                    while (target && target !== container) {
+                                        if (target.classList.contains('json-item') && 
+                                            target.getAttribute('data-expandable') === 'true') {
+                                            // 不处理 expand-icon 点击
+                                            if (!e.target.classList.contains('expand-icon')) {
+                                                target.classList.toggle('expanded');
+                                                e.stopPropagation();
+                                            }
+                                            break;
                                         }
-                                    });
+                                        target = target.parentNode;
+                                    }
                                 });
                             }
 
