@@ -139,10 +139,11 @@
         .header-container {
             display: flex;
             align-items: center;
-            padding: 5px 10px;
+            padding: 10px;
             background-color: #fff;
             border-bottom: 1px solid #ddd;
             flex-wrap: wrap; /* Allow wrapping */
+            gap: 10px; /* Add gap between elements */
         }
         .header {
             margin: 0;
@@ -150,54 +151,15 @@
             align-items: center;
             font-size: 1.1rem;
             margin-right: 15px;
+            white-space: nowrap;
         }
         .view-switcher {
             margin-right: auto; /* Pushes buttons to the right */
         }
-         .view-switcher .button {
-            background-color: #eee;
-            color: #555;
-            padding: 0.4em 0.8em;
-            font-size: 0.8rem;
-            border-radius: 3px;
-         }
-         .view-switcher .button.active {
-            background-color: #ddd;
-            color: #333;
-            font-weight: bold;
-         }
         .buttons {
             display: flex;
             flex-wrap: nowrap; /* Prevent button wrapping within the group */
             gap: 5px;
-            margin-left: 10px;
-        }
-        .button {
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 1em;
-            border: none;
-            border-radius: 3px;
-            padding: 0.4em 0.8em;
-            font-weight: 700;
-            transition: opacity 0.1s ease, background-color 0.1s ease, color 0.1s ease, box-shadow 0.1s ease;
-            text-decoration: none;
-            font-size: 0.8rem;
-            white-space: nowrap; /* Prevent text wrapping inside button */
-        }
-        .primary.button {
-            background-color: #2185d0;
-            color: white;
-        }
-        .button:hover {
-            background-color: #1678c2;
-            color: white;
-        }
-        .view-switcher .button:hover {
-            background-color: #ccc;
-            color: #333;
         }
         .dropdown {
             position: relative;
@@ -341,6 +303,7 @@
             .header-container {
                 flex-direction: column;
                 align-items: flex-start;
+                padding: 8px;
             }
             .view-switcher {
                 display: none; /* Hide view switcher on mobile */
@@ -369,23 +332,19 @@
                 margin-left: 0;
                 width: 100%;
                 justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 5px;
             }
-            .button {
-                padding: 0.3em 0.6em;
-                font-size: 0.75rem;
-            }
-            .dropdown {
-                 font-size: 0.75rem;
-            }
-            .dropdown .menu {
-                min-width: 6rem;
+            .header {
+                margin-bottom: 5px;
+                font-size: 1rem;
             }
         }
 
         .disabled {
-            opacity: 0.5;
-            cursor: not-allowed !important;
-            pointer-events: none;
+            opacity: 0.45 !important;
+            cursor: default !important;
+            pointer-events: none !important;
         }
 
         .collapsed-brace {
@@ -419,21 +378,23 @@
             </h1>
 
             <div class="view-switcher">
-                <button class="button active" data-view="text">Text</button>
-                <button class="button" data-view="tree">Tree</button>
+                <div class="ui tiny basic buttons">
+                    <button class="ui button active" data-view="text">Text</button>
+                    <button class="ui button" data-view="tree">Tree</button>
+                </div>
             </div>
             
             <div class="buttons">
-                <button class="primary button" id="format-btn">Format</button>
-                <button class="button" id="minify-btn">Minify</button>
-                <button class="button" id="validate-btn">Validate</button>
-                <button class="button" id="copy-btn">Copy</button>
-                <button class="button" id="clear-btn">Clear</button>
+                <button class="ui tiny primary button" id="format-btn">Format</button>
+                <button class="ui tiny button" id="minify-btn">Minify</button>
+                <button class="ui tiny button" id="validate-btn">Validate</button>
+                <button class="ui tiny button" id="copy-btn">Copy</button>
+                <button class="ui tiny button" id="clear-btn">Clear</button>
                 
-                <div class="dropdown" id="indent-dropdown">
+                <div class="ui tiny selection dropdown" id="indent-dropdown">
                     <input type="hidden" name="indent" value="2">
-                    <div class="text">2 Spaces</div>
-                    <span class="dropdown icon"></span>
+                    <i class="dropdown icon"></i>
+                    <div class="default text">2 Spaces</div>
                     <div class="menu">
                         <div class="item" data-value="2">2 Spaces</div>
                         <div class="item" data-value="4">4 Spaces</div>
@@ -537,6 +498,29 @@
                                  this.elements.forEach(el => el.scrollTop = value);
                                  return this;
                              }
+                         },
+                         // Add delay and queue support for animations
+                         delay: function(ms) {
+                             this.delayTime = ms;
+                             return this;
+                         },
+                         queue: function(callback) {
+                             if (this.delayTime) {
+                                 const self = this;
+                                 setTimeout(function() {
+                                     callback.call(self.elements[0]);
+                                 }, this.delayTime);
+                                 this.delayTime = 0;
+                             } else {
+                                 callback.call(this.elements[0]);
+                             }
+                             return this;
+                         },
+                         hide: function() {
+                             this.elements.forEach(el => {
+                                 el.style.display = 'none';
+                             });
+                             return this;
                          }
                     };
                 } else if (typeof selector === 'function') {
@@ -569,30 +553,80 @@
 
         // Initialize dropdown functionality (Semantic UI or fallback)
         function initDropdown() {
+            // 检查是否有可用的Semantic UI
+            if (typeof $ !== 'undefined' && typeof $.fn.dropdown !== 'undefined') {
+                // 使用Semantic UI的dropdown
+                $('.ui.dropdown').dropdown();
+                // 初始化按钮
+                $('.ui.button').each(function() {
+                    $(this).on('click', function() {
+                        // 对于视图切换按钮，切换 active 状态
+                        if ($(this).parent().hasClass('view-switcher') || $(this).closest('.view-switcher').length) {
+                            $(this).siblings().removeClass('active');
+                            $(this).addClass('active');
+                        }
+                    });
+                });
+                return;
+            }
+
+            // 以下是无Semantic UI时的回退方案
             const dropdown = document.getElementById('indent-dropdown');
             if (!dropdown) return;
 
-            const textEl = dropdown.querySelector('.text');
+            const textEl = dropdown.querySelector('.text, .default.text');
             const inputEl = dropdown.querySelector('input');
             const menuEl = dropdown.querySelector('.menu');
 
             dropdown.addEventListener('click', function(e) {
                 this.classList.toggle('active');
+                this.classList.toggle('visible');
+                menuEl.classList.toggle('visible');
                 e.stopPropagation();
             });
 
             menuEl.addEventListener('click', function(e) {
-                if (e.target.classList.contains('item')) {
-                    const value = e.target.getAttribute('data-value');
+                const item = e.target.closest('.item');
+                if (item) {
+                    const value = item.getAttribute('data-value');
+                    const text = item.textContent;
+                    
                     inputEl.value = value;
-                    textEl.textContent = e.target.textContent;
-                    dropdown.classList.remove('active');
+                    if (textEl) textEl.textContent = text;
+                    
+                    // 移除旧的active item
+                    menuEl.querySelectorAll('.item').forEach(el => {
+                        el.classList.remove('active', 'selected');
+                    });
+                    
+                    // 设置新的active item
+                    item.classList.add('active', 'selected');
+                    
+                    dropdown.classList.remove('active', 'visible');
+                    menuEl.classList.remove('visible');
                 }
             });
 
             document.addEventListener('click', function() {
-                dropdown.classList.remove('active');
+                dropdown.classList.remove('active', 'visible');
+                menuEl.classList.remove('visible');
             });
+            
+            // 初始化按钮的回退方案
+            const initButtons = function() {
+                // 为视图切换按钮添加切换功能
+                const viewButtons = document.querySelectorAll('.view-switcher .ui.button');
+                viewButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        // 移除所有激活状态
+                        viewButtons.forEach(btn => btn.classList.remove('active'));
+                        // 为当前按钮添加激活状态
+                        this.classList.add('active');
+                    });
+                });
+            };
+            
+            initButtons();
         }
 
         // Function to create Tree View HTML
@@ -774,7 +808,7 @@
                 if (typeof $.fn.dropdown === 'undefined') {
                     initDropdown();
                 } else {
-                    $('.dropdown').dropdown(); // Use basic selector
+                    $('.ui.dropdown').dropdown();
                 }
                 
                 // DOM Elements
@@ -975,6 +1009,11 @@
                             updateCharCount();
                             updateLineNumbers();
                             
+                            // Success animation for button
+                            formatBtn.addClass('positive').delay(1000).queue(function(){
+                                $(this).removeClass('positive').dequeue();
+                            });
+                            
                             // Always render tree view
                             renderTreeView();
                         }
@@ -998,6 +1037,12 @@
                         statusMessage.text(`Minified in ${(endTime - startTime).toFixed(2)}ms`);
                         updateCharCount();
                         updateLineNumbers();
+                        
+                        // Success animation for button
+                        minifyBtn.addClass('positive').delay(1000).queue(function(){
+                            $(this).removeClass('positive').dequeue();
+                        });
+                        
                         renderTreeView(); // Update tree view
                     } catch (e) {
                         showError(e.message);
@@ -1015,6 +1060,12 @@
                         
                         const endTime = performance.now();
                         statusMessage.text(`Valid JSON! Validated in ${(endTime - startTime).toFixed(2)}ms`);
+                        
+                        // Success animation for button
+                        validateBtn.addClass('positive').delay(1000).queue(function(){
+                            $(this).removeClass('positive').dequeue();
+                        });
+                        
                         renderTreeView(); // Update tree view
                     } catch (e) {
                         showError(e.message);
@@ -1026,12 +1077,12 @@
                 // Get indentation setting
                 function getIndentation() {
                     let value;
-                    // Check if Semantic UI dropdown is initialized
-                    const dropdownElement = document.getElementById('indent-dropdown');
-                    if (typeof $ !== 'undefined' && typeof $.fn.dropdown !== 'undefined' && dropdownElement && dropdownElement.classList.contains('ui')) {
-                        value = $(indentDropdown).dropdown('get value');
+                    
+                    // 直接使用Semantic UI的dropdown API
+                    if (typeof $ !== 'undefined' && typeof $.fn.dropdown !== 'undefined') {
+                        value = $('#indent-dropdown').dropdown('get value');
                     } else {
-                        // Fallback
+                        // 回退方案
                         const input = document.querySelector('#indent-dropdown input');
                         value = input ? input.value : '2';
                     }
@@ -1047,6 +1098,10 @@
                     errorMessage.text('Error: ' + message);
                     errorMessage.removeClass('hidden');
                     statusMessage.text('');
+                    // Semantic UI negative button animation
+                    validateBtn.addClass('negative').delay(1000).queue(function(){
+                        $(this).removeClass('negative').dequeue();
+                    });
                 }
                 
                 // Copy to clipboard function
