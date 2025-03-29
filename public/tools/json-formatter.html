@@ -154,12 +154,40 @@
             white-space: nowrap;
         }
         .view-switcher {
-            margin-right: auto; /* Pushes buttons to the right */
+            margin-right: 15px; /* Change from auto to fixed margin */
         }
         .buttons {
             display: flex;
             flex-wrap: nowrap; /* Prevent button wrapping within the group */
             gap: 5px;
+        }
+        /* Make buttons more compact */
+        .ui.tiny.button {
+            padding: 0.5em 0.7em !important;
+            font-size: 0.78rem !important;
+            height: 28px !important;
+        }
+        /* Make button group buttons match height */
+        .ui.buttons .ui.button {
+            padding: 0.5em 0.7em !important;
+            font-size: 0.78rem !important;
+            height: 28px !important;
+        }
+        /* Reduce dropdown width */
+        .ui.tiny.selection.dropdown {
+            min-width: 110px !important;
+            padding: 0.5em 0.7em !important;
+            font-size: 0.78rem !important;
+            height: 28px !important;
+            line-height: 1 !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+        /* Fix dropdown icon alignment */
+        .ui.dropdown .dropdown.icon {
+            line-height: 1 !important;
+            margin: 0 0 0 0.5em !important;
+            height: auto !important;
         }
         .dropdown {
             position: relative;
@@ -373,17 +401,9 @@
     <div class="container">
         <div class="header-container">
             <h1 class="header">
-                <span class="code icon"></span>
                 <span style="margin-left: 5px;">JSON Formatter</span>
             </h1>
 
-            <div class="view-switcher">
-                <div class="ui tiny basic buttons">
-                    <button class="ui button active" data-view="text">Text</button>
-                    <button class="ui button" data-view="tree">Tree</button>
-                </div>
-            </div>
-            
             <div class="buttons">
                 <button class="ui tiny primary button" id="format-btn">Format</button>
                 <button class="ui tiny button" id="minify-btn">Minify</button>
@@ -400,6 +420,13 @@
                         <div class="item" data-value="4">4 Spaces</div>
                         <div class="item" data-value="tab">Tab</div>
                     </div>
+                </div>
+            </div>
+            
+            <div class="view-switcher">
+                <div class="ui tiny basic buttons">
+                    <button class="ui button active" data-view="text">Text</button>
+                    <button class="ui button" data-view="tree">Tree</button>
                 </div>
             </div>
         </div>
