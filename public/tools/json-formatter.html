@@ -69,7 +69,8 @@
             box-sizing: border-box;
             flex: 1;
             overflow: auto;
-            white-space: pre;
+            white-space: pre-wrap; /* Change from pre to pre-wrap to enable word wrapping */
+            word-wrap: break-word; /* Add break-word to ensure long words are broken */
             border: none;
             border-radius: 0;
             outline: none;
@@ -164,21 +165,21 @@
         /* Make buttons more compact */
         .ui.tiny.button {
             padding: 0.5em 0.7em !important;
-            font-size: 0.78rem !important;
+            font-size: 0.85rem !important;
             height: 28px !important;
         }
         /* Make button group buttons match height */
         .ui.buttons .ui.button {
             padding: 0.5em 0.7em !important;
-            font-size: 0.78rem !important;
+            font-size: 0.85rem !important;
             height: 28px !important;
         }
         /* Reduce dropdown width */
         .ui.tiny.selection.dropdown {
-            min-width: 110px !important;
+            min-width: 90px !important;
             padding: 0.5em 0.7em !important;
-            font-size: 0.78rem !important;
-            height: 28px !important;
+            font-size: 0.85rem !important;
+            height: 24px !important;
             line-height: 1 !important;
             display: flex !important;
             align-items: center !important;
@@ -188,6 +189,15 @@
             line-height: 1 !important;
             margin: 0 0 0 0.5em !important;
             height: auto !important;
+            position: absolute !important;
+            right: 0.4em !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+        }
+        /* Fix the text alignment in dropdown */
+        .ui.selection.dropdown .text {
+            margin-right: 1em !important;
+            line-height: 1 !important;
         }
         .dropdown {
             position: relative;
@@ -200,7 +210,7 @@
             left: auto;
             z-index: 1000;
             display: none;
-            min-width: 8rem;
+            min-width: 6rem;
             background-color: white;
             border: 1px solid rgba(34,36,38,.15);
             border-radius: 4px;
@@ -210,14 +220,14 @@
             display: block;
         }
         .dropdown .item {
-            padding: 0.4em 0.8em;
+            padding: 0.2em 0.4em;
             cursor: pointer;
         }
         .dropdown .item:hover {
             background-color: rgba(0,0,0,.05);
         }
         .dropdown .text {
-            margin-right: 5px;
+            margin-right: 2px;
         }
         .hidden {
             display: none !important;
@@ -1057,7 +1067,7 @@
                         const startTime = performance.now();
                         currentJson = JSON.parse(jsonInput.val()); // Update currentJson
                         const minified = JSON.stringify(currentJson);
-                        jsonInput.val(minified);
+                        jsonInput.val(minified + '\n'); // Add line break at the end
                         errorMessage.addClass('hidden');
 
                         const endTime = performance.now();
