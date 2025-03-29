@@ -83,27 +83,6 @@
             background: white;
             z-index: 2;
         }
-        #highlighted-json {
-            display: none; /* 隐藏高亮元素，改为直接编辑 */
-            font-family: monospace;
-            width: 100%;
-            height: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            flex: 1;
-            overflow: auto;
-            white-space: pre;
-            border: none;
-            border-radius: 0;
-            outline: none;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            position: absolute;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 1;
-        }
         .input-container {
             position: relative;
             flex: 1;
@@ -153,9 +132,6 @@
             font-size: 1.1rem;
             margin-right: 15px;
             white-space: nowrap;
-        }
-        .view-switcher {
-            margin-right: 15px; /* Change from auto to fixed margin */
         }
         .buttons {
             display: flex;
@@ -376,9 +352,6 @@
                 align-items: flex-start;
                 padding: 8px;
             }
-            .view-switcher {
-                display: none; /* Hide view switcher on mobile */
-            }
             .tree-controls {
                 margin-left: 0 !important;
                 margin-top: 5px;
@@ -468,13 +441,6 @@
                 <div class="ui tiny checkbox" id="fix-json-checkbox" style="margin-left: 10px; display: flex; align-items: center;">
                     <input type="checkbox" checked>
                     <label style="font-size: 0.85rem; cursor: pointer;">Fix JSON</label>
-                </div>
-            </div>
-            
-            <div class="view-switcher">
-                <div class="ui tiny basic buttons">
-                    <button class="ui button active" data-view="text">Text</button>
-                    <button class="ui button" data-view="tree">Tree</button>
                 </div>
             </div>
             
@@ -641,16 +607,6 @@
                 $('.ui.dropdown').dropdown();
                 // Initialize checkbox
                 $('.ui.checkbox').checkbox();
-                // 初始化按钮
-                $('.ui.button').each(function() {
-                    $(this).on('click', function() {
-                        // 对于视图切换按钮，切换 active 状态
-                        if ($(this).parent().hasClass('view-switcher') || $(this).closest('.view-switcher').length) {
-                            $(this).siblings().removeClass('active');
-                            $(this).addClass('active');
-                        }
-                    });
-                });
                 return;
             }
 
@@ -695,22 +651,6 @@
                 dropdown.classList.remove('active', 'visible');
                 menuEl.classList.remove('visible');
             });
-            
-            // 初始化按钮的回退方案
-            const initButtons = function() {
-                // 为视图切换按钮添加切换功能
-                const viewButtons = document.querySelectorAll('.view-switcher .ui.button');
-                viewButtons.forEach(button => {
-                    button.addEventListener('click', function() {
-                        // 移除所有激活状态
-                        viewButtons.forEach(btn => btn.classList.remove('active'));
-                        // 为当前按钮添加激活状态
-                        this.classList.add('active');
-                    });
-                });
-            };
-            
-            initButtons();
         }
 
         // Function to create Tree View HTML
@@ -864,39 +804,6 @@
             return contentDiv.outerHTML;
         }
 
-        // Function to highlight JSON text
-        function highlightJSON(json) {
-            if (!json) return '';
-            
-            // 使用正则表达式匹配 JSON 部分
-            const tokenized = json
-                // 添加对字符串的处理
-                .replace(/"(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?/g, match => {
-                    // 键名带冒号
-                    if (match.endsWith(':')) {
-                        return `<span class="key">${match.slice(0, -1)}</span><span class="colon">:</span>`;
-                    }
-                    // 普通字符串
-                    return `<span class="value string">${match}</span>`;
-                })
-                // 数字
-                .replace(/\b(-?)(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?\b/g, 
-                    '<span class="value number">$&</span>')
-                // 布尔值和 null
-                .replace(/\b(true|false|null)\b/g, 
-                    '<span class="value $1">$&</span>')
-                // 括号
-                .replace(/[\{\}]/g, 
-                    '<span class="brace">$&</span>')
-                .replace(/[\[\]]/g, 
-                    '<span class="bracket">$&</span>')
-                // 逗号
-                .replace(/,/g, 
-                    '<span class="comma">,</span>');
-                
-            return tokenized;
-        }
-
         // Function to update line numbers
         function updateLineNumbers() {
             const linesDiv = document.getElementById('line-numbers');
@@ -932,7 +839,6 @@
                 
                 // DOM Elements
                 const jsonInput = $('#json-input');
-                const highlightedJson = $('#highlighted-json');
                 const lineNumbers = $('#line-numbers');
                 const treeViewContainer = $('#json-tree');
                 const textViewContainer = $('#text-view');
@@ -945,13 +851,11 @@
                 const clearBtn = $('#clear-btn');
                 const statusMessage = $('#status-message');
                 const charCount = $('#char-count');
-                const viewSwitcherBtns = $(".view-switcher .button");
                 const expandAllBtn = $('#expand-all-btn');
                 const collapseAllBtn = $('#collapse-all-btn');
                 
                 let currentJson = null; // Store parsed JSON
-                let currentView = 'tree'; // Set to tree to ensure tree view renders
-
+                
                 // Sample JSON for initial demo
                 const sampleJson = {
                     "name": "JSON Formatter Tool",
@@ -978,14 +882,6 @@
                 // 设置初始布局比例
                 document.getElementById('text-view').style.flex = '0 0 45%';
                 document.querySelector('.tree-container').style.flex = '1 1 auto';
-                
-                // Remove view switcher functionality since both views are visible
-                viewSwitcherBtns.hide();
-                
-                // Update highlighted content - no longer needed for side-by-side view
-                function updateHighlightedContent() {
-                    // Function simplified since we're using direct edit now
-                }
                 
                 // Update character count
                 function updateCharCount() {
