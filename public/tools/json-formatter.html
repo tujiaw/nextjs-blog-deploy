@@ -69,8 +69,8 @@
             box-sizing: border-box;
             flex: 1;
             overflow: auto;
-            white-space: pre-wrap; /* Change from pre to pre-wrap to enable word wrapping */
-            word-wrap: break-word; /* Add break-word to ensure long words are broken */
+            white-space: pre; /* Default to no wrap for formatted JSON */
+            /* word-wrap will be set dynamically when minified */
             border: none;
             border-radius: 0;
             outline: none;
@@ -327,6 +327,12 @@
         .key {
             color: #0033B3; /* 亮蓝色 */
             font-weight: bold;
+        }
+        
+        /* 为数组索引添加特殊颜色 */
+        .key.array-index {
+            color: #888888; /* 灰色 */
+            font-weight: normal;
         }
         
         .value.string {
@@ -1056,6 +1062,9 @@
                             const formatted = JSON.stringify(currentJson, null, indent);
                             jsonInput.val(formatted);
                             errorMessage.addClass('hidden');
+
+                            // Set text to not wrap in formatted mode
+                            document.getElementById('json-input').style.whiteSpace = 'pre';
                             
                             const endTime = performance.now();
                             statusMessage.text(`Formatted in ${(endTime - startTime).toFixed(2)}ms`);
@@ -1095,6 +1104,10 @@
                         const minified = JSON.stringify(currentJson);
                         jsonInput.val(minified + '\n'); // Add line break at the end
                         errorMessage.addClass('hidden');
+
+                        // Set text to wrap in minified mode
+                        document.getElementById('json-input').style.whiteSpace = 'pre-wrap';
+                        document.getElementById('json-input').style.wordWrap = 'break-word';
 
                         const endTime = performance.now();
                         statusMessage.text(`Minified in ${(endTime - startTime).toFixed(2)}ms`);
