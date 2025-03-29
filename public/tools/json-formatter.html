@@ -51,16 +51,19 @@
             overflow: hidden;
             user-select: none;
             border-right: 1px solid #ddd;
-            border-left: 1px solid #ddd;
             font-size: 0.9rem;
             line-height: 1.5; /* Match textarea line-height */
             width: 40px; /* 固定宽度 */
-            flex: 0 0 auto; /* 不伸缩 */
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 3;
         }
         #json-input {
             font-family: monospace;
             resize: none;
-            width: 100%;
+            width: calc(100% - 40px); /* 减去行号宽度 */
             height: 100%;
             padding: 10px;
             box-sizing: border-box;
@@ -346,16 +349,16 @@
                 flex-direction: column; /* Stack views on mobile */
             }
             #line-numbers {
-                width: auto;
-                border-left: none;
-                border-right: none;
-                border-top: 1px solid #ddd;
-                border-bottom: 1px solid #ddd;
-                padding: 5px;
-                text-align: center;
-                overflow-x: auto;
-                white-space: nowrap;
-                height: 20px;
+                width: 40px;
+                position: absolute;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                overflow-y: auto;
+                padding: 10px 5px;
+            }
+            #json-input {
+                width: calc(100% - 40px);
             }
             .resizer {
                 width: 100%;
@@ -443,10 +446,9 @@
         <div class="view-container">
              <div class="input-container" id="text-view">
                  <textarea id="json-input" placeholder="Paste your JSON here..."></textarea>
+                 <div id="line-numbers">1</div>
              </div>
-             <div class="resizer" id="resizer-left"></div> <!-- 添加左侧可拖拽分隔条 -->
-             <div id="line-numbers">1</div> <!-- 独立行号容器 -->
-             <div class="resizer" id="resizer-right"></div> <!-- 添加右侧可拖拽分隔条 -->
+             <div class="resizer" id="resizer"></div> <!-- 保留单个分隔条 -->
              <div class="tree-container">
                  <div id="json-tree" class="json-tree"></div> <!-- Tree view container -->
              </div>
@@ -595,14 +597,11 @@
 
         // Function to create Tree View HTML
         function createTreeView(jsonObj) {
-            const lineNumbersDiv = document.createElement('div');
-            lineNumbersDiv.className = 'tree-line-numbers';
-            
             const contentDiv = document.createElement('div');
             contentDiv.className = 'tree-content';
             
             // 递归构建 JSON 结构
-            function buildJsonItem(obj, key = null, lineNum = 1) {
+            function buildJsonItem(obj, key = null) {
                 const isArray = Array.isArray(obj);
                 const isObject = obj !== null && typeof obj === 'object';
                 const itemDiv = document.createElement('div');
@@ -612,9 +611,6 @@
                 if (isObject) {
                     itemDiv.setAttribute('data-expandable', 'true');
                 }
-                
-                // 生成行号 - 这部分会被隐藏，但保留以维持原有逻辑
-                lineNumbersDiv.innerHTML += lineNum + '<br>';
                 
                 // 生成当前行内容
                 let content = '';
@@ -657,28 +653,21 @@
                     
                     // 处理空对象/数组
                     if (isArray && obj.length === 0) {
-                        lineNumbersDiv.innerHTML += (lineNum + 1) + '<br>';
                         childrenDiv.innerHTML = '<div class="json-item"><em>/* empty array */</em></div>';
-                        lineNum++;
                     } else if (!isArray && Object.keys(obj).length === 0) {
-                        lineNumbersDiv.innerHTML += (lineNum + 1) + '<br>';
                         childrenDiv.innerHTML = '<div class="json-item"><em>/* empty object */</em></div>';
-                        lineNum++;
                     } else {
                         // 递归处理子项
                         let childKeys = isArray ? [...Array(obj.length).keys()] : Object.keys(obj);
-                        lineNum++;
                         
                         childKeys.forEach((childKey) => {
                             const childValue = obj[childKey];
-                            const [childContent, newLineNum] = buildJsonItem(childValue, childKey, lineNum);
+                            const childContent = buildJsonItem(childValue, childKey);
                             childrenDiv.appendChild(childContent);
-                            lineNum = newLineNum;
                         });
                     }
                     
                     // 添加右括号
-                    lineNumbersDiv.innerHTML += lineNum + '<br>';
                     childrenDiv.innerHTML += `<div class="json-item"><span class="brace">${isArray ? ']' : '}'}</span></div>`;
                     
                     // 为外部容器添加右括号（在折叠时显示）
@@ -689,9 +678,8 @@
                     itemDiv.appendChild(closeBrace);
                     
                     itemDiv.classList.add('expanded'); // 默认展开
-                    lineNum++;
                     
-                    return [itemDiv, lineNum];
+                    return itemDiv;
                 } else {
                     // 基本类型值的处理
                     const valueType = (obj === null) ? 'null' : typeof obj;
@@ -712,21 +700,15 @@
                     
                     itemDiv.innerHTML += content;
                     
-                    return [itemDiv, lineNum + 1];
+                    return itemDiv;
                 }
             }
             
-            const [rootItem] = buildJsonItem(jsonObj);
+            const rootItem = buildJsonItem(jsonObj);
             contentDiv.appendChild(rootItem);
             
-            // 创建包含行号和内容的完整树视图
-            const treeView = document.createElement('div');
-            treeView.className = 'tree-view';
-            treeView.style.display = 'flex';
-            treeView.appendChild(lineNumbersDiv);
-            treeView.appendChild(contentDiv);
-            
-            return treeView.outerHTML;
+            // 返回创建的树视图
+            return contentDiv.outerHTML;
         }
 
         // Function to highlight JSON text
@@ -840,8 +822,7 @@
                 
                 // 设置初始布局比例
                 document.getElementById('text-view').style.flex = '0 0 45%';
-                document.getElementById('line-numbers').style.flex = '0 0 40px';
-                document.querySelector('.tree-container').style.flex = '0 0 calc(55% - 52px)';
+                document.querySelector('.tree-container').style.flex = '1 1 auto';
                 
                 // Remove view switcher functionality since both views are visible
                 viewSwitcherBtns.hide();
@@ -1101,10 +1082,8 @@
                 
                 // 初始化拖拽分隔条功能
                 function initResizer() {
-                    const leftResizer = document.getElementById('resizer-left');
-                    const rightResizer = document.getElementById('resizer-right');
+                    const resizer = document.getElementById('resizer');
                     const textView = document.getElementById('text-view');
-                    const lineNumbers = document.getElementById('line-numbers');
                     const treeContainer = document.querySelector('.tree-container');
                     
                     // 检测是否为移动设备
@@ -1113,11 +1092,10 @@
                     if (isMobile) {
                         // 移动设备下设置初始布局
                         textView.style.flex = '1';
-                        lineNumbers.style.flex = '0 0 auto';
                         treeContainer.style.flex = '1';
                         
                         // 移动设备下的分隔条逻辑
-                        const mobileResizeLeft = function(e) {
+                        const mobileResize = function(e) {
                             const y = e.clientY || e.touches[0].clientY;
                             const containerHeight = document.querySelector('.view-container').offsetHeight;
                             const textViewHeight = Math.max(150, Math.min(y, containerHeight - 200));
@@ -1126,113 +1104,54 @@
                             textView.style.flex = `0 0 ${textViewPercent}%`;
                         };
                         
-                        const mobileResizeRight = function(e) {
-                            const y = e.clientY || e.touches[0].clientY;
-                            const containerHeight = document.querySelector('.view-container').offsetHeight;
-                            const textViewRect = textView.getBoundingClientRect();
-                            const lineNumRect = lineNumbers.getBoundingClientRect();
-                            const topSpace = textViewRect.height + lineNumRect.height + 12; // 加上分隔条的高度
-                            
-                            const treeContainerHeight = Math.max(150, containerHeight - y);
-                            const treeContainerPercent = (treeContainerHeight / containerHeight) * 100;
-                            
-                            treeContainer.style.flex = `0 0 ${treeContainerPercent}%`;
-                        };
-                        
                         // 移动设备下的触摸和鼠标事件处理
-                        leftResizer.addEventListener('touchstart', function(e) {
-                            document.addEventListener('touchmove', mobileResizeLeft);
+                        resizer.addEventListener('touchstart', function(e) {
+                            document.addEventListener('touchmove', mobileResize);
                             document.addEventListener('touchend', function() {
-                                document.removeEventListener('touchmove', mobileResizeLeft);
+                                document.removeEventListener('touchmove', mobileResize);
                             }, { once: true });
                         });
                         
-                        leftResizer.addEventListener('mousedown', function(e) {
-                            document.addEventListener('mousemove', mobileResizeLeft);
+                        resizer.addEventListener('mousedown', function(e) {
+                            document.addEventListener('mousemove', mobileResize);
                             document.addEventListener('mouseup', function() {
-                                document.removeEventListener('mousemove', mobileResizeLeft);
-                            }, { once: true });
-                        });
-                        
-                        rightResizer.addEventListener('touchstart', function(e) {
-                            document.addEventListener('touchmove', mobileResizeRight);
-                            document.addEventListener('touchend', function() {
-                                document.removeEventListener('touchmove', mobileResizeRight);
-                            }, { once: true });
-                        });
-                        
-                        rightResizer.addEventListener('mousedown', function(e) {
-                            document.addEventListener('mousemove', mobileResizeRight);
-                            document.addEventListener('mouseup', function() {
-                                document.removeEventListener('mousemove', mobileResizeRight);
+                                document.removeEventListener('mousemove', mobileResize);
                             }, { once: true });
                         });
                     } else {
-                        // 桌面版左侧分隔条拖拽逻辑
-                        let x1 = 0;
+                        // 桌面版分隔条拖拽逻辑
+                        let x = 0;
                         let textViewWidth = 0;
                         
-                        const leftMouseDownHandler = function(e) {
-                            x1 = e.clientX;
+                        const mouseDownHandler = function(e) {
+                            x = e.clientX;
                             
                             const textViewRect = textView.getBoundingClientRect();
                             textViewWidth = textViewRect.width;
                             
-                            document.addEventListener('mousemove', leftMouseMoveHandler);
-                            document.addEventListener('mouseup', leftMouseUpHandler);
+                            document.addEventListener('mousemove', mouseMoveHandler);
+                            document.addEventListener('mouseup', mouseUpHandler);
                             
                             e.preventDefault();
                         };
                         
-                        const leftMouseMoveHandler = function(e) {
-                            const dx = e.clientX - x1;
+                        const mouseMoveHandler = function(e) {
+                            const dx = e.clientX - x;
                             
                             const containerWidth = document.querySelector('.view-container').offsetWidth;
-                            const newTextViewWidth = Math.max(100, Math.min(textViewWidth + dx, containerWidth - 250));
+                            const newTextViewWidth = Math.max(100, Math.min(textViewWidth + dx, containerWidth - 150));
                             const newTextViewPercent = (newTextViewWidth / containerWidth) * 100;
                             
                             textView.style.flex = `0 0 ${newTextViewPercent}%`;
                         };
                         
-                        const leftMouseUpHandler = function() {
-                            document.removeEventListener('mousemove', leftMouseMoveHandler);
-                            document.removeEventListener('mouseup', leftMouseUpHandler);
-                        };
-                        
-                        // 桌面版右侧分隔条拖拽逻辑
-                        let x2 = 0;
-                        let treeContainerWidth = 0;
-                        
-                        const rightMouseDownHandler = function(e) {
-                            x2 = e.clientX;
-                            
-                            const treeContainerRect = treeContainer.getBoundingClientRect();
-                            treeContainerWidth = treeContainerRect.width;
-                            
-                            document.addEventListener('mousemove', rightMouseMoveHandler);
-                            document.addEventListener('mouseup', rightMouseUpHandler);
-                            
-                            e.preventDefault();
-                        };
-                        
-                        const rightMouseMoveHandler = function(e) {
-                            const dx = e.clientX - x2;
-                            
-                            const containerWidth = document.querySelector('.view-container').offsetWidth;
-                            const newTreeContainerWidth = Math.max(150, Math.min(treeContainerWidth - dx, containerWidth - 200));
-                            const newTreeContainerPercent = (newTreeContainerWidth / containerWidth) * 100;
-                            
-                            treeContainer.style.flex = `0 0 ${newTreeContainerPercent}%`;
-                        };
-                        
-                        const rightMouseUpHandler = function() {
-                            document.removeEventListener('mousemove', rightMouseMoveHandler);
-                            document.removeEventListener('mouseup', rightMouseUpHandler);
+                        const mouseUpHandler = function() {
+                            document.removeEventListener('mousemove', mouseMoveHandler);
+                            document.removeEventListener('mouseup', mouseUpHandler);
                         };
                         
                         // 添加事件监听
-                        leftResizer.addEventListener('mousedown', leftMouseDownHandler);
-                        rightResizer.addEventListener('mousedown', rightMouseDownHandler);
+                        resizer.addEventListener('mousedown', mouseDownHandler);
                     }
                     
                     // 窗口大小变化时重新初始化
@@ -1240,8 +1159,7 @@
                         const newIsMobile = window.innerWidth <= 700;
                         if (newIsMobile !== isMobile) {
                             // 移除所有事件监听器
-                            leftResizer.replaceWith(leftResizer.cloneNode(true));
-                            rightResizer.replaceWith(rightResizer.cloneNode(true));
+                            resizer.replaceWith(resizer.cloneNode(true));
                             // 重新初始化
                             initResizer();
                         }
