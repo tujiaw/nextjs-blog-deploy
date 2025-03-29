@@ -7,6 +7,12 @@ interface Project {
 
 const projectsData: Project[] = [
   {
+    title: 'JSON Formatter',
+    description: `纯HTML实现的JSON格式化工具，支持格式化、压缩、验证JSON数据，可自定义缩进方式，一键复制结果。完全在浏览器中运行，数据不会发送到服务器。`,
+    imgSrc: '/static/images/json-formatter.png',
+    href: '/tools/json-formatter.html',
+  },
+  {
     title: 'Acc',
     description: `快速找到你要打开的应用程序。不用为了找到某个程序的启动图标而烦恼，不用在任务栏摆一堆的快捷方式。`,
     imgSrc: '/static/images/acc.png',

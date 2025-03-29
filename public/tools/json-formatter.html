@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Formatter Tool</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
+    <style>
+        body {
+            padding: 10px;
+            background-color: #f8f8f8;
+            max-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+        .ui.segment, .segment {
+            border: 1px solid rgba(34,36,38,.15);
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            background-color: white;
+            padding: 1em;
+        }
+        #json-input {
+            font-family: monospace;
+            resize: none;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            flex: 1;
+            overflow: auto;
+            white-space: pre;
+        }
+        .error-message {
+            color: #db2828;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+        .header-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .header {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+        }
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-left: auto;
+        }
+        .button {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 1em;
+            border: none;
+            border-radius: 4px;
+            padding: 0.5em 1em;
+            font-weight: 700;
+            transition: opacity 0.1s ease, background-color 0.1s ease, color 0.1s ease, box-shadow 0.1s ease;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        .primary.button {
+            background-color: #2185d0;
+            color: white;
+        }
+        .button:hover {
+            background-color: #1678c2;
+            color: white;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown .menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 1000;
+            display: none;
+            min-width: 10rem;
+            background-color: white;
+            border: 1px solid rgba(34,36,38,.15);
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,.15);
+        }
+        .dropdown.active .menu {
+            display: block;
+        }
+        .dropdown .item {
+            padding: 0.5em 1em;
+            cursor: pointer;
+        }
+        .dropdown .item:hover {
+            background-color: rgba(0,0,0,.05);
+        }
+        .dropdown .text {
+            margin-right: 5px;
+        }
+        .clear-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+        }
+        .input-container {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .status-bar {
+            background-color: #f5f5f5;
+            border-top: 1px solid #ddd;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
+        }
+        .icon {
+            display: inline-block;
+            width: 1.18em;
+            height: 1em;
+            font-style: normal;
+            text-decoration: inherit;
+            text-align: center;
+            speak: none;
+        }
+        /* Fallback icons using Unicode */
+        .trash.icon:before { content: "🗑️"; }
+        .copy.icon:before { content: "📋"; }
+        .check.icon:before { content: "✓"; }
+        .code.icon:before { content: "{ }"; }
+        .dropdown.icon:before { content: "▼"; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-container">
+            <h1 class="header">
+                <span class="code icon"></span>
+                <span style="margin-left: 5px;">JSON Formatter</span>
+            </h1>
+            
+            <div class="buttons">
+                <button class="primary button" id="format-btn">Format</button>
+                <button class="button" id="minify-btn">Minify</button>
+                <button class="button" id="validate-btn">Validate</button>
+                <button class="button" id="copy-btn">Copy</button>
+                <button class="button" id="clear-btn">Clear</button>
+                
+                <div class="dropdown" id="indent-dropdown">
+                    <input type="hidden" name="indent" value="2">
+                    <div class="text">2 Spaces</div>
+                    <span class="dropdown icon"></span>
+                    <div class="menu">
+                        <div class="item" data-value="2">2 Spaces</div>
+                        <div class="item" data-value="4">4 Spaces</div>
+                        <div class="item" data-value="tab">Tab</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <textarea id="json-input" class="segment" placeholder="Paste your JSON here..."></textarea>
+            <div class="error-message hidden" id="error-message"></div>
+        </div>
+        
+        <div class="status-bar">
+            <div id="status-message"></div>
+            <div id="char-count">Characters: 0</div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>
+    <script>
+        // Fallback for jQuery if CDN fails
+        if (typeof jQuery === 'undefined') {
+            // Simple DOM manipulation functions
+            function $(selector) {
+                if (typeof selector === 'string') {
+                    const elements = document.querySelectorAll(selector);
+                    return {
+                        elements: elements,
+                        val: function(value) {
+                            if (value === undefined) {
+                                return this.elements[0].value;
+                            } else {
+                                this.elements.forEach(el => el.value = value);
+                                return this;
+                            }
+                        },
+                        text: function(value) {
+                            if (value === undefined) {
+                                return this.elements[0].textContent;
+                            } else {
+                                this.elements.forEach(el => el.textContent = value);
+                                return this;
+                            }
+                        },
+                        addClass: function(className) {
+                            this.elements.forEach(el => el.classList.add(className));
+                            return this;
+                        },
+                        removeClass: function(className) {
+                            this.elements.forEach(el => el.classList.remove(className));
+                            return this;
+                        },
+                        find: function(childSelector) {
+                            const children = [];
+                            this.elements.forEach(el => {
+                                const found = el.querySelectorAll(childSelector);
+                                found.forEach(child => children.push(child));
+                            });
+                            return {
+                                elements: children,
+                                removeClass: function(className) {
+                                    this.elements.forEach(el => el.classList.remove(className));
+                                    return this;
+                                },
+                                addClass: function(className) {
+                                    this.elements.forEach(el => el.classList.add(className));
+                                    return this;
+                                }
+                            };
+                        },
+                        on: function(event, callback) {
+                            this.elements.forEach(el => el.addEventListener(event, callback));
+                            return this;
+                        }
+                    };
+                } else if (selector.nodeType) {
+                    return {
+                        elements: [selector],
+                        val: function(value) {
+                            if (value === undefined) {
+                                return this.elements[0].value;
+                            } else {
+                                this.elements[0].value = value;
+                                return this;
+                            }
+                        },
+                        find: function(childSelector) {
+                            const children = this.elements[0].querySelectorAll(childSelector);
+                            return {
+                                elements: children,
+                                removeClass: function(className) {
+                                    this.elements.forEach(el => el.classList.remove(className));
+                                    return this;
+                                },
+                                addClass: function(className) {
+                                    this.elements.forEach(el => el.classList.add(className));
+                                    return this;
+                                }
+                            };
+                        }
+                    };
+                }
+            }
+
+            $.fn = {};
+            
+            // Simple document ready function
+            function documentReady(fn) {
+                if (document.readyState !== 'loading') {
+                    fn();
+                } else {
+                    document.addEventListener('DOMContentLoaded', fn);
+                }
+            }
+            
+            // Reassign ready function
+            $ = function(selector) {
+                if (typeof selector === 'function') {
+                    return documentReady(selector);
+                } else {
+                    return $(selector);
+                }
+            };
+        }
+
+        // Initialize dropdown functionality
+        function initDropdown() {
+            const dropdown = document.getElementById('indent-dropdown');
+            if (!dropdown) return;
+            
+            dropdown.addEventListener('click', function(e) {
+                this.classList.toggle('active');
+                e.stopPropagation();
+            });
+            
+            const items = dropdown.querySelectorAll('.item');
+            const text = dropdown.querySelector('.text');
+            const input = dropdown.querySelector('input');
+            
+            items.forEach(item => {
+                item.addEventListener('click', function() {
+                    const value = this.getAttribute('data-value');
+                    input.value = value;
+                    text.textContent = this.textContent;
+                    dropdown.classList.remove('active');
+                });
+            });
+            
+            document.addEventListener('click', function() {
+                dropdown.classList.remove('active');
+            });
+        }
+        
+        // Document ready function
+        (function() {
+            // Try to use jQuery if available, otherwise use our fallback
+            const ready = (typeof jQuery !== 'undefined') ? jQuery : $;
+            
+            ready(function() {
+                // Initialize dropdowns if Semantic UI is not available
+                if (typeof $.fn.dropdown === 'undefined') {
+                    initDropdown();
+                } else {
+                    $('.ui.dropdown').dropdown();
+                }
+                
+                // DOM Elements
+                const jsonInput = $('#json-input');
+                const formatBtn = $('#format-btn');
+                const minifyBtn = $('#minify-btn');
+                const validateBtn = $('#validate-btn');
+                const errorMessage = $('#error-message');
+                const indentDropdown = $('#indent-dropdown');
+                const copyBtn = $('#copy-btn');
+                const clearBtn = $('#clear-btn');
+                const statusMessage = $('#status-message');
+                const charCount = $('#char-count');
+                
+                // Sample JSON for initial demo
+                const sampleJson = {
+                    "name": "JSON Formatter Tool",
+                    "description": "A tool to format, validate and beautify JSON data",
+                    "features": ["Format", "Minify", "Validate"],
+                    "settings": {
+                        "indentation": 2,
+                        "theme": "light"
+                    },
+                    "isAwesome": true,
+                    "version": 1.0
+                };
+                
+                // Set sample JSON
+                jsonInput.val(JSON.stringify(sampleJson, null, 2));
+                updateCharCount();
+                
+                // Update character count
+                function updateCharCount() {
+                    const count = jsonInput.val().length;
+                    charCount.text(`Characters: ${count.toLocaleString()}`);
+                }
+                
+                // Input change event
+                jsonInput.on('input', function() {
+                    updateCharCount();
+                });
+                
+                // Format JSON
+                formatBtn.on('click', function() {
+                    formatJson();
+                });
+                
+                // Minify JSON
+                minifyBtn.on('click', function() {
+                    minifyJson();
+                });
+                
+                // Validate JSON
+                validateBtn.on('click', function() {
+                    validateJson();
+                });
+                
+                // Clear input
+                clearBtn.on('click', function() {
+                    jsonInput.val('');
+                    errorMessage.addClass('hidden');
+                    statusMessage.text('');
+                    updateCharCount();
+                });
+                
+                // Copy output
+                copyBtn.on('click', function() {
+                    const output = jsonInput.val();
+                    copyToClipboard(output);
+                    
+                    // Show copied message
+                    statusMessage.text('Copied to clipboard!');
+                    setTimeout(() => {
+                        statusMessage.text('');
+                    }, 2000);
+                });
+                
+                // Format JSON function
+                function formatJson() {
+                    try {
+                        const startTime = performance.now();
+                        const json = JSON.parse(jsonInput.val());
+                        const indent = getIndentation();
+                        const formatted = JSON.stringify(json, null, indent);
+                        jsonInput.val(formatted);
+                        errorMessage.addClass('hidden');
+                        
+                        const endTime = performance.now();
+                        statusMessage.text(`Formatted in ${(endTime - startTime).toFixed(2)}ms`);
+                        updateCharCount();
+                    } catch (e) {
+                        showError(e.message);
+                    }
+                }
+                
+                // Minify JSON function
+                function minifyJson() {
+                    try {
+                        const startTime = performance.now();
+                        const json = JSON.parse(jsonInput.val());
+                        const minified = JSON.stringify(json);
+                        jsonInput.val(minified);
+                        errorMessage.addClass('hidden');
+                        
+                        const endTime = performance.now();
+                        statusMessage.text(`Minified in ${(endTime - startTime).toFixed(2)}ms`);
+                        updateCharCount();
+                    } catch (e) {
+                        showError(e.message);
+                    }
+                }
+                
+                // Validate JSON function
+                function validateJson() {
+                    try {
+                        const startTime = performance.now();
+                        JSON.parse(jsonInput.val());
+                        errorMessage.addClass('hidden');
+                        
+                        const endTime = performance.now();
+                        statusMessage.text(`Valid JSON! Validated in ${(endTime - startTime).toFixed(2)}ms`);
+                    } catch (e) {
+                        showError(e.message);
+                    }
+                }
+                
+                // Get indentation setting
+                function getIndentation() {
+                    let value;
+                    if (typeof indentDropdown.dropdown === 'function') {
+                        // Using Semantic UI
+                        value = indentDropdown.dropdown('get value');
+                    } else {
+                        // Fallback
+                        const input = document.querySelector('#indent-dropdown input');
+                        value = input ? input.value : '2';
+                    }
+                    
+                    if (value === 'tab') {
+                        return '\t';
+                    }
+                    return parseInt(value) || 2;
+                }
+                
+                // Show error message
+                function showError(message) {
+                    errorMessage.text('Error: ' + message);
+                    errorMessage.removeClass('hidden');
+                    statusMessage.text('');
+                }
+                
+                // Copy to clipboard function
+                function copyToClipboard(text) {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                }
+                
+                // Format on load
+                formatJson();
+            });
+        })();
+    </script>
+</body>
+</html> 
