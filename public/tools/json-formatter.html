@@ -69,6 +69,33 @@
             outline: none;
             font-size: 0.9rem;
             line-height: 1.5;
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: rgba(0,0,0,0.8); /* 改为可见文字，删除透明颜色 */
+            background: white; /* 改为不透明背景 */
+            z-index: 2;
+        }
+        #highlighted-json {
+            display: none; /* 隐藏高亮元素，改为直接编辑 */
+            font-family: monospace;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            flex: 1;
+            overflow: auto;
+            white-space: pre;
+            border: none;
+            border-radius: 0;
+            outline: none;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
         }
         #json-tree {
             flex: 1;
@@ -285,27 +312,27 @@
             display: inline-block;
         }
         
-        /* 为不同类型的值添加颜色 */
+        /* 为不同类型的值添加颜色 - 用于两种视图 */
         .key {
-            color: #881391; /* 紫色 */
+            color: #0033B3; /* 亮蓝色 */
             font-weight: bold;
         }
         
         .value.string {
-            color: #1a1aa6; /* 蓝色 */
+            color: #008000; /* 亮绿色 */
         }
         
         .value.number {
-            color: #098658; /* 绿色 */
+            color: #E67700; /* 亮橙色 */
         }
         
         .value.boolean, .value.null {
-            color: #0000ff; /* 蓝色 */
+            color: #D53C4E; /* 亮红色 */
             font-weight: bold;
         }
         
-        .brace {
-            color: #000000; /* 黑色 */
+        .brace, .bracket, .comma, .colon {
+            color: #555555; /* 深灰色 */
         }
 
         @media (max-width: 700px) { /* Adjusted breakpoint */
@@ -332,6 +359,20 @@
             .dropdown .menu {
                 min-width: 6rem;
             }
+        }
+
+        .disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            pointer-events: none;
+        }
+
+        .collapsed-brace {
+            display: none; /* 默认隐藏 */
+        }
+        
+        .json-item:not(.expanded) > .collapsed-brace {
+            display: inline-block; /* 折叠状态时显示 */
         }
     </style>
 </head>
@@ -371,6 +412,7 @@
         <div class="view-container">
              <div id="line-numbers">1</div> <!-- Line numbers container -->
              <div class="input-container" id="text-view">
+                 <pre id="highlighted-json"></pre>
                  <textarea id="json-input" placeholder="Paste your JSON here..."></textarea>
              </div>
              <div id="json-tree" class="json-tree"></div> <!-- Tree view container -->
@@ -607,7 +649,7 @@
                     
                     // 为外部容器添加右括号（在折叠时显示）
                     const closeBrace = document.createElement('span');
-                    closeBrace.className = 'brace';
+                    closeBrace.className = 'brace collapsed-brace';
                     closeBrace.textContent = isArray ? ']' : '}';
                     itemDiv.appendChild(childrenDiv);
                     itemDiv.appendChild(closeBrace);
@@ -653,6 +695,39 @@
             return treeView.outerHTML;
         }
 
+        // Function to highlight JSON text
+        function highlightJSON(json) {
+            if (!json) return '';
+            
+            // 使用正则表达式匹配 JSON 部分
+            const tokenized = json
+                // 添加对字符串的处理
+                .replace(/"(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?/g, match => {
+                    // 键名带冒号
+                    if (match.endsWith(':')) {
+                        return `<span class="key">${match.slice(0, -1)}</span><span class="colon">:</span>`;
+                    }
+                    // 普通字符串
+                    return `<span class="value string">${match}</span>`;
+                })
+                // 数字
+                .replace(/\b(-?)(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?\b/g, 
+                    '<span class="value number">$&</span>')
+                // 布尔值和 null
+                .replace(/\b(true|false|null)\b/g, 
+                    '<span class="value $1">$&</span>')
+                // 括号
+                .replace(/[\{\}]/g, 
+                    '<span class="brace">$&</span>')
+                .replace(/[\[\]]/g, 
+                    '<span class="bracket">$&</span>')
+                // 逗号
+                .replace(/,/g, 
+                    '<span class="comma">,</span>');
+                
+            return tokenized;
+        }
+
         // Function to update line numbers
         function updateLineNumbers() {
             const linesDiv = document.getElementById('line-numbers');
@@ -691,6 +766,7 @@
                 
                 // DOM Elements
                 const jsonInput = $('#json-input');
+                const highlightedJson = $('#highlighted-json');
                 const lineNumbers = $('#line-numbers');
                 const treeViewContainer = $('#json-tree');
                 const textViewContainer = $('#text-view');
@@ -727,9 +803,31 @@
                 // Set sample JSON
                 jsonInput.val(JSON.stringify(sampleJson, null, 2));
                 try { currentJson = JSON.parse(jsonInput.val()); } catch(e) { currentJson = null; }
+                updateHighlightedContent();
                 updateCharCount();
                 updateLineNumbers();
                 renderTreeView(); // Initial render
+                
+                // Update highlighted content
+                function updateHighlightedContent() {
+                    // 直接在text模式下使用原始textarea，不再需要高亮显示
+                    // 只在tree模式下使用高亮JSON渲染
+                    if (currentView === 'tree') {
+                        try {
+                            const content = jsonInput.val();
+                            // 仍然需要解析JSON来构建树视图
+                            if (content.trim()) {
+                                try {
+                                    currentJson = JSON.parse(content);
+                                } catch (e) {
+                                    // 解析失败，树视图将显示错误
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Error updating highlighted content:", e);
+                        }
+                    }
+                }
                 
                 // Update character count
                 function updateCharCount() {
@@ -787,29 +885,43 @@
                 jsonInput.on('input', function() {
                     errorMessage.addClass('hidden'); // Hide error on new input
                     statusMessage.text('');
-                    try { currentJson = JSON.parse(jsonInput.val()); } catch(e) { currentJson = null; }
+                    try { 
+                        // Only try to parse if it's not empty
+                        if (jsonInput.val().trim()) {
+                            currentJson = JSON.parse(jsonInput.val()); 
+                        } else {
+                            currentJson = null;
+                        }
+                    } catch(e) { currentJson = null; }
+                    updateHighlightedContent();
                     updateCharCount();
                     updateLineNumbers();
-                     // Optionally update tree view live? Might be slow. Let's update on format.
+                    // Optionally update tree view live? Might be slow. Let's update on format.
                 });
 
-                // Sync scroll for line numbers
-                 jsonInput.on('scroll', function() {
-                     lineNumbers.scrollTop(jsonInput.scrollTop());
-                 });
+                // Sync scroll between textarea and highlighted view
+                jsonInput.on('scroll', function() {
+                    // 文本模式不再需要同步滚动
+                    if (currentView === 'text') {
+                        lineNumbers.scrollTop(jsonInput.scrollTop());
+                    }
+                });
                 
                 // Format JSON
                 formatBtn.on('click', function() {
+                    if ($(this).hasClass('disabled')) return; // 阻止树模式下的操作
                     formatJson();
                 });
                 
                 // Minify JSON
                 minifyBtn.on('click', function() {
+                    if ($(this).hasClass('disabled')) return; // 阻止树模式下的操作
                     minifyJson();
                 });
                 
                 // Validate JSON
                 validateBtn.on('click', function() {
+                    if ($(this).hasClass('disabled')) return; // 阻止树模式下的操作
                     validateJson();
                 });
                 
@@ -819,6 +931,7 @@
                     errorMessage.addClass('hidden');
                     statusMessage.text('');
                     currentJson = null;
+                    updateHighlightedContent();
                     updateCharCount();
                     updateLineNumbers();
                     renderTreeView();
@@ -853,11 +966,30 @@
                          treeViewContainer.css('display', 'none');
                          lineNumbers.css('display', 'block'); // Show line numbers in text mode
                          updateLineNumbers(); // Ensure line numbers are up-to-date
+                         
+                         // 启用编辑模式
+                         jsonInput.attr('readonly', false);
+                         jsonInput.css('cursor', 'text');
+                         
+                         // 确保按钮可用
+                         formatBtn.removeClass('disabled');
+                         minifyBtn.removeClass('disabled');
+                         validateBtn.removeClass('disabled');
+                         
                      } else { // Tree view
                          textViewContainer.css('display', 'none');
                          treeViewContainer.css('display', 'block');
                          lineNumbers.css('display', 'none'); // Hide main line numbers in tree mode
                          renderTreeView(); // Render tree if switching to it
+                         
+                         // 禁用编辑模式
+                         jsonInput.attr('readonly', true);
+                         jsonInput.css('cursor', 'default');
+                         
+                         // 禁用不需要的按钮，保留复制和清除功能
+                         formatBtn.addClass('disabled');
+                         minifyBtn.addClass('disabled');
+                         validateBtn.addClass('disabled');
                      }
                       errorMessage.addClass('hidden'); // Hide error on view switch
                       statusMessage.text('');
@@ -867,21 +999,30 @@
                 function formatJson() {
                     try {
                         const startTime = performance.now();
-                        currentJson = JSON.parse(jsonInput.val()); // Update currentJson
-                        const indent = getIndentation();
-                        const formatted = JSON.stringify(currentJson, null, indent);
-                        jsonInput.val(formatted);
-                        errorMessage.addClass('hidden');
-                        
-                        const endTime = performance.now();
-                        statusMessage.text(`Formatted in ${(endTime - startTime).toFixed(2)}ms`);
-                        updateCharCount();
-                        updateLineNumbers();
-                        renderTreeView(); // Update tree view as well
+                        const content = jsonInput.val().trim();
+                        if (content) {
+                            currentJson = JSON.parse(content); // Update currentJson
+                            const indent = getIndentation();
+                            const formatted = JSON.stringify(currentJson, null, indent);
+                            jsonInput.val(formatted);
+                            errorMessage.addClass('hidden');
+                            
+                            const endTime = performance.now();
+                            statusMessage.text(`Formatted in ${(endTime - startTime).toFixed(2)}ms`);
+                            updateCharCount();
+                            updateLineNumbers();
+                            
+                            // 如果在树模式下，渲染树视图
+                            if (currentView === 'tree') {
+                                renderTreeView();
+                            }
+                        }
                     } catch (e) {
                         showError(e.message);
                         currentJson = null; // Invalidate JSON on error
-                        renderTreeView(); // Clear tree on error
+                        if (currentView === 'tree') {
+                            renderTreeView(); // Clear tree on error
+                        }
                     }
                 }
                 
@@ -907,11 +1048,12 @@
                         statusMessage.text(`Minified in ${(endTime - startTime).toFixed(2)}ms`);
                         updateCharCount();
                         updateLineNumbers();
-                        renderTreeView(); // Clear tree view content
                     } catch (e) {
                         showError(e.message);
                         currentJson = null; // Invalidate JSON on error
-                        renderTreeView(); // Clear tree on error
+                        if (currentView === 'tree') {
+                            renderTreeView(); // Clear tree on error
+                        }
                     }
                 }
                 
