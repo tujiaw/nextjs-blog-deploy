@@ -179,7 +179,7 @@
             min-width: 90px !important;
             padding: 0.5em 0.7em !important;
             font-size: 0.85rem !important;
-            height: 24px !important;
+            height: 28px !important;
             line-height: 1 !important;
             display: flex !important;
             align-items: center !important;
@@ -431,6 +431,11 @@
                         <div class="item" data-value="tab">Tab</div>
                     </div>
                 </div>
+                
+                <div class="ui tiny checkbox" id="fix-json-checkbox" style="margin-left: 10px; display: flex; align-items: center;">
+                    <input type="checkbox" checked>
+                    <label style="font-size: 0.85rem; cursor: pointer;">Fix JSON</label>
+                </div>
             </div>
             
             <div class="view-switcher">
@@ -594,6 +599,8 @@
             if (typeof $ !== 'undefined' && typeof $.fn.dropdown !== 'undefined') {
                 // 使用Semantic UI的dropdown
                 $('.ui.dropdown').dropdown();
+                // Initialize checkbox
+                $('.ui.checkbox').checkbox();
                 // 初始化按钮
                 $('.ui.button').each(function() {
                     $(this).on('click', function() {
@@ -1035,7 +1042,15 @@
                         const startTime = performance.now();
                         const content = jsonInput.val().trim();
                         if (content) {
-                            currentJson = JSON.parse(content); // Update currentJson
+                            let processedContent = content;
+                            
+                            // Apply JSON repair if checkbox is checked
+                            const shouldRepair = $('#fix-json-checkbox input').is(':checked');
+                            if (shouldRepair) {
+                                processedContent = repairJson(content);
+                            }
+                            
+                            currentJson = JSON.parse(processedContent); // Update currentJson
                             const indent = getIndentation();
                             const formatted = JSON.stringify(currentJson, null, indent);
                             jsonInput.val(formatted);
@@ -1065,7 +1080,17 @@
                 function minifyJson() {
                     try {
                         const startTime = performance.now();
-                        currentJson = JSON.parse(jsonInput.val()); // Update currentJson
+                        const content = jsonInput.val().trim();
+                        
+                        // Apply JSON repair if checkbox is checked
+                        const shouldRepair = $('#fix-json-checkbox input').is(':checked');
+                        if (shouldRepair && content) {
+                            const repaired = repairJson(content);
+                            currentJson = JSON.parse(repaired);
+                        } else {
+                            currentJson = JSON.parse(content);
+                        }
+                        
                         const minified = JSON.stringify(currentJson);
                         jsonInput.val(minified + '\n'); // Add line break at the end
                         errorMessage.addClass('hidden');
@@ -1092,7 +1117,23 @@
                 function validateJson() {
                     try {
                         const startTime = performance.now();
-                        currentJson = JSON.parse(jsonInput.val()); // Update currentJson
+                        const content = jsonInput.val().trim();
+                        
+                        // Apply JSON repair if checkbox is checked
+                        const shouldRepair = $('#fix-json-checkbox input').is(':checked');
+                        if (shouldRepair && content) {
+                            const repaired = repairJson(content);
+                            currentJson = JSON.parse(repaired);
+                            // If repaired successfully, update textarea with fixed JSON
+                            if (repaired !== content) {
+                                jsonInput.val(repaired);
+                                updateCharCount();
+                                updateLineNumbers();
+                            }
+                        } else {
+                            currentJson = JSON.parse(content);
+                        }
+                        
                         errorMessage.addClass('hidden');
                         
                         const endTime = performance.now();
@@ -1109,6 +1150,47 @@
                         currentJson = null; // Invalidate JSON on error
                         treeViewContainer.html(''); // Clear tree on error
                     }
+                }
+                
+                // Repair JSON function to fix common syntax errors
+                function repairJson(jsonString) {
+                    if (!jsonString) return jsonString;
+                    
+                    let repaired = jsonString;
+                    
+                    // 1. Replace Python/JavaScript specific values with JSON equivalents
+                    repaired = repaired
+                        .replace(/\bNone\b/g, 'null')     // Python None -> null
+                        .replace(/\bTrue\b/g, 'true')     // Python True -> true
+                        .replace(/\bFalse\b/g, 'false')   // Python False -> false
+                        .replace(/\bundefined\b/g, 'null') // JavaScript undefined -> null
+                        .replace(/\bNaN\b/g, 'null');     // JavaScript NaN -> null
+                    
+                    // 2. Fix trailing commas in arrays and objects
+                    repaired = repaired
+                        .replace(/,\s*([}\]])/g, '$1');   // Remove trailing commas
+                    
+                    // 3. Convert single quotes to double quotes for property names and string values
+                    // This is more complex as we need to handle nested quotes and escaping
+                    
+                    // Step 1: First handle property names with single quotes
+                    repaired = repaired.replace(/'([^']+)'\s*:/g, function(match, p1) {
+                        // Escape any double quotes in the property name
+                        return `"${p1.replace(/"/g, '\\"')}":`; 
+                    });
+                    
+                    // Step 2: Handle string values with single quotes
+                    // This regex finds single-quoted strings not followed by a colon (which would be a property name)
+                    const singleQuoteRegex = /'((?:[^'\\]|\\.)*)'/g;
+                    repaired = repaired.replace(singleQuoteRegex, function(match, p1) {
+                        // Replace with double-quoted string, escaping any double quotes
+                        return `"${p1.replace(/"/g, '\\"')}"`;
+                    });
+                    
+                    // 4. Add quotes to unquoted property names
+                    repaired = repaired.replace(/(\{|\,)\s*([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":');
+                    
+                    return repaired;
                 }
                 
                 // Get indentation setting
