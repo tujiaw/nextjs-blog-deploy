@@ -379,6 +379,14 @@
             .view-switcher {
                 display: none; /* Hide view switcher on mobile */
             }
+            .tree-controls {
+                margin-left: 0 !important;
+                margin-top: 5px;
+                width: 100%;
+            }
+            .tree-controls .buttons {
+                width: 100%;
+            }
             .view-container {
                 flex-direction: column; /* Stack views on mobile */
             }
@@ -467,6 +475,13 @@
                 <div class="ui tiny basic buttons">
                     <button class="ui button active" data-view="text">Text</button>
                     <button class="ui button" data-view="tree">Tree</button>
+                </div>
+            </div>
+            
+            <div class="tree-controls" style="margin-left: auto; display: flex; align-items: center;">
+                <div class="ui tiny basic buttons">
+                    <button class="ui tiny button" id="expand-all-btn">Expand All</button>
+                    <button class="ui tiny button" id="collapse-all-btn">Collapse All</button>
                 </div>
             </div>
         </div>
@@ -931,6 +946,8 @@
                 const statusMessage = $('#status-message');
                 const charCount = $('#char-count');
                 const viewSwitcherBtns = $(".view-switcher .button");
+                const expandAllBtn = $('#expand-all-btn');
+                const collapseAllBtn = $('#collapse-all-btn');
                 
                 let currentJson = null; // Store parsed JSON
                 let currentView = 'tree'; // Set to tree to ensure tree view renders
@@ -1091,6 +1108,34 @@
                     copyToClipboard(output);
                     
                     statusMessage.text('Copied to clipboard!');
+                    setTimeout(() => {
+                        statusMessage.text('');
+                    }, 2000);
+                });
+                
+                // Expand all tree nodes
+                expandAllBtn.on('click', function() {
+                    if ($(this).hasClass('disabled')) return;
+                    
+                    const startTime = performance.now();
+                    $('#json-tree .json-item[data-expandable="true"]').addClass('expanded');
+                    const endTime = performance.now();
+                    
+                    statusMessage.text(`All nodes expanded in ${(endTime - startTime).toFixed(2)}ms`);
+                    setTimeout(() => {
+                        statusMessage.text('');
+                    }, 2000);
+                });
+                
+                // Collapse all tree nodes
+                collapseAllBtn.on('click', function() {
+                    if ($(this).hasClass('disabled')) return;
+                    
+                    const startTime = performance.now();
+                    $('#json-tree .json-item[data-expandable="true"]').removeClass('expanded');
+                    const endTime = performance.now();
+                    
+                    statusMessage.text(`All nodes collapsed in ${(endTime - startTime).toFixed(2)}ms`);
                     setTimeout(() => {
                         statusMessage.text('');
                     }, 2000);
