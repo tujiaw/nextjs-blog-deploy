@@ -14,6 +14,9 @@
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <!-- Moment Timezone -->
     <script src="https://cdn.jsdelivr.net/npm/moment-timezone@0.5.37/builds/moment-timezone-with-data.min.js"></script>
+    <!-- Flatpickr for better date picker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
         body {
             padding: 2em;
@@ -36,6 +39,35 @@
         }
         #currentTime {
             margin-bottom: 1em;
+        }
+        
+        /* Fix calendar dropdown positioning */
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            position: relative;
+            z-index: 100;
+        }
+        
+        .ui.dropdown .menu {
+            z-index: 1000 !important;
+        }
+        
+        /* Fix for dropdown position */
+        .ui.dropdown .menu:after {
+            display: none !important;
+        }
+        
+        /* Flatpickr customization */
+        .flatpickr-calendar {
+            z-index: 1000 !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .date-time-picker-container {
+            position: relative;
+        }
+        
+        .date-time-picker-container .ui.input {
+            width: 100%;
         }
     </style>
 </head>
@@ -116,7 +148,9 @@
                 <div class="fields">
                     <div class="twelve wide field">
                         <label>Enter Date and Time</label>
-                        <input type="datetime-local" id="datetimeInput">
+                        <div class="date-time-picker-container">
+                            <input type="text" id="datetimeInput" placeholder="Select date and time">
+                        </div>
                     </div>
                     <div class="four wide field">
                         <label>&nbsp;</label>
@@ -163,6 +197,17 @@
             $('.ui.dropdown').dropdown();
             $('.tabular.menu .item').tab();
             $('.ui.checkbox').checkbox();
+            
+            // Initialize Flatpickr
+            const datePickerInstance = flatpickr("#datetimeInput", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                time_24hr: true,
+                minuteIncrement: 1,
+                defaultDate: new Date(),
+                position: "auto",
+                disableMobile: true
+            });
             
             // Populate timezone dropdown
             const timezones = moment.tz.names();
@@ -310,7 +355,7 @@
                 if (!datetimeInput) return;
                 
                 const timezone = $('#timezoneSelectDate').val();
-                const date = moment.tz(datetimeInput, timezone);
+                const date = moment.tz(datetimeInput, "YYYY-MM-DD HH:mm", timezone);
                 
                 if (!date.isValid()) {
                     $('#timestampResult').hide();
@@ -404,7 +449,7 @@
                 } else {
                     // Switch to date tab
                     $('.tabular.menu .item[data-tab="date-to-timestamp"]').tab('change tab', 'date-to-timestamp');
-                    $('#datetimeInput').val(item.from);
+                    datePickerInstance.setDate(item.from);
                     $('#timezoneSelectDate').dropdown('set selected', item.timezone);
                     $('#convertDateButton').click();
                 }
@@ -415,16 +460,6 @@
                 localStorage.removeItem('timestampConverterHistory');
                 loadHistory();
             });
-            
-            // Auto-fill current date on page load
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            
-            $('#datetimeInput').val(`${year}-${month}-${day}T${hours}:${minutes}`);
         });
     </script>
 </body>
