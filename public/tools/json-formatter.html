@@ -566,8 +566,12 @@
                     // 添加左括号（与文本视图格式一致）
                     content += `<span class="brace">${isArray ? '[' : '{'}</span>`;
                     
-                    // 添加折叠时显示的省略号
-                    content += `<span class="collapsed-indicator">...</span>`;
+                    // 计算子项数量
+                    const childCount = isArray ? obj.length : Object.keys(obj).length;
+                    const itemText = childCount === 1 ? 'item' : 'items';
+                    
+                    // 添加折叠时显示的子项数量提示
+                    content += `<span class="collapsed-indicator">${childCount} ${itemText}</span>`;
                     
                     itemDiv.innerHTML += content;
                     
