@@ -220,53 +220,81 @@
         .dropdown.icon:before { content: "▼"; }
 
         /* Tree view styles */
-        .json-tree ul {
-            list-style-type: none;
-            padding-left: 20px;
-            margin: 0;
+        .json-tree {
+            display: flex; /* 使用 flex 布局 */
         }
-        .json-tree li {
-            position: relative;
-        }
-        .json-tree .caret {
-            cursor: pointer;
+        
+        .tree-line-numbers {
+            min-width: 20px;
+            text-align: right;
+            padding-right: 8px;
+            color: #aaa;
             user-select: none;
-            position: absolute;
-            left: -15px;
-            top: 0;
-            font-size: 0.8em;
+            border-right: 1px solid #ddd;
+            margin-right: 8px;
         }
-        .json-tree .caret::before {
-            content: "▶";
+        
+        .tree-content {
+            flex: 1;
+            overflow: auto;
+        }
+        
+        .expand-icon {
+            cursor: pointer;
             display: inline-block;
-            margin-right: 6px;
+            width: 16px;
+            text-align: center;
+            user-select: none;
+            margin-right: 3px;
         }
-        .json-tree .caret-down::before {
-            transform: rotate(90deg);
+        
+        .expand-icon::before {
+            content: "▶";
+            font-size: 0.8em;
+            color: #888;
         }
-        .json-tree .nested {
+        
+        .expanded > .expand-icon::before,
+        .expanded .expand-icon::before {
+            content: "▼";
+            color: #333;
+        }
+        
+        .json-item {
+            white-space: nowrap;
+            margin: 2px 0;
+        }
+        
+        .json-children {
             display: none;
+            padding-left: 20px;
         }
-        .json-tree .active {
+        
+        .expanded > .json-children {
             display: block;
         }
-        .json-tree .key {
-            color: #a52a2a; /* brown */
+        
+        /* 为不同类型的值添加颜色 */
+        .key {
+            color: #881391; /* 紫色 */
+            font-weight: bold;
         }
-        .json-tree .string {
-            color: #008000; /* green */
+        
+        .value.string {
+            color: #1a1aa6; /* 蓝色 */
         }
-        .json-tree .number {
-            color: #0000ff; /* blue */
+        
+        .value.number {
+            color: #098658; /* 绿色 */
         }
-        .json-tree .boolean {
-            color: #ff00ff; /* magenta */
+        
+        .value.boolean, .value.null {
+            color: #0000ff; /* 蓝色 */
+            font-weight: bold;
         }
-        .json-tree .null {
-            color: #808080; /* gray */
-        }
-        .json-tree .value {
-            margin-left: 5px;
+        
+        .brace {
+            color: #000000; /* 黑色 */
         }
 
         @media (max-width: 700px) { /* Adjusted breakpoint */
@@ -479,99 +507,119 @@
         }
 
         // Function to create Tree View HTML
-        function createTreeView(jsonObj, isRoot = true, depth = 0) {
-            const MAX_DEPTH = 100;
-            if (depth > MAX_DEPTH) {
-                return '<ul class="json-branch"><li><span style="color: red;">[Max depth exceeded]</span></li></ul>';
-            }
-
-            // 判断是否是数组、确定配对括号
-            const isArray = Array.isArray(jsonObj);
-            const bracketOpen = isArray ? '[' : '{';
-            const bracketClose = isArray ? ']' : '}';
-
-            // 如果是根节点，就用外层 <ul class="json-branch"> 包裹
-            let html = isRoot ? '<ul class="json-branch">' : '';
-
-            // 先输出开头：caret + 左括号
-            // caret-down + active => 默认展开
-            html += `<li><span class="caret caret-down"></span><span class="brace">${bracketOpen}</span>`;
-
-            // 子项放在嵌套的 <ul class="nested active"> 里
-            html += `<ul class="nested active">`;
-
-            try {
-                if (isArray) {
-                    // 处理数组
-                    if (jsonObj.length === 0) {
-                        // 空数组
-                        html += `<li><em>/* empty array */</em></li>`;
+        function createTreeView(jsonObj) {
+            const lineNumbersDiv = document.createElement('div');
+            lineNumbersDiv.className = 'tree-line-numbers';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'tree-content';
+            
+            // 递归构建 JSON 结构
+            function buildJsonItem(obj, key = null, lineNum = 1) {
+                const isArray = Array.isArray(obj);
+                const isObject = obj !== null && typeof obj === 'object';
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'json-item';
+                
+                // 生成行号
+                lineNumbersDiv.innerHTML += lineNum + '<br>';
+                
+                // 生成当前行内容
+                let content = '';
+                
+                // 添加键名和冒号（如果有的话）
+                if (key !== null) {
+                    if (typeof key === 'number') {
+                        content += `<span class="key array-index">${key}:</span> `;
                     } else {
-                        jsonObj.forEach((value, index) => {
-                            html += '<li>';
-                            // 显示索引
-                            html += `<span class="key array-index">${index}:</span> `;
-                            if (value && typeof value === 'object') {
-                                // 递归调用
-                                html += createTreeView(value, false, depth + 1);
-                            } else {
-                                // 基本类型
-                                const valStr = JSON.stringify(value);
-                                const valType = (value === null) ? 'null' : typeof value;
-                                html += `<span class="value ${valType}">${valStr}</span>`;
-                            }
-                            html += '</li>';
+                        content += `<span class="key">"${key}":</span> `;
+                    }
+                }
+                
+                // 为对象和数组添加展开/折叠图标
+                if (isObject) {
+                    const expandIcon = document.createElement('span');
+                    expandIcon.className = 'expand-icon';
+                    expandIcon.onclick = function(e) {
+                        e.stopPropagation(); // 防止事件冒泡
+                        itemDiv.classList.toggle('expanded');
+                    };
+                    itemDiv.appendChild(expandIcon);
+                    
+                    // 添加左括号（与文本视图格式一致）
+                    content += `<span class="brace">${isArray ? '[' : '{'}</span>`;
+                    itemDiv.innerHTML += content;
+                    
+                    // 创建子项的容器
+                    const childrenDiv = document.createElement('div');
+                    childrenDiv.className = 'json-children';
+                    
+                    // 处理空对象/数组
+                    if (isArray && obj.length === 0) {
+                        lineNumbersDiv.innerHTML += (lineNum + 1) + '<br>';
+                        childrenDiv.innerHTML = '<div class="json-item"><em>/* empty array */</em></div>';
+                        lineNum++;
+                    } else if (!isArray && Object.keys(obj).length === 0) {
+                        lineNumbersDiv.innerHTML += (lineNum + 1) + '<br>';
+                        childrenDiv.innerHTML = '<div class="json-item"><em>/* empty object */</em></div>';
+                        lineNum++;
+                    } else {
+                        // 递归处理子项
+                        let childKeys = isArray ? [...Array(obj.length).keys()] : Object.keys(obj);
+                        lineNum++;
+                        
+                        childKeys.forEach((childKey) => {
+                            const childValue = obj[childKey];
+                            const [childContent, newLineNum] = buildJsonItem(childValue, childKey, lineNum);
+                            childrenDiv.appendChild(childContent);
+                            lineNum = newLineNum;
                         });
                     }
+                    
+                    // 添加右括号
+                    lineNumbersDiv.innerHTML += lineNum + '<br>';
+                    childrenDiv.innerHTML += `<div class="json-item"><span class="brace">${isArray ? ']' : '}'}</span></div>`;
+                    
+                    itemDiv.appendChild(childrenDiv);
+                    itemDiv.classList.add('expanded'); // 默认展开
+                    lineNum++;
+                    
+                    return [itemDiv, lineNum];
                 } else {
-                    // 处理对象
-                    const keys = Object.keys(jsonObj);
-                    if (keys.length === 0) {
-                        // 空对象
-                        html += `<li><em>/* empty object */</em></li>`;
+                    // 基本类型值的处理
+                    const valueType = (obj === null) ? 'null' : typeof obj;
+                    let displayValue = JSON.stringify(obj);
+                    
+                    // 为字符串添加颜色
+                    if (valueType === 'string') {
+                        content += `<span class="value string">${displayValue}</span>`;
+                    } else if (valueType === 'number') {
+                        content += `<span class="value number">${displayValue}</span>`;
+                    } else if (valueType === 'boolean') {
+                        content += `<span class="value boolean">${displayValue}</span>`;
+                    } else if (valueType === 'null') {
+                        content += `<span class="value null">${displayValue}</span>`;
                     } else {
-                        keys.forEach(key => {
-                            html += '<li>';
-                            // 显示键名
-                            html += `<span class="key">"${key}":</span> `;
-                            const value = jsonObj[key];
-                            if (value && typeof value === 'object') {
-                                // 递归调用
-                                html += createTreeView(value, false, depth + 1);
-                            } else {
-                                // 基本类型
-                                const valStr = JSON.stringify(value);
-                                const valType = (value === null) ? 'null' : typeof value;
-                                html += `<span class="value ${valType}">${valStr}</span>`;
-                            }
-                            html += '</li>';
-                        });
+                        content += `<span class="value">${displayValue}</span>`;
                     }
+                    
+                    itemDiv.innerHTML += content;
+                    
+                    return [itemDiv, lineNum + 1];
                 }
-            } catch (err) {
-                console.error("Error rendering tree view:", err);
-                html += `<li style="color:red;">[Error rendering this node]</li>`;
             }
-
-            // 关掉子 <ul>，再输出右括号
-            html += `</ul><span class="brace">${bracketClose}</span></li>`;
-
-            // 如果是根节点，收尾 </ul>
-            if (isRoot) {
-                html += '</ul>';
-            }
-
-            return html;
-        }
-
-        // Function to add interactivity to the Tree View
-        function initTreeViewInteractivity(treeContainer) {
-            treeContainer.addEventListener("click", function (e) {
-                if (e.target.classList.contains("caret")) {
-                    e.target.parentElement.querySelector(".nested").classList.toggle("active");
-                    e.target.classList.toggle("caret-down");
-                }
-            });
+            
+            const [rootItem] = buildJsonItem(jsonObj);
+            contentDiv.appendChild(rootItem);
+            
+            // 创建包含行号和内容的完整树视图
+            const treeView = document.createElement('div');
+            treeView.className = 'tree-view';
+            treeView.style.display = 'flex';
+            treeView.appendChild(lineNumbersDiv);
+            treeView.appendChild(contentDiv);
+            
+            return treeView.outerHTML;
         }
 
         // Function to update line numbers
@@ -665,14 +713,26 @@
                         try {
                             const treeHtml = createTreeView(currentJson);
                             treeViewContainer.html(treeHtml);
-
-                            // 兼容处理：同时检查 fallback $() 和 jQuery
-                            // 若存在 fallback .elements，则用 elements[0]
-                            // 若存在 jQuery 对象，则用 [0]
-                            const containerElem = (treeViewContainer.elements && treeViewContainer.elements[0]) 
-                                                  || treeViewContainer[0];
-                            if (containerElem) {
-                                initTreeViewInteractivity(containerElem);
+                            
+                            // 添加点击json-item的事件，点击item时也触发展开/折叠
+                            if (typeof $ !== 'undefined') {
+                                $('.json-item').on('click', function(e) {
+                                    // 只有点击在.json-item上，而不是子元素上时才展开/折叠
+                                    if (e.target === this) {
+                                        $(this).toggleClass('expanded');
+                                        e.stopPropagation();
+                                    }
+                                });
+                            } else {
+                                const items = document.querySelectorAll('.json-item');
+                                items.forEach(item => {
+                                    item.addEventListener('click', function(e) {
+                                        if (e.target === this) {
+                                            this.classList.toggle('expanded');
+                                            e.stopPropagation();
+                                        }
+                                    });
+                                });
                             }
 
                             const endTime = performance.now();
@@ -755,10 +815,12 @@
                      if (currentView === 'text') {
                          textViewContainer.css('display', 'flex'); // Use flex for line numbers
                          treeViewContainer.css('display', 'none');
+                         lineNumbers.css('display', 'block'); // Show line numbers in text mode
                          updateLineNumbers(); // Ensure line numbers are up-to-date
                      } else { // Tree view
                          textViewContainer.css('display', 'none');
                          treeViewContainer.css('display', 'block');
+                         lineNumbers.css('display', 'none'); // Hide main line numbers in tree mode
                          renderTreeView(); // Render tree if switching to it
                      }
                       errorMessage.addClass('hidden'); // Hide error on view switch
