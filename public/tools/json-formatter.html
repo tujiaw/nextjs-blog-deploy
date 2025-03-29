@@ -6,19 +6,22 @@
     <title>JSON Formatter Tool</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
     <style>
-        body {
-            padding: 10px;
-            background-color: #f8f8f8;
-            max-height: 100vh;
+        html, body {
+            padding: 0;
             margin: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: #f8f8f8;
+            font-size: 14px; /* Base font size */
+        }
+        body {
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
         }
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             flex: 1;
@@ -26,42 +29,103 @@
         }
         .ui.segment, .segment {
             border: 1px solid rgba(34,36,38,.15);
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 0;
+            box-shadow: none;
             background-color: white;
             padding: 1em;
+            margin: 0;
+        }
+        .view-container {
+            flex: 1;
+            display: flex; /* Use flexbox for line numbers */
+            overflow: hidden;
+            position: relative; /* Needed for error message absolute positioning */
+            background-color: white;
+        }
+        #line-numbers {
+            font-family: monospace;
+            padding: 10px 5px 10px 10px;
+            background-color: #f7f7f7;
+            color: #aaa;
+            text-align: right;
+            overflow: hidden;
+            user-select: none;
+            border-right: 1px solid #ddd;
+            font-size: 0.9rem;
+            line-height: 1.5; /* Match textarea line-height */
         }
         #json-input {
             font-family: monospace;
             resize: none;
             width: 100%;
+            height: 100%;
             padding: 10px;
             box-sizing: border-box;
             flex: 1;
             overflow: auto;
             white-space: pre;
+            border: none;
+            border-radius: 0;
+            outline: none;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        #json-tree {
+            flex: 1;
+            overflow: auto;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            display: none; /* Hidden by default */
         }
         .error-message {
             color: #db2828;
-            margin-top: 5px;
             font-weight: bold;
+            padding: 5px 10px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(255, 240, 240, 0.9);
+            border-top: 1px solid #db2828;
+            z-index: 10; 
         }
         .header-container {
             display: flex;
             align-items: center;
-            margin-bottom: 10px;
+            padding: 5px 10px;
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+            flex-wrap: wrap; /* Allow wrapping */
         }
         .header {
             margin: 0;
             display: flex;
             align-items: center;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
+            margin-right: 15px;
         }
+        .view-switcher {
+            margin-right: auto; /* Pushes buttons to the right */
+        }
+         .view-switcher .button {
+            background-color: #eee;
+            color: #555;
+            padding: 0.4em 0.8em;
+            font-size: 0.8rem;
+            border-radius: 3px;
+         }
+         .view-switcher .button.active {
+            background-color: #ddd;
+            color: #333;
+            font-weight: bold;
+         }
         .buttons {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap; /* Prevent button wrapping within the group */
             gap: 5px;
-            margin-left: auto;
+            margin-left: 10px;
         }
         .button {
             cursor: pointer;
@@ -70,12 +134,13 @@
             justify-content: center;
             min-height: 1em;
             border: none;
-            border-radius: 4px;
-            padding: 0.5em 1em;
+            border-radius: 3px;
+            padding: 0.4em 0.8em;
             font-weight: 700;
             transition: opacity 0.1s ease, background-color 0.1s ease, color 0.1s ease, box-shadow 0.1s ease;
             text-decoration: none;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+            white-space: nowrap; /* Prevent text wrapping inside button */
         }
         .primary.button {
             background-color: #2185d0;
@@ -85,6 +150,10 @@
             background-color: #1678c2;
             color: white;
         }
+        .view-switcher .button:hover {
+            background-color: #ccc;
+            color: #333;
+        }
         .dropdown {
             position: relative;
             display: inline-block;
@@ -92,10 +161,11 @@
         .dropdown .menu {
             position: absolute;
             top: 100%;
-            left: 0;
+            right: 0; /* Align dropdown to the right */
+            left: auto;
             z-index: 1000;
             display: none;
-            min-width: 10rem;
+            min-width: 8rem;
             background-color: white;
             border: 1px solid rgba(34,36,38,.15);
             border-radius: 4px;
@@ -105,7 +175,7 @@
             display: block;
         }
         .dropdown .item {
-            padding: 0.5em 1em;
+            padding: 0.4em 0.8em;
             cursor: pointer;
         }
         .dropdown .item:hover {
@@ -114,17 +184,11 @@
         .dropdown .text {
             margin-right: 5px;
         }
-        .clear-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 100;
-        }
         .input-container {
             position: relative;
             flex: 1;
-            display: flex;
-            flex-direction: column;
+            display: flex; /* Changed to flex for main views */
+            flex-direction: row; /* Default to row for text view + lines */
             overflow: hidden;
         }
         .hidden {
@@ -133,7 +197,7 @@
         .status-bar {
             background-color: #f5f5f5;
             border-top: 1px solid #ddd;
-            padding: 5px 10px;
+            padding: 3px 10px;
             font-size: 0.8rem;
             color: #555;
             display: flex;
@@ -154,6 +218,82 @@
         .check.icon:before { content: "✓"; }
         .code.icon:before { content: "{ }"; }
         .dropdown.icon:before { content: "▼"; }
+
+        /* Tree view styles */
+        .json-tree ul {
+            list-style-type: none;
+            padding-left: 20px;
+            margin: 0;
+        }
+        .json-tree li {
+            position: relative;
+        }
+        .json-tree .caret {
+            cursor: pointer;
+            user-select: none;
+            position: absolute;
+            left: -15px;
+            top: 0;
+            font-size: 0.8em;
+        }
+        .json-tree .caret::before {
+            content: "▶";
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .json-tree .caret-down::before {
+            transform: rotate(90deg);
+        }
+        .json-tree .nested {
+            display: none;
+        }
+        .json-tree .active {
+            display: block;
+        }
+        .json-tree .key {
+            color: #a52a2a; /* brown */
+        }
+        .json-tree .string {
+            color: #008000; /* green */
+        }
+        .json-tree .number {
+            color: #0000ff; /* blue */
+        }
+        .json-tree .boolean {
+            color: #ff00ff; /* magenta */
+        }
+        .json-tree .null {
+            color: #808080; /* gray */
+        }
+        .json-tree .value {
+            margin-left: 5px;
+        }
+
+        @media (max-width: 700px) { /* Adjusted breakpoint */
+            .header-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .view-switcher {
+                margin-right: 0;
+                margin-bottom: 5px;
+            }
+            .buttons {
+                margin-left: 0;
+                width: 100%;
+                justify-content: space-between;
+            }
+            .button {
+                padding: 0.3em 0.6em;
+                font-size: 0.75rem;
+            }
+            .dropdown {
+                 font-size: 0.75rem;
+            }
+            .dropdown .menu {
+                min-width: 6rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -163,6 +303,11 @@
                 <span class="code icon"></span>
                 <span style="margin-left: 5px;">JSON Formatter</span>
             </h1>
+
+            <div class="view-switcher">
+                <button class="button active" data-view="text">Text</button>
+                <button class="button" data-view="tree">Tree</button>
+            </div>
             
             <div class="buttons">
                 <button class="primary button" id="format-btn">Format</button>
@@ -184,9 +329,13 @@
             </div>
         </div>
 
-        <div class="input-container">
-            <textarea id="json-input" class="segment" placeholder="Paste your JSON here..."></textarea>
-            <div class="error-message hidden" id="error-message"></div>
+        <div class="view-container">
+             <div id="line-numbers">1</div> <!-- Line numbers container -->
+             <div class="input-container" id="text-view">
+                 <textarea id="json-input" placeholder="Paste your JSON here..."></textarea>
+             </div>
+             <div id="json-tree" class="json-tree"></div> <!-- Tree view container -->
+             <div class="error-message hidden" id="error-message"></div>
         </div>
         
         <div class="status-bar">
@@ -208,7 +357,7 @@
                         elements: elements,
                         val: function(value) {
                             if (value === undefined) {
-                                return this.elements[0].value;
+                                return this.elements[0] ? this.elements[0].value : '';
                             } else {
                                 this.elements.forEach(el => el.value = value);
                                 return this;
@@ -216,12 +365,20 @@
                         },
                         text: function(value) {
                             if (value === undefined) {
-                                return this.elements[0].textContent;
+                                return this.elements[0] ? this.elements[0].textContent : '';
                             } else {
                                 this.elements.forEach(el => el.textContent = value);
                                 return this;
                             }
                         },
+                        html: function(value) {
+                             if (value === undefined) {
+                                 return this.elements[0] ? this.elements[0].innerHTML : '';
+                             } else {
+                                 this.elements.forEach(el => el.innerHTML = value);
+                                 return this;
+                             }
+                         },
                         addClass: function(className) {
                             this.elements.forEach(el => el.classList.add(className));
                             return this;
@@ -230,59 +387,58 @@
                             this.elements.forEach(el => el.classList.remove(className));
                             return this;
                         },
+                         css: function(prop, value) {
+                             if (value === undefined) {
+                                 // Simple getter for single property
+                                 return this.elements[0] ? window.getComputedStyle(this.elements[0])[prop] : undefined;
+                             } else {
+                                 this.elements.forEach(el => el.style[prop] = value);
+                                 return this;
+                             }
+                         },
                         find: function(childSelector) {
                             const children = [];
                             this.elements.forEach(el => {
                                 const found = el.querySelectorAll(childSelector);
                                 found.forEach(child => children.push(child));
                             });
-                            return {
-                                elements: children,
-                                removeClass: function(className) {
-                                    this.elements.forEach(el => el.classList.remove(className));
-                                    return this;
-                                },
-                                addClass: function(className) {
-                                    this.elements.forEach(el => el.classList.add(className));
-                                    return this;
-                                }
-                            };
+                             // Return a new chainable object
+                             const newQuery = { elements: children };
+                             Object.assign(newQuery, this);
+                             newQuery.elements = children; // Ensure elements are the found children
+                             return newQuery;
                         },
                         on: function(event, callback) {
                             this.elements.forEach(el => el.addEventListener(event, callback));
                             return this;
-                        }
-                    };
-                } else if (selector.nodeType) {
-                    return {
-                        elements: [selector],
-                        val: function(value) {
-                            if (value === undefined) {
-                                return this.elements[0].value;
-                            } else {
-                                this.elements[0].value = value;
-                                return this;
-                            }
                         },
-                        find: function(childSelector) {
-                            const children = this.elements[0].querySelectorAll(childSelector);
-                            return {
-                                elements: children,
-                                removeClass: function(className) {
-                                    this.elements.forEach(el => el.classList.remove(className));
-                                    return this;
-                                },
-                                addClass: function(className) {
-                                    this.elements.forEach(el => el.classList.add(className));
-                                    return this;
-                                }
-                            };
-                        }
+                        // Basic implementation for scroll event
+                         scrollTop: function(value) {
+                             if (value === undefined) {
+                                 return this.elements[0] ? this.elements[0].scrollTop : 0;
+                             } else {
+                                 this.elements.forEach(el => el.scrollTop = value);
+                                 return this;
+                             }
+                         }
                     };
-                }
+                } else if (typeof selector === 'function') {
+                     // Handle document ready
+                     documentReady(selector);
+                     return undefined; // Return undefined for ready function
+                 } else if (selector.nodeType || selector === window || selector === document) {
+                     // Handle direct nodes, window, document
+                     const newQuery = { elements: [selector] };
+                     // Copy methods from prototype, but be careful not to overwrite 'elements'
+                     Object.assign(newQuery, $().constructor.prototype);
+                     newQuery.elements = [selector];
+                     return newQuery;
+                 } else {
+                    return { elements: [] }; // Return empty set for invalid selectors
+                 }
             }
 
-            $.fn = {};
+            $.fn = {}; // Keep for potential Semantic UI fallback check
             
             // Simple document ready function
             function documentReady(fn) {
@@ -292,60 +448,173 @@
                     document.addEventListener('DOMContentLoaded', fn);
                 }
             }
-            
-            // Reassign ready function
-            $ = function(selector) {
-                if (typeof selector === 'function') {
-                    return documentReady(selector);
-                } else {
-                    return $(selector);
-                }
-            };
-        }
+        } 
 
-        // Initialize dropdown functionality
+        // Initialize dropdown functionality (Semantic UI or fallback)
         function initDropdown() {
             const dropdown = document.getElementById('indent-dropdown');
             if (!dropdown) return;
-            
+
+            const textEl = dropdown.querySelector('.text');
+            const inputEl = dropdown.querySelector('input');
+            const menuEl = dropdown.querySelector('.menu');
+
             dropdown.addEventListener('click', function(e) {
                 this.classList.toggle('active');
                 e.stopPropagation();
             });
-            
-            const items = dropdown.querySelectorAll('.item');
-            const text = dropdown.querySelector('.text');
-            const input = dropdown.querySelector('input');
-            
-            items.forEach(item => {
-                item.addEventListener('click', function() {
-                    const value = this.getAttribute('data-value');
-                    input.value = value;
-                    text.textContent = this.textContent;
+
+            menuEl.addEventListener('click', function(e) {
+                if (e.target.classList.contains('item')) {
+                    const value = e.target.getAttribute('data-value');
+                    inputEl.value = value;
+                    textEl.textContent = e.target.textContent;
                     dropdown.classList.remove('active');
-                });
+                }
             });
-            
+
             document.addEventListener('click', function() {
                 dropdown.classList.remove('active');
             });
+        }
+
+        // Function to create Tree View HTML
+        function createTreeView(jsonObj, isRoot = true, depth = 0) {
+            const MAX_DEPTH = 100;
+            if (depth > MAX_DEPTH) {
+                return '<ul class="json-branch"><li><span style="color: red;">[Max depth exceeded]</span></li></ul>';
+            }
+
+            // 判断是否是数组、确定配对括号
+            const isArray = Array.isArray(jsonObj);
+            const bracketOpen = isArray ? '[' : '{';
+            const bracketClose = isArray ? ']' : '}';
+
+            // 如果是根节点，就用外层 <ul class="json-branch"> 包裹
+            let html = isRoot ? '<ul class="json-branch">' : '';
+
+            // 先输出开头：caret + 左括号
+            // caret-down + active => 默认展开
+            html += `<li><span class="caret caret-down"></span><span class="brace">${bracketOpen}</span>`;
+
+            // 子项放在嵌套的 <ul class="nested active"> 里
+            html += `<ul class="nested active">`;
+
+            try {
+                if (isArray) {
+                    // 处理数组
+                    if (jsonObj.length === 0) {
+                        // 空数组
+                        html += `<li><em>/* empty array */</em></li>`;
+                    } else {
+                        jsonObj.forEach((value, index) => {
+                            html += '<li>';
+                            // 显示索引
+                            html += `<span class="key array-index">${index}:</span> `;
+                            if (value && typeof value === 'object') {
+                                // 递归调用
+                                html += createTreeView(value, false, depth + 1);
+                            } else {
+                                // 基本类型
+                                const valStr = JSON.stringify(value);
+                                const valType = (value === null) ? 'null' : typeof value;
+                                html += `<span class="value ${valType}">${valStr}</span>`;
+                            }
+                            html += '</li>';
+                        });
+                    }
+                } else {
+                    // 处理对象
+                    const keys = Object.keys(jsonObj);
+                    if (keys.length === 0) {
+                        // 空对象
+                        html += `<li><em>/* empty object */</em></li>`;
+                    } else {
+                        keys.forEach(key => {
+                            html += '<li>';
+                            // 显示键名
+                            html += `<span class="key">"${key}":</span> `;
+                            const value = jsonObj[key];
+                            if (value && typeof value === 'object') {
+                                // 递归调用
+                                html += createTreeView(value, false, depth + 1);
+                            } else {
+                                // 基本类型
+                                const valStr = JSON.stringify(value);
+                                const valType = (value === null) ? 'null' : typeof value;
+                                html += `<span class="value ${valType}">${valStr}</span>`;
+                            }
+                            html += '</li>';
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Error rendering tree view:", err);
+                html += `<li style="color:red;">[Error rendering this node]</li>`;
+            }
+
+            // 关掉子 <ul>，再输出右括号
+            html += `</ul><span class="brace">${bracketClose}</span></li>`;
+
+            // 如果是根节点，收尾 </ul>
+            if (isRoot) {
+                html += '</ul>';
+            }
+
+            return html;
+        }
+
+        // Function to add interactivity to the Tree View
+        function initTreeViewInteractivity(treeContainer) {
+            treeContainer.addEventListener("click", function (e) {
+                if (e.target.classList.contains("caret")) {
+                    e.target.parentElement.querySelector(".nested").classList.toggle("active");
+                    e.target.classList.toggle("caret-down");
+                }
+            });
+        }
+
+        // Function to update line numbers
+        function updateLineNumbers() {
+            const linesDiv = document.getElementById('line-numbers');
+            const textarea = document.getElementById('json-input');
+            if (!linesDiv || !textarea) return;
+
+            try {
+                const lines = textarea.value.split('\n');
+                const lineCount = lines.length;
+                let linesHtml = '';
+                for (let i = 1; i <= lineCount; i++) {
+                    linesHtml += i + '<br>';
+                }
+                linesDiv.innerHTML = linesHtml;
+
+                // Synchronize scroll
+                linesDiv.scrollTop = textarea.scrollTop;
+            } catch (e) {
+                console.error("Error updating line numbers:", e);
+                linesDiv.innerHTML = '1'; // Fallback
+            }
         }
         
         // Document ready function
         (function() {
             // Try to use jQuery if available, otherwise use our fallback
-            const ready = (typeof jQuery !== 'undefined') ? jQuery : $;
+            const ready = (typeof jQuery !== 'undefined') ? jQuery : documentReady;
             
             ready(function() {
                 // Initialize dropdowns if Semantic UI is not available
                 if (typeof $.fn.dropdown === 'undefined') {
                     initDropdown();
                 } else {
-                    $('.ui.dropdown').dropdown();
+                    $('.dropdown').dropdown(); // Use basic selector
                 }
                 
                 // DOM Elements
                 const jsonInput = $('#json-input');
+                const lineNumbers = $('#line-numbers');
+                const treeViewContainer = $('#json-tree');
+                const textViewContainer = $('#text-view');
                 const formatBtn = $('#format-btn');
                 const minifyBtn = $('#minify-btn');
                 const validateBtn = $('#validate-btn');
@@ -355,7 +624,11 @@
                 const clearBtn = $('#clear-btn');
                 const statusMessage = $('#status-message');
                 const charCount = $('#char-count');
+                const viewSwitcherBtns = $(".view-switcher .button");
                 
+                let currentView = 'text'; // Default view
+                let currentJson = null; // Store parsed JSON
+
                 // Sample JSON for initial demo
                 const sampleJson = {
                     "name": "JSON Formatter Tool",
@@ -366,23 +639,68 @@
                         "theme": "light"
                     },
                     "isAwesome": true,
-                    "version": 1.0
+                    "version": 1.0,
+                    "nested": {
+                        "level1": [1, 2, {"deep": true}]
+                    }
                 };
                 
                 // Set sample JSON
                 jsonInput.val(JSON.stringify(sampleJson, null, 2));
+                try { currentJson = JSON.parse(jsonInput.val()); } catch(e) { currentJson = null; }
                 updateCharCount();
+                updateLineNumbers();
+                renderTreeView(); // Initial render
                 
                 // Update character count
                 function updateCharCount() {
                     const count = jsonInput.val().length;
                     charCount.text(`Characters: ${count.toLocaleString()}`);
                 }
+
+                // Render Tree View
+                function renderTreeView() {
+                    if (currentJson && currentView === 'tree') {
+                        const startTime = performance.now();
+                        try {
+                            const treeHtml = createTreeView(currentJson);
+                            treeViewContainer.html(treeHtml);
+
+                            // 兼容处理：同时检查 fallback $() 和 jQuery
+                            // 若存在 fallback .elements，则用 elements[0]
+                            // 若存在 jQuery 对象，则用 [0]
+                            const containerElem = (treeViewContainer.elements && treeViewContainer.elements[0]) 
+                                                  || treeViewContainer[0];
+                            if (containerElem) {
+                                initTreeViewInteractivity(containerElem);
+                            }
+
+                            const endTime = performance.now();
+                            statusMessage.text(`Tree rendered in ${(endTime - startTime).toFixed(2)}ms`);
+                        } catch (e) {
+                            console.error("Error rendering tree:", e);
+                            treeViewContainer.html('<p style="color: red;">Error rendering tree view.</p>');
+                            statusMessage.text(`Error rendering tree.`);
+                        }
+                    } else {
+                        treeViewContainer.html(''); // Clear if no valid JSON or not in tree view
+                    }
+                }
                 
                 // Input change event
                 jsonInput.on('input', function() {
+                    errorMessage.addClass('hidden'); // Hide error on new input
+                    statusMessage.text('');
+                    try { currentJson = JSON.parse(jsonInput.val()); } catch(e) { currentJson = null; }
                     updateCharCount();
+                    updateLineNumbers();
+                     // Optionally update tree view live? Might be slow. Let's update on format.
                 });
+
+                // Sync scroll for line numbers
+                 jsonInput.on('scroll', function() {
+                     lineNumbers.scrollTop(jsonInput.scrollTop());
+                 });
                 
                 // Format JSON
                 formatBtn.on('click', function() {
@@ -404,36 +722,68 @@
                     jsonInput.val('');
                     errorMessage.addClass('hidden');
                     statusMessage.text('');
+                    currentJson = null;
                     updateCharCount();
+                    updateLineNumbers();
+                    renderTreeView();
                 });
                 
                 // Copy output
                 copyBtn.on('click', function() {
+                    // Copy raw text regardless of view
                     const output = jsonInput.val();
                     copyToClipboard(output);
                     
-                    // Show copied message
                     statusMessage.text('Copied to clipboard!');
                     setTimeout(() => {
                         statusMessage.text('');
                     }, 2000);
                 });
+
+                // View Switcher Logic
+                 viewSwitcherBtns.on('click', function(e) {
+                     const targetView = e.target.getAttribute('data-view');
+                     if (targetView === currentView) return;
+
+                     currentView = targetView;
+
+                     // Update button styles
+                     viewSwitcherBtns.removeClass('active');
+                     $(e.target).addClass('active');
+
+                     // Toggle view visibility
+                     if (currentView === 'text') {
+                         textViewContainer.css('display', 'flex'); // Use flex for line numbers
+                         treeViewContainer.css('display', 'none');
+                         updateLineNumbers(); // Ensure line numbers are up-to-date
+                     } else { // Tree view
+                         textViewContainer.css('display', 'none');
+                         treeViewContainer.css('display', 'block');
+                         renderTreeView(); // Render tree if switching to it
+                     }
+                      errorMessage.addClass('hidden'); // Hide error on view switch
+                      statusMessage.text('');
+                 });
                 
                 // Format JSON function
                 function formatJson() {
                     try {
                         const startTime = performance.now();
-                        const json = JSON.parse(jsonInput.val());
+                        currentJson = JSON.parse(jsonInput.val()); // Update currentJson
                         const indent = getIndentation();
-                        const formatted = JSON.stringify(json, null, indent);
+                        const formatted = JSON.stringify(currentJson, null, indent);
                         jsonInput.val(formatted);
                         errorMessage.addClass('hidden');
                         
                         const endTime = performance.now();
                         statusMessage.text(`Formatted in ${(endTime - startTime).toFixed(2)}ms`);
                         updateCharCount();
+                        updateLineNumbers();
+                        renderTreeView(); // Update tree view as well
                     } catch (e) {
                         showError(e.message);
+                        currentJson = null; // Invalidate JSON on error
+                        renderTreeView(); // Clear tree on error
                     }
                 }
                 
@@ -441,16 +791,29 @@
                 function minifyJson() {
                     try {
                         const startTime = performance.now();
-                        const json = JSON.parse(jsonInput.val());
-                        const minified = JSON.stringify(json);
+                        currentJson = JSON.parse(jsonInput.val()); // Update currentJson
+                        const minified = JSON.stringify(currentJson);
                         jsonInput.val(minified);
                         errorMessage.addClass('hidden');
                         
+                        // Switch to text view if not already there, as tree view isn't useful for minified
+                        if (currentView !== 'text') {
+                             viewSwitcherBtns.elements.forEach(btn => {
+                                 if (btn.getAttribute('data-view') === 'text') {
+                                     btn.click(); // Simulate click
+                                 }
+                             });
+                         }
+
                         const endTime = performance.now();
                         statusMessage.text(`Minified in ${(endTime - startTime).toFixed(2)}ms`);
                         updateCharCount();
+                        updateLineNumbers();
+                        renderTreeView(); // Clear tree view content
                     } catch (e) {
                         showError(e.message);
+                        currentJson = null; // Invalidate JSON on error
+                        renderTreeView(); // Clear tree on error
                     }
                 }
                 
@@ -458,22 +821,29 @@
                 function validateJson() {
                     try {
                         const startTime = performance.now();
-                        JSON.parse(jsonInput.val());
+                        currentJson = JSON.parse(jsonInput.val()); // Update currentJson
                         errorMessage.addClass('hidden');
                         
                         const endTime = performance.now();
                         statusMessage.text(`Valid JSON! Validated in ${(endTime - startTime).toFixed(2)}ms`);
+                        // Re-render tree if in tree view to ensure it reflects validated JSON
+                        if (currentView === 'tree') {
+                           renderTreeView(); 
+                        }
                     } catch (e) {
                         showError(e.message);
+                        currentJson = null; // Invalidate JSON on error
+                         renderTreeView(); // Clear tree on error
                     }
                 }
                 
                 // Get indentation setting
                 function getIndentation() {
                     let value;
-                    if (typeof indentDropdown.dropdown === 'function') {
-                        // Using Semantic UI
-                        value = indentDropdown.dropdown('get value');
+                    // Check if Semantic UI dropdown is initialized
+                    const dropdownElement = document.getElementById('indent-dropdown');
+                    if (typeof $ !== 'undefined' && typeof $.fn.dropdown !== 'undefined' && dropdownElement && dropdownElement.classList.contains('ui')) {
+                        value = $(indentDropdown).dropdown('get value');
                     } else {
                         // Fallback
                         const input = document.querySelector('#indent-dropdown input');
@@ -495,12 +865,27 @@
                 
                 // Copy to clipboard function
                 function copyToClipboard(text) {
-                    const textarea = document.createElement('textarea');
-                    textarea.value = text;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
+                    if (!navigator.clipboard) {
+                        // Fallback for older browsers
+                        const textarea = document.createElement('textarea');
+                        textarea.value = text;
+                        textarea.style.position = 'fixed'; // Prevent scrolling to bottom
+                        document.body.appendChild(textarea);
+                        textarea.focus();
+                        textarea.select();
+                        try {
+                            document.execCommand('copy');
+                        } catch (err) {
+                            console.error('Fallback: Oops, unable to copy', err);
+                        }
+                        document.body.removeChild(textarea);
+                        return;
+                    }
+                    navigator.clipboard.writeText(text).then(function() {
+                        /* success */
+                    }, function(err) {
+                        console.error('Async: Could not copy text: ', err);
+                    });
                 }
                 
                 // Format on load
