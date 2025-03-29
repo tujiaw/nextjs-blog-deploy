@@ -293,13 +293,15 @@
         
         .json-item {
             white-space: nowrap;
-            margin: 2px 0;
+            margin: 0; /* 移除上下边距，使行高与文本视图一致 */
+            line-height: 1.5; /* 确保与json-input相同的行高 */
             cursor: default; /* 改为默认光标，因为只有三角形可点击 */
         }
         
         .json-children {
             display: none;
             padding-left: 20px;
+            line-height: 1.5; /* 确保子项也有相同的行高 */
         }
         
         .expanded > .json-children {
@@ -327,6 +329,7 @@
         /* Make the collapsed brace appear only when collapsed */
         .collapsed-brace {
             display: none; /* 默认隐藏 */
+            line-height: 1.5; /* 与其他元素保持一致的行高 */
         }
         
         .json-item:not(.expanded) > .collapsed-brace {
@@ -750,9 +753,9 @@
                     
                     // 处理空对象/数组
                     if (isArray && obj.length === 0) {
-                        childrenDiv.innerHTML = '<div class="json-item"><em>/* empty array */</em></div>';
+                        childrenDiv.innerHTML = '<div class="json-item"><em style="line-height: 1.5;">/* empty array */</em></div>';
                     } else if (!isArray && Object.keys(obj).length === 0) {
-                        childrenDiv.innerHTML = '<div class="json-item"><em>/* empty object */</em></div>';
+                        childrenDiv.innerHTML = '<div class="json-item"><em style="line-height: 1.5;">/* empty object */</em></div>';
                     } else {
                         // 递归处理子项
                         let childKeys = isArray ? [...Array(obj.length).keys()] : Object.keys(obj);
