@@ -37,7 +37,7 @@
         }
         .view-container {
             flex: 1;
-            display: flex; /* Use flexbox for line numbers */
+            display: flex; /* Using flexbox for side-by-side layout */
             overflow: hidden;
             position: relative; /* Needed for error message absolute positioning */
             background-color: white;
@@ -72,8 +72,8 @@
             position: absolute;
             top: 0;
             left: 0;
-            color: rgba(0,0,0,0.8); /* 改为可见文字，删除透明颜色 */
-            background: white; /* 改为不透明背景 */
+            color: rgba(0,0,0,0.8);
+            background: white;
             z-index: 2;
         }
         #highlighted-json {
@@ -97,6 +97,20 @@
             pointer-events: none;
             z-index: 1;
         }
+        .input-container {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: row; /* Default to row for text view + lines */
+            overflow: hidden;
+        }
+        .tree-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-left: 1px solid #ddd;
+        }
         #json-tree {
             flex: 1;
             overflow: auto;
@@ -104,7 +118,6 @@
             font-family: monospace;
             font-size: 0.9rem;
             line-height: 1.5;
-            display: none; /* Hidden by default */
         }
         .error-message {
             color: #db2828;
@@ -210,13 +223,6 @@
         }
         .dropdown .text {
             margin-right: 5px;
-        }
-        .input-container {
-            position: relative;
-            flex: 1;
-            display: flex; /* Changed to flex for main views */
-            flex-direction: row; /* Default to row for text view + lines */
-            overflow: hidden;
         }
         .hidden {
             display: none !important;
@@ -341,8 +347,10 @@
                 align-items: flex-start;
             }
             .view-switcher {
-                margin-right: 0;
-                margin-bottom: 5px;
+                display: none; /* Hide view switcher on mobile */
+            }
+            .view-container {
+                flex-direction: column; /* Stack views on mobile */
             }
             .buttons {
                 margin-left: 0;
@@ -410,12 +418,14 @@
         </div>
 
         <div class="view-container">
-             <div id="line-numbers">1</div> <!-- Line numbers container -->
              <div class="input-container" id="text-view">
+                 <div id="line-numbers">1</div> <!-- Line numbers container -->
                  <pre id="highlighted-json"></pre>
                  <textarea id="json-input" placeholder="Paste your JSON here..."></textarea>
              </div>
-             <div id="json-tree" class="json-tree"></div> <!-- Tree view container -->
+             <div class="tree-container">
+                 <div id="json-tree" class="json-tree"></div> <!-- Tree view container -->
+             </div>
              <div class="error-message hidden" id="error-message"></div>
         </div>
         
@@ -781,8 +791,8 @@
                 const charCount = $('#char-count');
                 const viewSwitcherBtns = $(".view-switcher .button");
                 
-                let currentView = 'text'; // Default view
                 let currentJson = null; // Store parsed JSON
+                let currentView = 'tree'; // Set to tree to ensure tree view renders
 
                 // Sample JSON for initial demo
                 const sampleJson = {
@@ -803,30 +813,16 @@
                 // Set sample JSON
                 jsonInput.val(JSON.stringify(sampleJson, null, 2));
                 try { currentJson = JSON.parse(jsonInput.val()); } catch(e) { currentJson = null; }
-                updateHighlightedContent();
                 updateCharCount();
                 updateLineNumbers();
                 renderTreeView(); // Initial render
                 
-                // Update highlighted content
+                // Remove view switcher functionality since both views are visible
+                viewSwitcherBtns.hide();
+                
+                // Update highlighted content - no longer needed for side-by-side view
                 function updateHighlightedContent() {
-                    // 直接在text模式下使用原始textarea，不再需要高亮显示
-                    // 只在tree模式下使用高亮JSON渲染
-                    if (currentView === 'tree') {
-                        try {
-                            const content = jsonInput.val();
-                            // 仍然需要解析JSON来构建树视图
-                            if (content.trim()) {
-                                try {
-                                    currentJson = JSON.parse(content);
-                                } catch (e) {
-                                    // 解析失败，树视图将显示错误
-                                }
-                            }
-                        } catch (e) {
-                            console.error("Error updating highlighted content:", e);
-                        }
-                    }
+                    // Function simplified since we're using direct edit now
                 }
                 
                 // Update character count
@@ -837,13 +833,14 @@
 
                 // Render Tree View
                 function renderTreeView() {
-                    if (currentJson && currentView === 'tree') {
+                    // Always attempt to render the tree regardless of view mode
+                    if (currentJson) {
                         const startTime = performance.now();
                         try {
                             const treeHtml = createTreeView(currentJson);
                             treeViewContainer.html(treeHtml);
                             
-                            // 删除在json-item上的点击事件，只保留expand-icon上的点击事件
+                            // 确保只有三角形图标可以触发展开/折叠
                             if (typeof $ !== 'undefined') {
                                 // 确保只有三角形图标可以触发展开/折叠
                                 $('#json-tree').off('click');
@@ -873,38 +870,40 @@
                             statusMessage.text(`Tree rendered in ${(endTime - startTime).toFixed(2)}ms`);
                         } catch (e) {
                             console.error("Error rendering tree:", e);
-                            treeViewContainer.html('<p style="color: red;">Error rendering tree view.</p>');
+                            treeViewContainer.html('<p style="color: red;">Error rendering tree view: ' + e.message + '</p>');
                             statusMessage.text(`Error rendering tree.`);
                         }
                     } else {
-                        treeViewContainer.html(''); // Clear if no valid JSON or not in tree view
+                        treeViewContainer.html('<p style="color: #888;">Enter valid JSON to see tree view</p>'); // Clear if no valid JSON
                     }
                 }
                 
-                // Input change event
+                // Input change event with real-time tree update
                 jsonInput.on('input', function() {
                     errorMessage.addClass('hidden'); // Hide error on new input
                     statusMessage.text('');
+                    updateCharCount();
+                    updateLineNumbers();
+                    
                     try { 
                         // Only try to parse if it's not empty
                         if (jsonInput.val().trim()) {
-                            currentJson = JSON.parse(jsonInput.val()); 
+                            currentJson = JSON.parse(jsonInput.val());
+                            // Real-time update of tree view
+                            renderTreeView();
                         } else {
                             currentJson = null;
+                            treeViewContainer.html(''); // Clear tree view
                         }
-                    } catch(e) { currentJson = null; }
-                    updateHighlightedContent();
-                    updateCharCount();
-                    updateLineNumbers();
-                    // Optionally update tree view live? Might be slow. Let's update on format.
+                    } catch(e) { 
+                        currentJson = null;
+                        // Don't show error during typing
+                    }
                 });
 
-                // Sync scroll between textarea and highlighted view
+                // Sync scroll between textarea and line numbers
                 jsonInput.on('scroll', function() {
-                    // 文本模式不再需要同步滚动
-                    if (currentView === 'text') {
-                        lineNumbers.scrollTop(jsonInput.scrollTop());
-                    }
+                    lineNumbers.scrollTop(jsonInput.scrollTop());
                 });
                 
                 // Format JSON
@@ -931,10 +930,9 @@
                     errorMessage.addClass('hidden');
                     statusMessage.text('');
                     currentJson = null;
-                    updateHighlightedContent();
                     updateCharCount();
                     updateLineNumbers();
-                    renderTreeView();
+                    treeViewContainer.html(''); // Clear tree view
                 });
                 
                 // Copy output
@@ -949,52 +947,6 @@
                     }, 2000);
                 });
 
-                // View Switcher Logic
-                 viewSwitcherBtns.on('click', function(e) {
-                     const targetView = e.target.getAttribute('data-view');
-                     if (targetView === currentView) return;
-
-                     currentView = targetView;
-
-                     // Update button styles
-                     viewSwitcherBtns.removeClass('active');
-                     $(e.target).addClass('active');
-
-                     // Toggle view visibility
-                     if (currentView === 'text') {
-                         textViewContainer.css('display', 'flex'); // Use flex for line numbers
-                         treeViewContainer.css('display', 'none');
-                         lineNumbers.css('display', 'block'); // Show line numbers in text mode
-                         updateLineNumbers(); // Ensure line numbers are up-to-date
-                         
-                         // 启用编辑模式
-                         jsonInput.attr('readonly', false);
-                         jsonInput.css('cursor', 'text');
-                         
-                         // 确保按钮可用
-                         formatBtn.removeClass('disabled');
-                         minifyBtn.removeClass('disabled');
-                         validateBtn.removeClass('disabled');
-                         
-                     } else { // Tree view
-                         textViewContainer.css('display', 'none');
-                         treeViewContainer.css('display', 'block');
-                         lineNumbers.css('display', 'none'); // Hide main line numbers in tree mode
-                         renderTreeView(); // Render tree if switching to it
-                         
-                         // 禁用编辑模式
-                         jsonInput.attr('readonly', true);
-                         jsonInput.css('cursor', 'default');
-                         
-                         // 禁用不需要的按钮，保留复制和清除功能
-                         formatBtn.addClass('disabled');
-                         minifyBtn.addClass('disabled');
-                         validateBtn.addClass('disabled');
-                     }
-                      errorMessage.addClass('hidden'); // Hide error on view switch
-                      statusMessage.text('');
-                 });
-                
                 // Format JSON function
                 function formatJson() {
                     try {
@@ -1012,17 +964,13 @@
                             updateCharCount();
                             updateLineNumbers();
                             
-                            // 如果在树模式下，渲染树视图
-                            if (currentView === 'tree') {
-                                renderTreeView();
-                            }
+                            // Always render tree view
+                            renderTreeView();
                         }
                     } catch (e) {
                         showError(e.message);
                         currentJson = null; // Invalidate JSON on error
-                        if (currentView === 'tree') {
-                            renderTreeView(); // Clear tree on error
-                        }
+                        treeViewContainer.html(''); // Clear tree on error
                     }
                 }
                 
@@ -1034,26 +982,16 @@
                         const minified = JSON.stringify(currentJson);
                         jsonInput.val(minified);
                         errorMessage.addClass('hidden');
-                        
-                        // Switch to text view if not already there, as tree view isn't useful for minified
-                        if (currentView !== 'text') {
-                             viewSwitcherBtns.elements.forEach(btn => {
-                                 if (btn.getAttribute('data-view') === 'text') {
-                                     btn.click(); // Simulate click
-                                 }
-                             });
-                         }
 
                         const endTime = performance.now();
                         statusMessage.text(`Minified in ${(endTime - startTime).toFixed(2)}ms`);
                         updateCharCount();
                         updateLineNumbers();
+                        renderTreeView(); // Update tree view
                     } catch (e) {
                         showError(e.message);
                         currentJson = null; // Invalidate JSON on error
-                        if (currentView === 'tree') {
-                            renderTreeView(); // Clear tree on error
-                        }
+                        treeViewContainer.html(''); // Clear tree on error
                     }
                 }
                 
@@ -1066,14 +1004,11 @@
                         
                         const endTime = performance.now();
                         statusMessage.text(`Valid JSON! Validated in ${(endTime - startTime).toFixed(2)}ms`);
-                        // Re-render tree if in tree view to ensure it reflects validated JSON
-                        if (currentView === 'tree') {
-                           renderTreeView(); 
-                        }
+                        renderTreeView(); // Update tree view
                     } catch (e) {
                         showError(e.message);
                         currentJson = null; // Invalidate JSON on error
-                         renderTreeView(); // Clear tree on error
+                        treeViewContainer.html(''); // Clear tree on error
                     }
                 }
                 
