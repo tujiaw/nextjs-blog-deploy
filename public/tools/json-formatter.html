@@ -275,6 +275,9 @@
             text-align: center;
             user-select: none;
             margin-right: 3px;
+            margin-left: 3px;
+            position: relative;
+            top: 1px;
         }
         
         .expand-icon::before {
@@ -308,12 +311,29 @@
             color: #888;
             padding: 0 3px;
             font-style: italic;
+            margin-left: 2px;
         }
         
         .json-item:not(.expanded) > .collapsed-indicator {
             display: inline-block;
         }
+
+        /* Make the expanded icons show only when expanded */
+        .json-item:not(.expanded) > .expand-icon {
+            position: relative;
+            margin-right: 2px;
+        }
         
+        /* Make the collapsed brace appear only when collapsed */
+        .collapsed-brace {
+            display: none; /* 默认隐藏 */
+        }
+        
+        .json-item:not(.expanded) > .collapsed-brace {
+            display: inline-block; /* 折叠状态时显示 */
+            margin-left: 3px;
+        }
+
         /* 为不同类型的值添加颜色 - 用于两种视图 */
         .key {
             color: #0033B3; /* 亮蓝色 */
@@ -383,14 +403,6 @@
             opacity: 0.45 !important;
             cursor: default !important;
             pointer-events: none !important;
-        }
-
-        .collapsed-brace {
-            display: none; /* 默认隐藏 */
-        }
-        
-        .json-item:not(.expanded) > .collapsed-brace {
-            display: inline-block; /* 折叠状态时显示 */
         }
 
         /* 添加分隔条样式 */
@@ -704,15 +716,6 @@
                 
                 // 为对象和数组添加展开/折叠图标
                 if (isObject) {
-                    const expandIcon = document.createElement('span');
-                    expandIcon.className = 'expand-icon';
-                    expandIcon.onclick = function(e) {
-                        e.stopPropagation(); // 防止事件冒泡
-                        const parentItem = this.parentNode;
-                        parentItem.classList.toggle('expanded');
-                    };
-                    itemDiv.appendChild(expandIcon);
-                    
                     // 添加左括号（与文本视图格式一致）
                     content += `<span class="brace">${isArray ? '[' : '{'}</span>`;
                     
@@ -720,10 +723,26 @@
                     const childCount = isArray ? obj.length : Object.keys(obj).length;
                     const itemText = childCount === 1 ? 'item' : 'items';
                     
-                    // 添加折叠时显示的子项数量提示
-                    content += `<span class="collapsed-indicator">${childCount} ${itemText}</span>`;
+                    // 创建展开/折叠图标
+                    const expandIcon = document.createElement('span');
+                    expandIcon.className = 'expand-icon';
+                    expandIcon.onclick = function(e) {
+                        e.stopPropagation(); // 防止事件冒泡
+                        const parentItem = this.parentNode;
+                        parentItem.classList.toggle('expanded');
+                    };
                     
+                    // 添加内容到 itemDiv
                     itemDiv.innerHTML += content;
+                    
+                    // 创建折叠时显示的容器（包含图标和文本）
+                    const collapsedContent = document.createElement('span');
+                    collapsedContent.className = 'collapsed-indicator';
+                    collapsedContent.innerHTML = `${childCount} ${itemText}`;
+                    
+                    // 添加元素到 itemDiv
+                    itemDiv.appendChild(expandIcon);
+                    itemDiv.appendChild(collapsedContent);
                     
                     // 创建子项的容器
                     const childrenDiv = document.createElement('div');
