@@ -734,28 +734,36 @@
                     itemDiv.appendChild(expandIcon);
                     itemDiv.appendChild(collapsedContent);
                     
+                    // 处理空对象/数组
+                    if ((isArray && obj.length === 0) || (!isArray && Object.keys(obj).length === 0)) {
+                        // 对于空对象/数组，直接返回简单的显示，不需要展开/折叠功能
+                        const simpleDiv = document.createElement('div');
+                        simpleDiv.className = 'json-item';
+                        let content = '';
+                        if (key !== null) {
+                            if (typeof key === 'number') {
+                                content += `<span class="key array-index">${key}:</span> `;
+                            } else {
+                                content += `<span class="key">"${key}":</span> `;
+                            }
+                        }
+                        content += `<span class="brace">${isArray ? '[]' : '{}'}</span>`;
+                        simpleDiv.innerHTML = content;
+                        return simpleDiv;
+                    }
+                    
                     // 创建子项的容器
                     const childrenDiv = document.createElement('div');
                     childrenDiv.className = 'json-children';
                     
-                    // 处理空对象/数组
-                    if (isArray && obj.length === 0) {
-                        childrenDiv.innerHTML = '<div class="json-item"><em style="line-height: 1.5;">/* empty array */</em></div>';
-                    } else if (!isArray && Object.keys(obj).length === 0) {
-                        childrenDiv.innerHTML = '<div class="json-item"><em style="line-height: 1.5;">/* empty object */</em></div>';
-                    } else {
-                        // 递归处理子项
-                        let childKeys = isArray ? [...Array(obj.length).keys()] : Object.keys(obj);
-                        
-                        childKeys.forEach((childKey) => {
-                            const childValue = obj[childKey];
-                            const childContent = buildJsonItem(childValue, childKey);
-                            childrenDiv.appendChild(childContent);
-                        });
-                    }
+                    // 递归处理子项
+                    let childKeys = isArray ? [...Array(obj.length).keys()] : Object.keys(obj);
                     
-                    // 移除旧的右括号添加方式
-                    // childrenDiv.innerHTML += `<div class="json-item"><span class="brace">${isArray ? ']' : '}'}</span></div>`;
+                    childKeys.forEach((childKey) => {
+                        const childValue = obj[childKey];
+                        const childContent = buildJsonItem(childValue, childKey);
+                        childrenDiv.appendChild(childContent);
+                    });
                     
                     // 为外部容器添加右括号（在折叠时显示）
                     const closeBrace = document.createElement('span');
