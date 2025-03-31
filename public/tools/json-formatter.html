@@ -872,6 +872,15 @@
                 
                 let currentJson = null; // Store parsed JSON
                 
+                // 添加tab键转换为空格的功能
+                jsonInput.on('keydown', function(e) {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const spaces = ' '.repeat(getIndentation());
+                        document.execCommand('insertText', false, spaces);
+                    }
+                });
+                
                 // Sample JSON for initial demo
                 const sampleJson = {
                     "name": "JSON Formatter Tool",
