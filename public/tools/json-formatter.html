@@ -923,6 +923,10 @@
                     if (currentJson) {
                         const startTime = performance.now();
                         try {
+                            // 保存当前滚动位置
+                            const treeContent = document.querySelector('.tree-content');
+                            const previousScrollTop = treeContent ? treeContent.scrollTop : 0;
+                            
                             const treeHtml = createTreeView(currentJson);
                             treeViewContainer.html(treeHtml);
                             
@@ -953,13 +957,13 @@
                             }
 
                             // 重新绑定树视图的滚动事件
-                            const treeContent = document.querySelector('.tree-content');
-                            if (treeContent) {
+                            const newTreeContent = document.querySelector('.tree-content');
+                            if (newTreeContent) {
                                 // 移除旧的事件监听器
-                                treeContent.removeEventListener('scroll', treeContent.scrollHandler);
+                                newTreeContent.removeEventListener('scroll', newTreeContent.scrollHandler);
                                 
                                 // 创建新的事件处理函数
-                                treeContent.scrollHandler = function() {
+                                newTreeContent.scrollHandler = function() {
                                     const textarea = document.getElementById('json-input');
                                     if (textarea) {
                                         // 计算树视图的滚动比例
@@ -972,7 +976,10 @@
                                 };
                                 
                                 // 添加新的事件监听器
-                                treeContent.addEventListener('scroll', treeContent.scrollHandler);
+                                newTreeContent.addEventListener('scroll', newTreeContent.scrollHandler);
+                                
+                                // 恢复之前的滚动位置
+                                newTreeContent.scrollTop = previousScrollTop;
                             }
 
                             const endTime = performance.now();
