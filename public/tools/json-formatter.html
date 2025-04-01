@@ -889,6 +889,15 @@
                         document.execCommand('insertText', false, spaces);
                     }
                 });
+                jsonInput.on('paste', function(e) {
+                    // 保存当前滚动位置
+                    const scrollTop = this.scrollTop ?? 1;
+                    
+                    // 使用 setTimeout 让粘贴操作完成后再设置滚动位置
+                    setTimeout(() => {
+                        this.scrollTop = scrollTop;
+                    }, 0);
+                });
                 
                 // Sample JSON for initial demo
                 const sampleJson = {
@@ -1037,7 +1046,7 @@
                 }
 
                 // 创建防抖动的更新函数
-                const debouncedUpdate = debounce(updateJsonView, 500);
+                const debouncedUpdate = debounce(updateJsonView, 1000);
 
                 // 使用防抖动的更新函数
                 jsonInput.on('input', debouncedUpdate);
