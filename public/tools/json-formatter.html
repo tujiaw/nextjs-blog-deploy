@@ -52,13 +52,19 @@
             user-select: none;
             border-right: 1px solid #ddd;
             font-size: 0.9rem;
-            line-height: 1.5; /* Match textarea line-height */
-            width: 40px; /* 固定宽度 */
+            line-height: 1.5;
+            width: 40px;
             position: absolute;
             right: 0;
             top: 0;
             bottom: 0;
             z-index: 3;
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        #line-numbers::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
         #json-input {
             font-family: monospace;
@@ -1033,35 +1039,60 @@
                     }
                 });
 
+                // 添加一个标志位来防止循环触发
+                let isScrolling = false;
+
                 // Sync scroll between textarea and tree view
                 jsonInput.on('scroll', function() {
+                    if (isScrolling) return;
+                    isScrolling = true;
+                    
                     const treeContent = document.querySelector('.tree-content');
-                    if (treeContent) {
-                        // 计算文本框的滚动比例
-                        const textareaScrollRatio = this.scrollTop / (this.scrollHeight - this.clientHeight);
-                        // 计算树视图应该滚动到的位置
-                        const treeScrollTop = textareaScrollRatio * (treeContent.scrollHeight - treeContent.clientHeight);
-                        // 设置树视图的滚动位置
-                        treeContent.scrollTop = treeScrollTop;
-                        console.log('treeContent.scrollTop', treeContent.scrollTop);
+                    const lineNumbers = document.getElementById('line-numbers');
+                    
+                    // 同步行号滚动
+                    if (lineNumbers) {
+                        lineNumbers.scrollTop = this.scrollTop;
                     }
+                    
+                    // 同步树视图滚动
+                    if (treeContent) {
+                        const textareaScrollRatio = this.scrollTop / (this.scrollHeight - this.clientHeight);
+                        const treeScrollTop = textareaScrollRatio * (treeContent.scrollHeight - treeContent.clientHeight);
+                        treeContent.scrollTop = treeScrollTop;
+                    }
+                    
+                    // 使用 setTimeout 确保在下一个事件循环中重置标志位
+                    setTimeout(() => {
+                        isScrolling = false;
+                    }, 50);
                 });
                 
-                // 同步树视图的滚动到文本框
+                // 修改树视图滚动同步
                 const treeContent = document.querySelector('.tree-content');
                 if (treeContent) {
                     treeContent.addEventListener('scroll', function() {
+                        if (isScrolling) return;
+                        isScrolling = true;
+                        
                         const textarea = document.getElementById('json-input');
+                        const lineNumbers = document.getElementById('line-numbers');
+                        
                         if (textarea) {
-                            console.log('treeContent.scrollTop', this.scrollTop);
-                            // 计算树视图的滚动比例
                             const treeScrollRatio = this.scrollTop / (this.scrollHeight - this.clientHeight);
-                            // 计算文本框应该滚动到的位置
                             const textareaScrollTop = treeScrollRatio * (textarea.scrollHeight - textarea.clientHeight);
-                            // 设置文本框的滚动位置
                             textarea.scrollTop = textareaScrollTop;
-                            console.log('textarea.scrollTop', textarea.scrollTop);
+                            
+                            // 同步行号滚动
+                            if (lineNumbers) {
+                                lineNumbers.scrollTop = textareaScrollTop;
+                            }
                         }
+                        
+                        // 使用 setTimeout 确保在下一个事件循环中重置标志位
+                        setTimeout(() => {
+                            isScrolling = false;
+                        }, 50);
                     });
                 }
                 
