@@ -961,6 +961,22 @@
                     }
                 }
                 
+                // 统一的JSON解析方法
+                function parseJson(content) {
+                    // 先尝试直接解析
+                    try {
+                        return JSON.parse(content);
+                    } catch (parseError) {
+                        // 如果直接解析失败，且启用了修复选项，则尝试修复
+                        if ($('#fix-json-checkbox input').is(':checked')) {
+                            const repaired = repairJson(content);
+                            return JSON.parse(repaired);
+                        } else {
+                            throw parseError;
+                        }
+                    }
+                }
+
                 // Input change event with real-time tree update
                 jsonInput.on('input', function() {
                     errorMessage.addClass('hidden'); // Hide error on new input
@@ -971,7 +987,7 @@
                     try { 
                         // Only try to parse if it's not empty
                         if (jsonInput.val().trim()) {
-                            currentJson = JSON.parse(jsonInput.val());
+                            currentJson = parseJson(jsonInput.val());
                             // Real-time update of tree view
                             renderTreeView();
                         } else {
@@ -1074,15 +1090,8 @@
                         const startTime = performance.now();
                         const content = jsonInput.val().trim();
                         if (content) {
-                            let processedContent = content;
+                            currentJson = parseJson(content);
                             
-                            // Apply JSON repair if checkbox is checked
-                            const shouldRepair = $('#fix-json-checkbox input').is(':checked');
-                            if (shouldRepair) {
-                                processedContent = repairJson(content);
-                            }
-                            
-                            currentJson = JSON.parse(processedContent); // Update currentJson
                             const indent = getIndentation();
                             const formatted = JSON.stringify(currentJson, null, indent);
                             jsonInput.val(formatted);
@@ -1117,14 +1126,7 @@
                         const startTime = performance.now();
                         const content = jsonInput.val().trim();
                         
-                        // Apply JSON repair if checkbox is checked
-                        const shouldRepair = $('#fix-json-checkbox input').is(':checked');
-                        if (shouldRepair && content) {
-                            const repaired = repairJson(content);
-                            currentJson = JSON.parse(repaired);
-                        } else {
-                            currentJson = JSON.parse(content);
-                        }
+                        currentJson = parseJson(content);
                         
                         const minified = JSON.stringify(currentJson);
                         jsonInput.val(minified + '\n'); // Add line break at the end
@@ -1158,20 +1160,7 @@
                         const startTime = performance.now();
                         const content = jsonInput.val().trim();
                         
-                        // Apply JSON repair if checkbox is checked
-                        const shouldRepair = $('#fix-json-checkbox input').is(':checked');
-                        if (shouldRepair && content) {
-                            const repaired = repairJson(content);
-                            currentJson = JSON.parse(repaired);
-                            // If repaired successfully, update textarea with fixed JSON
-                            if (repaired !== content) {
-                                jsonInput.val(repaired);
-                                updateCharCount();
-                                updateLineNumbers();
-                            }
-                        } else {
-                            currentJson = JSON.parse(content);
-                        }
+                        currentJson = parseJson(content);
                         
                         errorMessage.addClass('hidden');
                         
@@ -1197,14 +1186,7 @@
                         const startTime = performance.now();
                         const content = jsonInput.val().trim();
                         
-                        // Apply JSON repair if checkbox is checked
-                        const shouldRepair = $('#fix-json-checkbox input').is(':checked');
-                        if (shouldRepair && content) {
-                            const repaired = repairJson(content);
-                            currentJson = JSON.parse(repaired);
-                        } else {
-                            currentJson = JSON.parse(content);
-                        }
+                        currentJson = parseJson(content);
                         
                         // Sort the JSON object
                         const sorted = sortObject(currentJson);
