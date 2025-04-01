@@ -236,12 +236,15 @@
         /* Tree view styles */
         .json-tree {
             display: flex; /* 使用 flex 布局 */
+            height: 100%; /* 确保树视图占满容器高度 */
+            overflow: hidden; /* 防止树视图本身滚动 */
         }
         
         .tree-content {
             flex: 1;
-            overflow: auto;
-            padding-left: 5px; /* 添加左侧填充使内容不贴边 */
+            overflow: auto; /* 让内容区域可滚动 */
+            padding-left: 5px;
+            height: 100%; /* 确保内容区域占满高度 */
         }
         
         .expand-icon {
@@ -1000,14 +1003,35 @@
                     }
                 });
 
-                // Sync scroll between textarea and line numbers
+                // Sync scroll between textarea and tree view
                 jsonInput.on('scroll', function() {
-                    // 获取行号容器
-                    const lineNumbers = document.getElementById('line-numbers');
-                    if (lineNumbers) {
-                        lineNumbers.scrollTop = this.scrollTop;
+                    const treeContent = document.querySelector('.tree-content');
+                    if (treeContent) {
+                        // 计算文本框的滚动比例
+                        const textareaScrollRatio = this.scrollTop / (this.scrollHeight - this.clientHeight);
+                        // 计算树视图应该滚动到的位置
+                        const treeScrollTop = textareaScrollRatio * (treeContent.scrollHeight - treeContent.clientHeight);
+                        // 设置树视图的滚动位置
+                        treeContent.scrollTop = treeScrollTop;
+                        console.log('treeContent.scrollTop', treeContent.scrollTop);
                     }
                 });
+                
+                // 同步树视图的滚动到文本框
+                const treeContent = document.querySelector('.tree-content');
+                if (treeContent) {
+                    treeContent.addEventListener('scroll', function() {
+                        const textarea = document.getElementById('json-input');
+                        if (textarea) {
+                            // 计算树视图的滚动比例
+                            const treeScrollRatio = this.scrollTop / (this.scrollHeight - this.clientHeight);
+                            // 计算文本框应该滚动到的位置
+                            const textareaScrollTop = treeScrollRatio * (textarea.scrollHeight - textarea.clientHeight);
+                            // 设置文本框的滚动位置
+                            textarea.scrollTop = textareaScrollTop;
+                        }
+                    });
+                }
                 
                 // Format JSON
                 formatBtn.on('click', function() {
