@@ -105,14 +105,14 @@ export default function ClipboardPage() {
   }, []);
   
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Online Clipboard</h1>
+    <div className="max-w-2xl p-4 mx-auto">
+      <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-gray-100">Online Clipboard</h1>
       
-      <div className="mb-4 relative">
-        <div className="absolute top-2 right-2 flex space-x-2 z-10">
+      <div className="relative mb-4">
+        <div className="absolute right-2 top-2 z-10 flex space-x-2">
           <button 
             onClick={copyToClipboard}
-            className="p-1 rounded-md bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+            className="rounded-md bg-gray-200 p-1 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
             title="Copy to clipboard"
             disabled={!content}
           >
@@ -122,19 +122,19 @@ export default function ClipboardPage() {
           </button>
         </div>
         <textarea 
-          className="w-full p-2 border rounded-md min-h-[200px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+          className="min-h-[200px] w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
           value={content} 
           onChange={(e) => setContent(e.target.value)}
           placeholder="Enter content to save"
         />
-        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-right">
+        <div className="mt-1 text-right text-sm text-gray-500 dark:text-gray-400">
           {content.length} / {MAX_CONTENT_LENGTH} characters
         </div>
       </div>
       
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="mb-4 flex flex-wrap gap-2">
         <button 
-          className="px-4 py-2 bg-blue-500/80 text-white rounded-md hover:bg-blue-600/90 disabled:opacity-50"
+          className="rounded-md bg-blue-500/80 px-4 py-2 text-white hover:bg-blue-600/90 disabled:opacity-50"
           onClick={saveToClipboard}
           disabled={isLoading || !content}
         >
@@ -143,7 +143,7 @@ export default function ClipboardPage() {
         
         <div className="flex items-center gap-2">
           <button 
-            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:opacity-50"
+            className="rounded-md bg-gray-500 px-4 py-2 text-white hover:bg-gray-600 disabled:opacity-50"
             onClick={loadFromClipboard}
             disabled={isLoading || !accessCode || accessCode.length !== 4}
           >
@@ -151,7 +151,7 @@ export default function ClipboardPage() {
           </button>
           <input
             type="text"
-            className="w-[80px] p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-center"
+            className="w-[80px] rounded-md border border-gray-300 bg-white p-2 text-center text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             value={accessCode}
             onChange={(e) => setAccessCode(e.target.value)}
             placeholder="Code"
@@ -161,19 +161,27 @@ export default function ClipboardPage() {
       </div>
       
       {savedCode && (
-        <div className="mb-4 p-4 border rounded-md bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-          <h2 className="text-lg font-semibold mb-2 text-green-800 dark:text-green-300">Access Code</h2>
-          <p className="text-green-700 dark:text-green-400">Please remember your access code: <span className="font-bold">{savedCode}</span></p>
-          <p className="text-sm text-green-600 dark:text-green-500 mt-2">Use this code to load your content on other devices</p>
+        <div className="mb-4 rounded-md border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+          <h2 className="mb-2 text-lg font-semibold text-green-800 dark:text-green-300">
+            Access Code
+          </h2>
+          <p className="text-green-700 dark:text-green-400">
+            Please remember your access code: <span className="font-bold">{savedCode}</span>
+          </p>
+          <p className="mt-2 text-sm text-green-600 dark:text-green-500">
+            Use this code to load your content on other devices
+          </p>
         </div>
       )}
       
       {message && (
-        <div className={`p-2 rounded-md ${
-          messageType === 'success' 
-            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
-            : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-        }`}>
+        <div
+          className={`rounded-md p-2 ${
+            messageType === 'success'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+          }`}
+        >
           {message}
         </div>
       )}

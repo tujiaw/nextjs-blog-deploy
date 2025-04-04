@@ -18,7 +18,7 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 
 // 生成1000-9999之间的随机数
 function generateRandomCode(): number {
-  return Math.floor(Math.random() * 9000) + 1000;
+  return Math.floor(Math.random() * 9000) + 1000
 }
 
 // 检查访问码是否已存在
@@ -27,45 +27,45 @@ async function isCodeExists(code: number): Promise<boolean> {
     .from('clipboard')
     .select('code')
     .eq('code', code)
-    .limit(1);
+    .limit(1)
   
   if (error) {
-    console.error('Error checking code existence:', error);
-    return false;
+    console.error('Error checking code existence:', error)
+    return false
   }
   
-  return data && data.length > 0;
+  return data && data.length > 0
 }
 
 // 生成唯一的访问码
 async function generateUniqueCode(): Promise<number> {
-  let code = generateRandomCode();
-  let exists = await isCodeExists(code);
+  let code = generateRandomCode()
+  let exists = await isCodeExists(code)
   
   // 尝试最多10次生成唯一码
-  let attempts = 0;
+  let attempts = 0
   while (exists && attempts < 10) {
-    code = generateRandomCode();
-    exists = await isCodeExists(code);
-    attempts++;
+    code = generateRandomCode()
+    exists = await isCodeExists(code)
+    attempts++
   }
   
-  return code;
+  return code
 }
 
 export async function GET(request: Request) {
   try {
     // 从URL中获取访问码
-    const url = new URL(request.url);
-    const code = url.searchParams.get('code');
+    const url = new URL(request.url)
+    const code = url.searchParams.get('code')
     
     if (!code) {
-      return NextResponse.json({ error: 'Access code is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Access code is required' }, { status: 400 })
     }
     
-    const codeNum = parseInt(code, 10);
+    const codeNum = parseInt(code, 10)
     if (isNaN(codeNum) || codeNum < 1000 || codeNum > 9999) {
-      return NextResponse.json({ error: 'Invalid access code' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid access code' }, { status: 400 })
     }
     
     const { data, error } = await supabase
@@ -79,7 +79,10 @@ export async function GET(request: Request) {
 
     // 检查是否找到匹配的访问码
     if (!data || data.length === 0) {
-      return NextResponse.json({ error: 'Invalid access code or no content found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Invalid access code or no content found' },
+        { status: 404 }
+      )
     }
     
     return NextResponse.json({ content: data[0].content })
@@ -98,7 +101,7 @@ export async function POST(request: Request) {
     }
 
     // 生成唯一的访问码
-    const code = await generateUniqueCode();
+    const code = await generateUniqueCode()
     
     // 使用 service_role 密钥绕过 RLS 策略
     const { error } = await supabase

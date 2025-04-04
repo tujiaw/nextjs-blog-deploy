@@ -182,11 +182,11 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 dark:bg-gray-900">      
+    <div className="mx-auto max-w-2xl p-6 dark:bg-gray-900">      
       <div className="space-y-4">
         <div 
           ref={dropZoneRef}
-          className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 dark:bg-gray-800"
+          className="rounded-lg border-2 border-dashed border-gray-300 p-6 dark:border-gray-600 dark:bg-gray-800"
           tabIndex={0}
         >
           <input
@@ -196,10 +196,10 @@ export default function UploadPage() {
             accept="image/*,.pdf,.doc,.docx,.txt"
             multiple
           />
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             Maximum {MAX_FILES} files, 30MB per file
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             You can also paste images directly from your clipboard (Ctrl+V)
           </p>
         </div>
@@ -208,17 +208,29 @@ export default function UploadPage() {
           <div className="space-y-2">
             <h3 className="font-medium dark:text-gray-200">Selected Files:</h3>
             {files.map((file, index) => (
-              <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                <span className="text-sm text-gray-600 dark:text-gray-300 truncate">
+              <div
+                key={index}
+                className="flex items-center justify-between rounded bg-gray-50 p-2 dark:bg-gray-800"
+              >
+                <span className="truncate text-sm text-gray-600 dark:text-gray-300">
                   {file.name} ({formatFileSize(file.size)})
                 </span>
                 <button
                   onClick={() => removeFile(index)}
-                  className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
+                  className="rounded-full p-1 text-sm text-red-500 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300"
                   title="Remove file"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
               </div>
@@ -229,48 +241,48 @@ export default function UploadPage() {
         <button
           onClick={handleUpload}
           disabled={files.length === 0 || uploading}
-          className={`w-full py-2 px-4 rounded ${
+          className={`w-full rounded px-4 py-2 ${
             files.length === 0 || uploading
-              ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed dark:text-gray-400'
-              : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white'
+              ? 'cursor-not-allowed bg-gray-300 dark:bg-gray-700 dark:text-gray-400'
+              : 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
           }`}
         >
           {uploading ? 'Uploading...' : `Upload ${files.length} File${files.length !== 1 ? 's' : ''}`}
         </button>
 
         {error && (
-          <div className="text-red-500 dark:text-red-400 text-sm">
+          <div className="text-sm text-red-500 dark:text-red-400">
             {error}
           </div>
         )}
 
         {uploadedUrls.length > 0 && (
-          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Upload successful!</p>
+          <div className="mt-4 rounded bg-gray-50 p-4 dark:bg-gray-800">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Upload successful!
+            </p>
             <div className="mt-2 space-y-2">
               {uploadedUrls.map((url, index) => (
-                <div key={index} className="flex items-center justify-between bg-white dark:bg-gray-700 p-2 rounded border dark:border-gray-600">
-                  <p className="text-sm text-gray-600 dark:text-gray-300 break-all flex-1 mr-2">
+                <div
+                  key={index}
+                  className="flex items-center justify-between rounded border bg-white p-2 dark:border-gray-600 dark:bg-gray-700"
+                >
+                  <span className="mr-2 flex-1 break-all text-sm text-gray-600 dark:text-gray-300">
                     {url}
-                  </p>
+                  </span>
                   <button
                     onClick={() => copyToClipboard(url, index)}
-                    className={`p-1 rounded-full ${
-                      copiedIndex === index
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50'
-                    }`}
-                    title={copiedIndex === index ? 'Copied!' : 'Copy to clipboard'}
+                    className="rounded-full p-1"
+                    title="Copy URL"
                   >
                     {copiedIndex === index ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
+                      <span className="text-green-700 dark:bg-green-900/30">
+                        Copied!
+                      </span>
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                        <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                      </svg>
+                      <span className="text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400">
+                        Copy
+                      </span>
                     )}
                   </button>
                 </div>

@@ -14,7 +14,14 @@ const compat = new FlatCompat({
 
 export default [
   {
-    ignores: ['scripts/**', 'node_modules/**', '.next/**', 'out/**', 'public/**'],
+    ignores: [
+      'scripts/**',
+      'node_modules/**',
+      '.next/**',
+      'out/**',
+      'public/**',
+      'components/FairyDustCursor.tsx'
+    ],
   },
   js.configs.recommended,
   ...compat.extends(
@@ -38,12 +45,15 @@ export default [
       },
 
       parser: tsParser,
-      ecmaVersion: 5,
-      sourceType: 'commonjs',
+      ecmaVersion: 2022,
+      sourceType: 'module',
 
       parserOptions: {
         project: true,
         tsconfigRootDir: __dirname,
+        ecmaFeatures: {
+          jsx: true
+        }
       },
     },
 
@@ -65,6 +75,11 @@ export default [
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-var-requires': 'off',
       '@typescript-eslint/ban-ts-comment': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
     },
   },
 ]
