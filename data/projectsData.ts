@@ -7,6 +7,12 @@ interface Project {
 
 const projectsData: Project[] = [
   {
+    title: 'Online Clipboard',
+    description: `在线剪贴板工具，支持保存和加载内容，通过访问码在不同设备间共享文本。完全在浏览器中运行，数据存储在服务器上。`,
+    imgSrc: '/static/images/clipboard.png',
+    href: '/projects/clipboard',
+  },
+  {
     title: 'Timestamp Converter',
     description: `时间戳转换工具，支持毫秒/秒级时间戳与日期的双向转换，多时区支持，提供历史记录功能。在浏览器中完全本地运行，数据不会发送到服务器。`,
     imgSrc: '/static/images/timestamp-converter.png',
