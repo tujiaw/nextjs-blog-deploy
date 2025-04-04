@@ -5,15 +5,28 @@ import { useState, useEffect } from 'react';
 export default function ClipboardPage() {
   const [content, setContent] = useState('');
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'success' | 'error' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [accessCode, setAccessCode] = useState('');
   const [savedCode, setSavedCode] = useState<number | null>(null);
-  const [showCodeInput, setShowCodeInput] = useState(false);
 
-  // 从剪贴板加载内容
+  // Maximum content length (100K characters)
+  const MAX_CONTENT_LENGTH = 500 * 1024;
+
+  // Combined function to set message and message type
+  const setMessageWithType = (text: string, type: 'success' | 'error' | null) => {
+    setMessage(text);
+    setMessageType(type);
+  };
+
+  // Load content from clipboard
   const loadFromClipboard = async () => {
+    // Clear previous messages when loading
+    setMessageWithType('', null);
+    setSavedCode(null);
+    
     if (!accessCode) {
-      setMessage('请输入访问码');
+      setMessageWithType('Please enter access code', 'error');
       return;
     }
 
@@ -24,20 +37,30 @@ export default function ClipboardPage() {
       
       if (response.ok) {
         setContent(data.content || '');
-        setMessage('内容已从剪贴板加载');
+        setMessageWithType('Content loaded from clipboard', 'success');
       } else {
-        setMessage(data.error || '加载失败，请检查访问码是否正确');
+        setMessageWithType(data.error || 'Loading failed, please check your access code', 'error');
       }
     } catch (error) {
-      console.error('加载剪贴板内容失败:', error);
-      setMessage('加载失败，请重试');
+      console.error('Failed to load clipboard content:', error);
+      setMessageWithType('Loading failed, please try again', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 保存内容到剪贴板
+  // Save content to clipboard
   const saveToClipboard = async () => {
+    // Clear previous messages when saving
+    setMessageWithType('', null);
+    setSavedCode(null);
+    
+    // Check content length
+    if (content.length > MAX_CONTENT_LENGTH) {
+      setMessageWithType(`Content exceeds maximum length of ${MAX_CONTENT_LENGTH} characters`, 'error');
+      return;
+    }
+    
     try {
       setIsLoading(true);
       const response = await fetch('/api/clipboard', {
@@ -51,88 +74,80 @@ export default function ClipboardPage() {
       const data = await response.json();
       if (data.success) {
         setSavedCode(data.code);
-        // 不再显示重复的保存成功消息
-        setMessage('');
-        // 不再自动显示访问码输入控件
-        // setShowCodeInput(true);
       } else {
-        setMessage('保存失败: ' + (data.error || '未知错误'));
+        setMessageWithType('Save failed: ' + (data.error || 'Unknown error'), 'error');
       }
     } catch (error) {
-      console.error('保存到剪贴板失败:', error);
-      setMessage('保存失败，请重试');
+      console.error('Failed to save to clipboard:', error);
+      setMessageWithType('Save failed, please try again', 'error');
     } finally {
       setIsLoading(false);
     }
   };
   
-  // 组件加载时不需要自动加载内容
+  // No need to automatically load content when component mounts
   useEffect(() => {
-    // 不再自动加载内容
+    // No longer automatically load content
   }, []);
   
   return (
     <div className="container mx-auto p-4 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">在线剪贴板</h1>
+      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Online Clipboard</h1>
       
       <div className="mb-4">
         <textarea 
           className="w-full p-2 border rounded-md min-h-[200px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
           value={content} 
           onChange={(e) => setContent(e.target.value)}
-          placeholder="输入要保存的内容"
+          placeholder="Enter content to save"
         />
+        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-right">
+          {content.length} / {MAX_CONTENT_LENGTH} characters
+        </div>
       </div>
       
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         <button 
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
           onClick={saveToClipboard}
           disabled={isLoading || !content}
         >
-          保存到剪贴板
+          Save to Clipboard
         </button>
-        <button 
-          className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:opacity-50"
-          onClick={() => setShowCodeInput(!showCodeInput)}
-        >
-          {showCodeInput ? '隐藏访问码输入' : '从剪贴板加载'}
-        </button>
-      </div>
-      
-      {showCodeInput && (
-        <div className="mb-4 p-4 border rounded-md bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">输入访问码</h2>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              className="flex-1 p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
-              value={accessCode}
-              onChange={(e) => setAccessCode(e.target.value)}
-              placeholder="输入4位访问码 (1000-9999)"
-              maxLength={4}
-            />
-            <button
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
-              onClick={loadFromClipboard}
-              disabled={isLoading || !accessCode || accessCode.length !== 4}
-            >
-              加载
-            </button>
-          </div>
+        
+        <div className="flex items-center gap-2">
+          <button 
+            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:opacity-50"
+            onClick={loadFromClipboard}
+            disabled={isLoading || !accessCode || accessCode.length !== 4}
+          >
+            Load from Clipboard
+          </button>
+          <input
+            type="text"
+            className="w-[80px] p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-center"
+            value={accessCode}
+            onChange={(e) => setAccessCode(e.target.value)}
+            placeholder="Code"
+            maxLength={4}
+          />
         </div>
-      )}
+      </div>
       
       {savedCode && (
         <div className="mb-4 p-4 border rounded-md bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-          <h2 className="text-lg font-semibold mb-2 text-green-800 dark:text-green-300">访问码</h2>
-          <p className="text-green-700 dark:text-green-400">请记住您的访问码: <span className="font-bold">{savedCode}</span></p>
-          <p className="text-sm text-green-600 dark:text-green-500 mt-2">使用此访问码可以在其他设备上加载您保存的内容</p>
+          <h2 className="text-lg font-semibold mb-2 text-green-800 dark:text-green-300">Access Code</h2>
+          <p className="text-green-700 dark:text-green-400">Please remember your access code: <span className="font-bold">{savedCode}</span></p>
+          <p className="text-sm text-green-600 dark:text-green-500 mt-2">Use this code to load your content on other devices</p>
         </div>
       )}
       
       {message && (
-        <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md text-gray-900 dark:text-gray-100">
+        <div className={`p-2 rounded-md ${
+          messageType === 'success' 
+            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+            : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+        }`}>
           {message}
         </div>
       )}
