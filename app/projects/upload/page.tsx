@@ -105,6 +105,34 @@ export default function UploadPage() {
     }
   };
 
+  const sanitizeFileName = (fileName: string): string => {
+    // Remove special characters and spaces, replace with hyphens
+    return fileName
+      .toLowerCase()
+      .replace(/[^a-z0-9.]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  };
+
+  const getFileNameWithoutExtension = (fileName: string): string => {
+    const lastDotIndex = fileName.lastIndexOf('.');
+    return lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
+  };
+
+  const getFileExtension = (fileName: string): string => {
+    const lastDotIndex = fileName.lastIndexOf('.');
+    return lastDotIndex > 0 ? fileName.substring(lastDotIndex) : '';
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024 * 1024) {
+      // Less than 1MB, show in KB
+      return `${(bytes / 1024).toFixed(2)}KB`;
+    }
+    // Show in MB
+    return `${(bytes / 1024 / 1024).toFixed(2)}MB`;
+  };
+
   const handleUpload = async () => {
     if (files.length === 0) {
       setError('Please select at least one file');
@@ -117,9 +145,13 @@ export default function UploadPage() {
       const newUploadedUrls: string[] = [];
 
       for (const file of files) {
-        // Create a unique file name
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
+        // Create a unique file name with original name
+        const timestamp = new Date().getTime();
+        const originalName = file.name;
+        const nameWithoutExt = getFileNameWithoutExtension(originalName);
+        const extension = getFileExtension(originalName);
+        const sanitizedName = sanitizeFileName(nameWithoutExt);
+        const fileName = `${sanitizedName}-${timestamp}${extension}`;
         const filePath = `uploads/${fileName}`;
 
         // Upload file to Supabase Storage
@@ -178,13 +210,16 @@ export default function UploadPage() {
             {files.map((file, index) => (
               <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                 <span className="text-sm text-gray-600 truncate">
-                  {file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)
+                  {file.name} ({formatFileSize(file.size)})
                 </span>
                 <button
                   onClick={() => removeFile(index)}
-                  className="text-red-500 hover:text-red-700 text-sm"
+                  className="text-red-500 hover:text-red-700 text-sm p-1 rounded-full hover:bg-red-50"
+                  title="Remove file"
                 >
-                  Remove
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
                 </button>
               </div>
             ))}
@@ -220,13 +255,23 @@ export default function UploadPage() {
                   </p>
                   <button
                     onClick={() => copyToClipboard(url, index)}
-                    className={`px-3 py-1 text-sm rounded ${
+                    className={`p-1 rounded-full ${
                       copiedIndex === index
                         ? 'bg-green-100 text-green-700'
                         : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                     }`}
+                    title={copiedIndex === index ? 'Copied!' : 'Copy to clipboard'}
                   >
-                    {copiedIndex === index ? 'Copied!' : 'Copy'}
+                    {copiedIndex === index ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                        <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                      </svg>
+                    )}
                   </button>
                 </div>
               ))}

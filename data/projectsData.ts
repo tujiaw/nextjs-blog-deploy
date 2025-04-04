@@ -7,6 +7,12 @@ interface Project {
 
 const projectsData: Project[] = [
   {
+    title: 'File Upload',
+    description: `文件上传工具，支持多文件上传（最多5个文件，每个最大30MB），支持从剪贴板粘贴图片，自动生成带原始文件名的链接，支持一键复制链接。`,
+    imgSrc: '/static/images/tool-upload.png',
+    href: '/projects/upload',
+  },
+  {
     title: 'Online Clipboard',
     description: `在线剪贴板工具，支持保存和加载内容，通过访问码在不同设备间共享文本。完全在浏览器中运行，数据存储在服务器上。`,
     imgSrc: '/static/images/clipboard.png',
