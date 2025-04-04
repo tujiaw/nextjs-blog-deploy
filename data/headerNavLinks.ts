@@ -4,6 +4,7 @@ const headerNavLinks = [
   { href: '/blog/llm-guide', title: 'LLM' },
   { href: '/tags', title: 'Tags' },
   { href: '/projects', title: 'Projects' },
+  { href: '/projects/clipboard', title: 'Clipboard' },
   { href: '/about', title: 'About' },
 ]
 
