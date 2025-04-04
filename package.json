@@ -1,6 +1,6 @@
 {
-  "name": "tailwind-nextjs-starter-blog",
-  "version": "2.3.0",
+  "name": "ningto-blog",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "next dev",
@@ -11,6 +11,7 @@
     "lint": "next lint --fix --dir pages --dir app --dir components --dir lib --dir layouts --dir scripts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.525.0",
     "@giscus/react": "^3.0.0",
     "@headlessui/react": "2.2.0",
     "@next/bundle-analyzer": "15.0.2",
