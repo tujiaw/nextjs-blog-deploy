@@ -60,6 +60,7 @@ export default [
     rules: {
       'prettier/prettier': 'off',
       'react/react-in-jsx-scope': 'off',
+      'jsx-a11y/no-noninteractive-tabindex': 'off',
 
       'jsx-a11y/anchor-is-valid': [
         'error',
