@@ -51,8 +51,10 @@ export default function ClipboardPage() {
       const data = await response.json();
       if (data.success) {
         setSavedCode(data.code);
-        setMessage(`内容已成功保存到剪贴板，访问码: ${data.code}`);
-        setShowCodeInput(true);
+        // 不再显示重复的保存成功消息
+        setMessage('');
+        // 不再自动显示访问码输入控件
+        // setShowCodeInput(true);
       } else {
         setMessage('保存失败: ' + (data.error || '未知错误'));
       }
