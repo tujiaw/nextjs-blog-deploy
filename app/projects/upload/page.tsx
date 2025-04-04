@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { s3Client } from '../../../lib/s3Client';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
@@ -44,11 +42,18 @@ export default function UploadPage() {
       for (const item of imageItems) {
         const file = item.getAsFile();
         if (file) {
-          if (file.size > MAX_FILE_SIZE) {
-            setError(`File ${file.name} exceeds the 30MB size limit`);
+          // Create a new File object with a proper name and type
+          const timestamp = new Date().getTime();
+          const extension = file.type.split('/')[1] || 'png';
+          const newFile = new File([file], `pasted-image-${timestamp}.${extension}`, {
+            type: file.type
+          });
+
+          if (newFile.size > MAX_FILE_SIZE) {
+            setError(`File ${newFile.name} exceeds the 30MB size limit`);
             continue;
           }
-          newFiles.push(file);
+          newFiles.push(newFile);
         }
       }
 
