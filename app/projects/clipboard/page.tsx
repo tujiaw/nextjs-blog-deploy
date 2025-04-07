@@ -10,8 +10,8 @@ export default function ClipboardPage() {
   const [accessCode, setAccessCode] = useState('');
   const [savedCode, setSavedCode] = useState<number | null>(null);
 
-  // Maximum content length (100K characters)
-  const MAX_CONTENT_LENGTH = 100 * 1024;
+  // Maximum content length (500K characters)
+  const MAX_CONTENT_LENGTH = 500 * 1024;
 
   // Combined function to set message and message type
   const setMessageWithType = (text: string, type: 'success' | 'error' | null) => {

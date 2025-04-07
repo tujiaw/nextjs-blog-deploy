@@ -1,0 +1,145 @@
+---
+title: '使用Responses API实现Web搜索和状态管理'
+date: '2025-04-06'
+tags: ['OpenAI', 'API', 'Responses API', '人工智能', 'Web搜索']
+draft: false
+summary: Responses API是一个新的API，专注于在使用OpenAI API时提供更大的简洁性和表达能力。它为多工具、多轮对话和多种模态而设计。
+---
+
+# 使用Responses API实现Web搜索和状态管理
+
+Responses API是一个新的API，专注于在使用我们的API时提供更大的简洁性和表达能力。它为多工具、多轮对话和多种模态而设计 — 与当前的API不同，当前API要么将这些功能强行附加到主要为文本输入和输出设计的API上（聊天完成），要么需要大量引导才能执行简单操作（assistants api）。
+
+在这里，我将向您展示Responses API提供的几个新功能，并在最后将它们全部结合起来。`responses`解决了我们当前API集合中的多个用户痛点。在使用completions API期间，我们发现人们希望：
+
+* 在单个API调用中轻松执行多轮模型交互的能力
+* 访问我们托管的工具（file_search、web_search、code_interpreter）
+* 对发送给模型的上下文进行精细控制
+
+随着模型开始开发更长时间的推理和思考能力，用户将需要异步友好和有状态的原语。Response解决了这个问题。
+
+## 基础知识
+
+按设计，表面上，Responses API与Completions API非常相似。
+
+```python
+from openai import OpenAI
+import os
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+```
+
+```python
+response = client.responses.create(
+    model="gpt-4o-mini",
+    input="tell me a joke",
+)
+```
+
+```python
+print(response.output[0].content[0].text)
+```
+
+稻草人为什么获得了奖项？
+
+因为他在他的领域里表现出色！（此处是双关语：outstanding既可以表示"杰出"也可以表示"站在外面"）
+
+Responses API的一个关键特点是它具有状态性。这意味着您不必自己管理对话的状态，API将为您处理它。例如，您可以随时检索响应，它将包含完整的对话历史记录。
+
+```python
+fetched_response = client.responses.retrieve(
+response_id=response.id)
+
+print(fetched_response.output[0].content[0].text)
+```
+
+稻草人为什么获得了奖项？
+
+因为他在他的领域里表现出色！
+
+您可以通过引用之前的响应来继续对话。
+
+```python
+response_two = client.responses.create(
+    model="gpt-4o-mini",
+    input="tell me another",
+    previous_response_id=response.id
+)
+```
+
+```python
+print(response_two.output[0].content[0].text)
+```
+
+骷髅们为什么不互相打架？
+
+因为他们没有勇气！（此处是双关语：guts既可以表示"勇气"也可以表示"内脏"）
+
+您当然可以自己管理上下文。但OpenAI为您维护上下文的一个好处是，您可以在任何时候分叉响应并从该点继续对话。
+
+```python
+response_two_forked = client.responses.create(
+    model="gpt-4o-mini",
+    input="I didn't like that joke, tell me another and tell me the difference between the two jokes",
+    previous_response_id=response.id # 从第一个响应分叉并继续
+)
+
+output_text = response_two_forked.output[0].content[0].text
+print(output_text)
+```
+
+当然！这是另一个笑话：
+
+为什么科学家不信任原子？
+
+因为它们编造了一切！（此处是双关语：make up既可以表示"构成"也可以表示"编造"）
+
+**区别：** 第一个笑话使用了"outstanding"一词的双关语，字面意思是"站在外面"与表示杰出之间的双关；而第二个笑话则依赖于"make up"这个词组的双关，既指原子"构成"物质，又指捏造故事。每个笑话都使用了文字游戏，但它们针对不同的概念（农业与科学）。
+
+## 托管工具
+
+Responses API的另一个优势是它增加了对托管工具（如`file_search`和`web_search`）的支持。无需手动调用工具，只需传入工具，API将决定使用哪个工具并使用它。
+
+下面是使用`web_search`工具将网络搜索结果整合到响应中的示例。您可能已经熟悉ChatGPT如何搜索网络。现在您也可以构建类似的体验！网络搜索工具使用OpenAI Index，这是为聊天应用程序优化的，驱动ChatGPT中的网络搜索。
+
+```python
+response = client.responses.create(
+    model="gpt-4o",  # 或其他支持的模型
+    input="What's the latest news about AI?",
+    tools=[
+        {
+            "type": "web_search"
+        }
+    ]
+)
+```
+
+```python
+import json
+print(json.dumps(response.output, default=lambda o: o.__dict__, indent=2))
+```
+
+[输出JSON示例内容]
+
+在上面的例子中，我们能够使用`web_search`工具在一个API调用中搜索与图像相关的新闻，而不是需要多次往返调用聊天完成API的方式。
+
+使用responses API 🔥 单个API调用可以处理：
+
+✅ 使用多模态输入分析给定图像。
+
+✅ 通过`web_search`托管工具执行网络搜索
+
+✅ 总结结果。
+
+相比之下，使用聊天完成API需要多个步骤，每个步骤都需要往返API：
+
+1️⃣ 上传图像并获取分析 → 1个请求
+
+2️⃣ 提取信息，调用外部网络搜索 → 手动步骤+工具执行
+
+3️⃣ 重新提交工具结果以进行总结 → 另一个请求
+
+请参阅以下图表，了解并排可视化比较！
+
+Responses与Completions的对比
+
+我们非常期待您尝试Responses API，看看它如何简化您的代码，并使构建复杂的、多模态的、工具增强的交互变得更加容易！ 
