@@ -1,0 +1,24 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- windows11系统下开发
+- 使用powershell命令，它不支持&&
+- 遇到需要当前时间时使用powershell获取，你自己并不知道当前时间
+- 文档总是生成在data/blog/2025目录下
+- 格式是mdx，内容一定要符合mdx格式，否则编译会报错
+- 文件名不要重复了
+- 文章头部格式总是如下，date使用今天的日期
+```
+    ---
+    title: '使用 natapp 进行内网穿透调试'
+    date: '2025-02-06'
+    tags: ['Python']
+    draft: false
+    summary: 本文介绍如何使用 Python 结合内网穿透工具 natapp 进行本地调试，解决 XXL-Job 调度中心无法直接访问本地开发机器的问题。
+    ---
+```
