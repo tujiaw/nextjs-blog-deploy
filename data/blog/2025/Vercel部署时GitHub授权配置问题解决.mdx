@@ -1,0 +1,141 @@
+---
+title: 'Vercel部署时GitHub授权配置问题解决'
+date: '2025-04-17'
+tags: ['NextJS', 'Vercel', 'Supabase', 'GitHub', '认证']
+draft: false
+summary: 本文解决在Vercel部署环境下GitHub OAuth授权重定向URL使用localhost的问题，确保授权流程在生产环境正常工作。
+---
+
+# Vercel部署时GitHub授权配置问题解决
+
+在使用Supabase和GitHub OAuth进行用户认证时，我们经常会遇到一个问题：本地开发环境一切正常，但部署到Vercel后，授权重定向URL可能仍然使用localhost，导致认证流程失败。本文将详细解释这个问题的原因和解决方案。
+
+## 问题描述
+
+在使用Supabase进行GitHub OAuth认证时，我们通常会设置一个重定向URL，用于GitHub授权完成后将用户重定向回我们的应用。在本地开发环境中，这个URL通常是：
+
+```typescript
+const { error } = await supabase.auth.signInWithOAuth({
+  provider: 'github',
+  options: {
+    redirectTo: `${window.location.origin}/some-path`,
+  },
+});
+```
+
+这在本地工作正常，因为`window.location.origin`会是`http://localhost:3000`或类似的值。
+
+然而，当部署到Vercel后，在某些情况下，特别是客户端渲染的组件中，`window.location.origin`可能仍然解析为`localhost`，这导致授权回调失败。
+
+## 解决方案
+
+解决这个问题需要以下几个步骤：
+
+### 1. 利用Vercel环境变量
+
+Vercel自动为部署的应用提供了`VERCEL_URL`环境变量，我们可以使用它来构建正确的重定向URL。
+
+首先，我们需要在`next.config.js`中将这个服务器端环境变量暴露给客户端：
+
+```javascript
+module.exports = {
+  // 其他配置...
+  env: {
+    NEXT_PUBLIC_VERCEL_URL: process.env.VERCEL_URL,
+  },
+};
+```
+
+### 2. 改进授权逻辑
+
+接下来，我们需要修改授权代码，优先使用Vercel URL（如果可用）：
+
+```typescript
+const signIn = async () => {
+  setIsLoading(true);
+  
+  // 获取正确的重定向URL
+  let redirectUrl = '';
+  
+  // 优先使用Vercel URL环境变量
+  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
+    redirectUrl = `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/your-path`;
+    console.log('使用VERCEL_URL重定向:', redirectUrl);
+  } 
+  // 否则使用当前窗口的origin
+  else if (typeof window !== 'undefined') {
+    redirectUrl = `${window.location.origin}/your-path`;
+    console.log('使用window.location.origin重定向:', redirectUrl);
+  }
+  
+  // 确保在任何情况下都有重定向URL
+  if (!redirectUrl && typeof window !== 'undefined') {
+    redirectUrl = `${window.location.href.split('?')[0]}`;
+    console.log('使用当前URL作为备选重定向:', redirectUrl);
+  }
+  
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: {
+      redirectTo: redirectUrl,
+    },
+  });
+  
+  if (error) {
+    console.error('登录错误:', error);
+    setIsLoading(false);
+  }
+};
+```
+
+这段代码的工作原理是：
+1. 首先检查是否有`NEXT_PUBLIC_VERCEL_URL`环境变量
+2. 如果有，使用它构建HTTPS重定向URL
+3. 如果没有，回退到使用`window.location.origin`
+4. 最后的保险机制是使用当前页面URL作为重定向URL
+
+### 3. 在GitHub和Supabase中配置正确的回调URL
+
+除了代码修改外，还需要确保在GitHub OAuth应用和Supabase项目中配置了正确的回调URL：
+
+#### GitHub OAuth应用配置
+
+1. 登录GitHub，访问[Developer Settings](https://github.com/settings/developers)
+2. 选择你的OAuth应用
+3. 在"Authorization callback URL"字段中，添加你的生产域名回调URL：
+   - 格式：`https://<SUPABASE_PROJECT>.supabase.co/auth/v1/callback`
+   - 你可以添加多个URL，用逗号分隔
+   - 本地开发URL和生产URL都应该添加
+
+#### Supabase配置
+
+1. 登录Supabase控制台
+2. 选择你的项目
+3. 进入"Authentication" > "URL Configuration"
+4. 在"Site URL"字段中，确保添加了你的Vercel部署URL
+5. 在"Redirect URLs"字段中，添加所有可能的重定向URL，包括本地开发URL和生产URL
+
+## 测试
+
+完成以上配置后，应该进行以下测试：
+
+1. 在本地开发环境测试GitHub登录
+2. 在Vercel预览部署环境测试GitHub登录
+3. 在Vercel生产环境测试GitHub登录
+
+确保在各个环境下，授权流程都能正常工作。
+
+## 调试技巧
+
+如果仍然遇到问题，可以使用以下方法进行调试：
+
+1. 在授权代码中添加`console.log`语句，记录重定向URL的值
+2. 检查浏览器控制台中的网络请求，特别是授权重定向请求
+3. 查看Supabase日志，检查授权过程中是否有错误
+4. 确认环境变量是否正确设置并在客户端可用
+
+## 总结
+
+在Vercel环境中使用GitHub OAuth时，正确处理重定向URL至关重要。通过合理利用Vercel提供的环境变量，我们可以确保授权流程在所有环境中正常工作。
+
+记住这个关键点：永远不要硬编码重定向URL，而是要动态构建它，优先使用可靠的环境变量，同时提供适当的回退机制。这样可以确保你的应用在任何环境中都能正确处理OAuth流程。 

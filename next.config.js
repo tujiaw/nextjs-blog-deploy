@@ -80,6 +80,9 @@ module.exports = () => {
       ],
       unoptimized,
     },
+    env: {
+      NEXT_PUBLIC_VERCEL_URL: process.env.VERCEL_URL,
+    },
     async headers() {
       return [
         {
