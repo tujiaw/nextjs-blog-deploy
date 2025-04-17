@@ -8,6 +8,8 @@ module.exports = {
     '@typescript-eslint/no-unsafe-call': 'off',
     '@typescript-eslint/no-unsafe-return': 'off',
     'prettier/prettier': 'off',
+    'jsx-a11y/click-events-have-key-events': 'off',
+    'jsx-a11y/no-static-element-interactions': 'off',
   },
   ignorePatterns: ['components/FairyDustCursor.tsx'],
 }

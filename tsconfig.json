@@ -43,7 +43,9 @@
     ".next/types/**/*.ts",
     "components/**/*.tsx",
     "layouts/**/*.tsx",
-    "types/**/*.d.ts"
+    "types/**/*.d.ts",
+    "app/**/*.ts",
+    "app/**/*.tsx"
   ],
   "exclude": ["node_modules", "data/blog"]
 }

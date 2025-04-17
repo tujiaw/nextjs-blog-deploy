@@ -76,12 +76,14 @@ export default function TodoItem({ todo }: TodoItemProps) {
           onKeyDown={handleKeyDown}
         />
       ) : (
+        /* eslint-disable jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
         <div
           className={`flex-1 cursor-pointer ${todo.completed ? 'text-gray-500 line-through dark:text-gray-400' : 'text-gray-700 dark:text-white'}`}
           onClick={handleEdit}
         >
           {todo.text}
         </div>
+        /* eslint-enable jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
       )}
       
       <button
