@@ -7,6 +7,12 @@ interface Project {
 
 const projectsData: Project[] = [
   {
+    title: '超级待办',
+    description: '一个使用Supabase存储数据的现代化待办事项应用，支持多用户、黑暗模式及实时更新。',
+    imgSrc: '/static/images/todo-app.png',
+    href: '/projects/todo',
+  },
+  {
     title: 'File Upload',
     description: `文件上传工具，支持多文件上传（最多5个文件，每个最大30MB），支持从剪贴板粘贴图片，自动生成带原始文件名的链接，支持一键复制链接。`,
     imgSrc: '/static/images/tool-upload.png',
@@ -53,13 +59,7 @@ const projectsData: Project[] = [
     description: `监视鼠标位置、键盘按键、剪切板，将信息显示在界面上，仅学习使用，源码编译需要安装WTL。`,
     imgSrc: '/static/images/MonitorClipboard.png',
     href: 'https://gitee.com/tujiaw/MonitorClipboard',
-  },
-  {
-    title: 'TODO应用',
-    description: '一个使用Supabase存储数据的现代化待办事项应用，支持多用户、黑暗模式及实时更新。',
-    imgSrc: '/static/images/todo-app.jpg',
-    href: '/projects/todo',
-  },
+  }
 ]
 
 export default projectsData
