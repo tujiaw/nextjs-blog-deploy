@@ -35,26 +35,17 @@ export function useUser() {
   const signIn = async () => {
     setIsLoading(true)
     
-    // 获取正确的重定向URL
-    let redirectUrl = ''
-    
-    // 优先使用Vercel URL环境变量
-    if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-      redirectUrl = `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/projects/todo`
-      console.log('使用VERCEL_URL重定向:', redirectUrl)
-    } 
-    // 否则使用当前窗口的origin
-    else if (typeof window !== 'undefined') {
-      redirectUrl = `${window.location.origin}/projects/todo`
-      console.log('使用window.location.origin重定向:', redirectUrl)
-    }
-    
-    // 确保在任何情况下都有重定向URL
-    if (!redirectUrl && typeof window !== 'undefined') {
+    // 获取网站URL，确保在Vercel和本地环境下都能正常工作
+    let redirectUrl = `${window.location.origin}/projects/todo`    
+    // 如果仍未设置重定向URL，使用备选方案
+    if (!redirectUrl) {
+      // 在NextJS应用中，可以硬编码生产环境URL，例如：
+      // redirectUrl = 'https://your-app-domain.vercel.app/projects/todo'
       redirectUrl = `${window.location.href.split('?')[0]}`
-      console.log('使用当前URL作为备选重定向:', redirectUrl)
+      console.log('使用备选重定向URL:', redirectUrl)
     }
     
+    console.log('最终使用的重定向URL:', redirectUrl)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
