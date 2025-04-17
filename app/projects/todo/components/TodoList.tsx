@@ -11,11 +11,31 @@ interface TodoListProps {
 export default function TodoList({ filter }: TodoListProps) {
   const { todos } = useTodoStore()
   
+  // 先按照过滤条件筛选待办事项
   const filteredTodos = todos.filter(todo => {
     if (filter === 'all') return true
     if (filter === 'active') return !todo.completed
     if (filter === 'completed') return todo.completed
     return true
+  })
+
+  // 自定义排序：未完成的在上面（按创建时间倒序），已完成的在下面（按完成时间倒序）
+  const sortedTodos = [...filteredTodos].sort((a, b) => {
+    // 如果一个完成一个未完成，未完成的排在前面
+    if (a.completed !== b.completed) {
+      return a.completed ? 1 : -1
+    }
+    
+    // 如果都是已完成的，按完成时间倒序排列
+    if (a.completed && b.completed) {
+      // 确保有完成时间，否则回退到创建时间
+      const aTime = a.completed_at || a.created_at
+      const bTime = b.completed_at || b.created_at
+      return new Date(bTime).getTime() - new Date(aTime).getTime()
+    }
+    
+    // 如果都是未完成的，按创建时间倒序排列
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   })
 
   if (todos.length === 0) {
@@ -55,7 +75,7 @@ export default function TodoList({ filter }: TodoListProps) {
 
   return (
     <div className="flex-1 space-y-2 overflow-y-auto py-2">
-      {filteredTodos.map(todo => (
+      {sortedTodos.map(todo => (
         <TodoItem key={todo.id} todo={todo} />
       ))}
     </div>

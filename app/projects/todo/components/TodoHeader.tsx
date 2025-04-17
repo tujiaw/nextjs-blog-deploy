@@ -2,6 +2,7 @@
 
 import { useState, KeyboardEvent, FormEvent } from 'react'
 import { useUser } from '../hooks/useUser'
+import { useTodoStore } from '../store/todoStore'
 
 interface TodoHeaderProps {
   onAddTodo: (text: string) => void
@@ -10,6 +11,10 @@ interface TodoHeaderProps {
 export default function TodoHeader({ onAddTodo }: TodoHeaderProps) {
   const [text, setText] = useState('')
   const { user, signOut } = useUser()
+  const { todos } = useTodoStore()
+  
+  // 计算未完成待办事项的数量
+  const activeCount = todos.filter(todo => !todo.completed).length
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -34,6 +39,14 @@ export default function TodoHeader({ onAddTodo }: TodoHeaderProps) {
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             你好，{user?.email?.split('@')[0] || '用户'}
+            {activeCount > 0 && (
+              <span className="ml-1">
+                ，你有 <span className="font-medium text-blue-600 dark:text-blue-400">{activeCount}</span> 项待办未完成
+              </span>
+            )}
+            {activeCount === 0 && (
+              <span className="ml-1">，恭喜你已完成所有待办</span>
+            )}
           </p>
         </div>
         <button

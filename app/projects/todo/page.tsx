@@ -30,7 +30,7 @@ export default function TodoApp() {
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col px-4">
-      <div className="mb-10 space-y-1 pt-6 text-center">
+      <div className="mb-4 space-y-1 pt-2 text-center">
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl md:text-5xl">
           <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             超级待办

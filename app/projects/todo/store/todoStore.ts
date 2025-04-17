@@ -41,7 +41,6 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
         .from('todos')
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false })
       
       if (error) throw error
       set({ todos: data || [], isLoading: false })
