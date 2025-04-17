@@ -81,14 +81,14 @@ export default function TodoItem({ todo }: TodoItemProps) {
   }
 
   return (
-    <div className={`group relative flex flex-col rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600 ${todo.completed ? 'opacity-70' : ''}`}>
+    <div className={`group relative flex flex-col rounded-md border border-gray-200 bg-white p-3 shadow-sm transition-all hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600 ${todo.completed ? 'opacity-80' : ''}`}>
       <div className="flex items-center">
         <button
           onClick={() => toggleTodo(todo.id)}
           className={`mr-3 flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
             todo.completed 
-              ? 'border-blue-500 bg-blue-500 text-white' 
-              : 'border-gray-300 dark:border-gray-600'
+              ? 'border-green-500 bg-green-500 text-white' 
+              : 'border-blue-500 dark:border-blue-400'
           }`}
           aria-label={todo.completed ? "标记为未完成" : "标记为已完成"}
         >

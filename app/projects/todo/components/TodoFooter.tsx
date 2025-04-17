@@ -1,15 +1,13 @@
 'use client'
 
-import { TodoFilter, useTodoStore } from '../store/todoStore'
+import { useTodoStore } from '../store/todoStore'
 
 interface TodoFooterProps {
-  activeFilter: TodoFilter
-  onFilterChange: (filter: TodoFilter) => void
+  showCompletedCount?: boolean
 }
 
 export default function TodoFooter({
-  activeFilter,
-  onFilterChange,
+  showCompletedCount = false,
 }: TodoFooterProps) {
   const { todos, clearCompleted } = useTodoStore()
   
@@ -25,39 +23,9 @@ export default function TodoFooter({
     <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 pt-4 text-sm dark:border-gray-700">
       <div className="text-gray-500 dark:text-gray-400">
         {activeTodos.length} 项未完成
-      </div>
-      
-      <div className="flex rounded-md border border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => onFilterChange('all')}
-          className={`rounded-l-md px-3 py-1 ${
-            activeFilter === 'all' 
-              ? 'bg-blue-500 text-white'
-              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-        >
-          全部
-        </button>
-        <button
-          onClick={() => onFilterChange('active')}
-          className={`border-l border-r border-gray-200 px-3 py-1 dark:border-gray-700 ${
-            activeFilter === 'active' 
-              ? 'bg-blue-500 text-white'
-              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-        >
-          未完成
-        </button>
-        <button
-          onClick={() => onFilterChange('completed')}
-          className={`rounded-r-md px-3 py-1 ${
-            activeFilter === 'completed' 
-              ? 'bg-blue-500 text-white'
-              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-        >
-          已完成
-        </button>
+        {showCompletedCount && completedTodos.length > 0 && 
+          <span className="ml-2">• {completedTodos.length} 项已完成</span>
+        }
       </div>
       
       <button

@@ -3,12 +3,16 @@
 import { useState, KeyboardEvent, FormEvent } from 'react'
 import { useUser } from '../hooks/useUser'
 import { useTodoStore } from '../store/todoStore'
+import { TodoFilter } from '../store/todoStore'
+import FilterButtons from './FilterButtons'
 
 interface TodoHeaderProps {
   onAddTodo: (text: string) => void
+  activeFilter: TodoFilter
+  onFilterChange: (filter: TodoFilter) => void
 }
 
-export default function TodoHeader({ onAddTodo }: TodoHeaderProps) {
+export default function TodoHeader({ onAddTodo, activeFilter, onFilterChange }: TodoHeaderProps) {
   const [text, setText] = useState('')
   const { user, signOut } = useUser()
   const { todos } = useTodoStore()
@@ -32,10 +36,10 @@ export default function TodoHeader({ onAddTodo }: TodoHeaderProps) {
 
   return (
     <div className="mb-6 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
         <div className="flex flex-col">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            今日待办
+            我的待办
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             你好，{user?.email?.split('@')[0] || '用户'}
@@ -49,12 +53,17 @@ export default function TodoHeader({ onAddTodo }: TodoHeaderProps) {
             )}
           </p>
         </div>
-        <button
-          onClick={signOut}
-          className="rounded-lg bg-gray-100 px-3 py-1 text-sm text-gray-600 transition hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-        >
-          退出
-        </button>
+        
+        <div className="flex items-center space-x-2">
+          <FilterButtons activeFilter={activeFilter} onFilterChange={onFilterChange} />
+          
+          <button
+            onClick={signOut}
+            className="rounded-lg bg-gray-100 px-3 py-1 text-sm text-gray-600 transition hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+          >
+            退出
+          </button>
+        </div>
       </div>
       
       <form onSubmit={handleSubmit} className="relative">

@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import TodoHeader from './components/TodoHeader'
-import TodoList from './components/TodoList'
+import TodoTimeline from './components/TodoTimeline'
 import TodoFooter from './components/TodoFooter'
-import { Todo, TodoFilter, useTodoStore } from './store/todoStore'
+import { TodoFilter, useTodoStore } from './store/todoStore'
 import { useUser } from './hooks/useUser'
 import LoginButton from './components/LoginButton'
 import { Toaster } from './components/ui/Toaster'
 
 export default function TodoApp() {
-  const [filter, setFilter] = useState<TodoFilter>('all')
+  const [filter, setFilter] = useState<TodoFilter>('active')
   const { user, isLoading } = useUser()
   const { fetchTodos, addTodo, todos } = useTodoStore()
   
@@ -50,11 +50,14 @@ export default function TodoApp() {
         </div>
       ) : (
         <div className="flex flex-1 flex-col rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800">
-          <TodoHeader onAddTodo={(text) => addTodo(text, user.id)} />
-          <TodoList filter={filter} />
+          <TodoHeader 
+            onAddTodo={(text) => addTodo(text, user.id)} 
+            activeFilter={filter}
+            onFilterChange={setFilter}
+          />
+          <TodoTimeline filter={filter} />
           <TodoFooter 
-            activeFilter={filter} 
-            onFilterChange={setFilter} 
+            showCompletedCount={true}
           />
         </div>
       )}

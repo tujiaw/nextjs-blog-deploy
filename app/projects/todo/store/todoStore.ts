@@ -37,10 +37,16 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     set({ isLoading: true, error: null })
     
     try {
+      // 计算一周前的日期
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const oneWeekAgoStr = oneWeekAgo.toISOString();
+      
       const { data, error } = await supabase
         .from('todos')
         .select('*')
         .eq('user_id', userId)
+        .gte('created_at', oneWeekAgoStr) // 只获取一周内的数据
       
       if (error) throw error
       set({ todos: data || [], isLoading: false })
