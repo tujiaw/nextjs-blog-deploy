@@ -11,6 +11,7 @@ export interface Todo {
   completed: boolean
   user_id: string
   created_at: string
+  completed_at?: string | null
 }
 
 interface TodoStore {
@@ -78,16 +79,19 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     const todo = get().todos.find(t => t.id === id)
     if (!todo) return
     
+    const completed = !todo.completed
+    const completed_at = completed ? new Date().toISOString() : null
+    
     try {
       const { error } = await supabase
         .from('todos')
-        .update({ completed: !todo.completed })
+        .update({ completed, completed_at })
         .eq('id', id)
       
       if (error) throw error
       set(state => ({
         todos: state.todos.map(t => 
-          t.id === id ? { ...t, completed: !t.completed } : t
+          t.id === id ? { ...t, completed, completed_at } : t
         )
       }))
     } catch (error) {
