@@ -29,21 +29,20 @@ export default function TodoApp() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col px-4">
-      <div className="mb-4 space-y-1 pt-2 text-center">
-        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl md:text-5xl">
-          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            超级待办
-          </span>
-        </h1>
-        <p className="text-base text-gray-500 dark:text-gray-400">
-          简单、美观、高效的待办事项管理
-        </p>
-      </div>
-
+    <div className="mx-auto flex min-h-[60vh] max-w-4xl flex-col px-4">
       {!user ? (
-        <div className="flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 p-12 dark:border-gray-700">
-          <h3 className="mb-4 text-xl font-semibold text-gray-700 dark:text-gray-300">
+        <div className="flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 p-8 dark:border-gray-700">
+          <div className="mb-4 space-y-1 pt-1 text-center">
+            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white sm:text-3xl md:text-4xl">
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                超级待办
+              </span>
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 md:text-base">
+              简单、美观、高效的待办事项管理
+            </p>
+          </div>
+          <h3 className="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
             请登录以管理您的待办事项
           </h3>
           <LoginButton />
