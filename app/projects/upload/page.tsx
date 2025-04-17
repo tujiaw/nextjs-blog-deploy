@@ -183,6 +183,7 @@ export default function UploadPage() {
 
   return (
     <div className="mx-auto max-w-2xl p-6 dark:bg-gray-900">      
+      <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Upload Files</h1>
       <div className="space-y-4">
         <div 
           ref={dropZoneRef}

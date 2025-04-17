@@ -54,6 +54,12 @@ const projectsData: Project[] = [
     imgSrc: '/static/images/MonitorClipboard.png',
     href: 'https://gitee.com/tujiaw/MonitorClipboard',
   },
+  {
+    title: 'TODO应用',
+    description: '一个使用Supabase存储数据的现代化待办事项应用，支持多用户、黑暗模式及实时更新。',
+    imgSrc: '/static/images/todo-app.jpg',
+    href: '/projects/todo',
+  },
 ]
 
 export default projectsData

@@ -1,0 +1,355 @@
+---
+title: '使用 Supabase 和 GitHub 授权实现用户认证'
+date: '2025-04-17'
+tags: ['NextJS', 'Supabase', 'React', 'GitHub', '认证']
+draft: false
+summary: 本文详细介绍如何在 Next.js 应用中使用 Supabase 和 GitHub OAuth 实现用户认证功能，包括完整的配置流程和代码实现。
+---
+
+# 使用 Supabase 和 GitHub 授权实现用户认证
+
+在现代 Web 应用开发中，用户认证是非常基础且重要的功能。传统的用户名密码认证方式虽然常见，但实现起来需要考虑密码加密、安全存储、找回密码等诸多细节。而社交登录（如 GitHub、Google 等）可以让用户更便捷地登录应用，同时简化开发流程。
+
+本文将详细介绍如何在 Next.js 应用中使用 Supabase 和 GitHub OAuth 实现用户认证功能。Supabase 是一个开源的 Firebase 替代品，提供数据库、认证、存储等完整的后端服务。
+
+## 前置准备
+
+1. 已有 [GitHub](https://github.com/) 账号
+2. 已有 [Supabase](https://supabase.com/) 账号
+3. 基本的 Next.js 和 React 知识
+
+## 步骤一：创建 Supabase 项目
+
+1. 登录 [Supabase 控制台](https://app.supabase.com/)
+2. 点击 "New Project"
+3. 填写项目名称、设置密码，选择区域（建议选择距离用户最近的区域）
+4. 点击 "Create new project"，等待项目创建完成
+
+![创建 Supabase 项目](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1744861704531-1744861707036.png)
+
+## 步骤二：配置 GitHub OAuth
+
+### 在 GitHub 创建 OAuth 应用
+
+1. 登录 GitHub，进入 [Developer Settings](https://github.com/settings/developers)
+2. 选择 "OAuth Apps" -> "New OAuth App"
+3. 填写应用信息：
+   - **Application name**：你的应用名称
+   - **Homepage URL**：你的应用 URL（开发环境可填 `http://localhost:3000`）
+   - **Authorization callback URL**：填写 Supabase 回调 URL
+     - 格式：`https://<YOUR_SUPABASE_PROJECT>.supabase.co/auth/v1/callback`
+     - 请将 `<YOUR_SUPABASE_PROJECT>` 替换为你的 Supabase 项目 ID
+4. 点击 "Register application"
+5. 创建成功后，点击 "Generate a new client secret" 生成密钥
+
+### 在 Supabase 配置 GitHub 提供商
+
+1. 在 Supabase 控制台，进入项目
+2. 左侧菜单选择 "Authentication" -> "Providers"
+3. 找到 GitHub，点击启用
+4. 填入上一步从 GitHub 获取的 Client ID 和 Client Secret
+5. 点击 "Save" 保存设置
+
+## 步骤三：在 Next.js 项目中配置 Supabase
+
+### 安装必要的依赖
+
+```bash
+npm install @supabase/supabase-js
+# 或使用 yarn
+yarn add @supabase/supabase-js
+```
+
+### 创建 Supabase 客户端
+
+在你的项目中创建一个 `lib/supabase.ts` 文件：
+
+```typescript
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+```
+
+### 配置环境变量
+
+在项目根目录创建 `.env.local` 文件：
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://你的项目ID.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=你的匿名密钥
+```
+
+> 注意：这些值可以从 Supabase 控制台的 "Settings" -> "API" 页面获取。
+
+## 步骤四：实现用户认证功能
+
+### 创建自定义 Hook 管理用户状态
+
+创建 `hooks/useUser.ts` 文件：
+
+```typescript
+'use client'
+
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { User } from '@supabase/supabase-js'
+
+export function useUser() {
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // 获取当前用户信息
+    const fetchUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+      } catch (error) {
+        console.error('获取用户信息错误:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    // 监听认证状态变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      setIsLoading(false)
+    })
+
+    fetchUser()
+
+    // 清理订阅
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  // GitHub 登录方法
+  const signIn = async () => {
+    setIsLoading(true)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`, // 登录成功后重定向的页面
+      },
+    })
+    if (error) {
+      console.error('登录错误:', error)
+      setIsLoading(false)
+    }
+  }
+
+  // 登出方法
+  const signOut = async () => {
+    setIsLoading(true)
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      console.error('登出错误:', error)
+    }
+    setIsLoading(false)
+  }
+
+  return { user, isLoading, signIn, signOut }
+}
+```
+
+### 创建登录按钮组件
+
+创建 `components/LoginButton.tsx` 组件：
+
+```tsx
+'use client'
+
+import { useUser } from '@/hooks/useUser'
+
+export default function LoginButton() {
+  const { user, isLoading, signIn, signOut } = useUser()
+
+  return (
+    <div>
+      {isLoading ? (
+        <button 
+          disabled 
+          className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-400"
+        >
+          加载中...
+        </button>
+      ) : user ? (
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-700">
+            欢迎，{user.user_metadata.name || user.email}
+          </span>
+          <button
+            onClick={signOut}
+            className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+          >
+            退出登录
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={signIn}
+          className="flex items-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+        >
+          <svg 
+            viewBox="0 0 24 24" 
+            width="16" 
+            height="16" 
+            fill="currentColor"
+          >
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          使用 GitHub 登录
+        </button>
+      )}
+    </div>
+  )
+}
+```
+
+### 在页面中使用登录按钮
+
+现在，你可以在任何需要的页面中导入和使用 `LoginButton` 组件：
+
+```tsx
+import LoginButton from '@/components/LoginButton'
+
+export default function HomePage() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center">
+      <h1 className="mb-8 text-3xl font-bold">我的应用</h1>
+      <LoginButton />
+    </div>
+  )
+}
+```
+
+## 步骤五：创建受保护的路由
+
+对于需要登录才能访问的页面，可以创建一个简单的保护组件：
+
+```tsx
+'use client'
+
+import { useEffect } from 'react'
+import { useUser } from '@/hooks/useUser'
+import { useRouter } from 'next/navigation'
+
+export default function ProtectedRoute({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const { user, isLoading } = useUser()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login')
+    }
+  }, [isLoading, user, router])
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-blue-500" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
+  return <>{children}</>
+}
+```
+
+然后在需要保护的页面中使用：
+
+```tsx
+'use client'
+
+import ProtectedRoute from '@/components/ProtectedRoute'
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <div className="p-8">
+        <h1 className="text-2xl font-bold">控制面板</h1>
+        <p className="mt-4">这是一个受保护的页面，只有登录用户才能访问。</p>
+      </div>
+    </ProtectedRoute>
+  )
+}
+```
+
+## 步骤六：设置数据库表和行级安全策略（RLS）
+
+如果你需要存储用户相关的数据，比如用户个人资料或者用户创建的内容，应该设置相应的数据库表和安全策略。
+
+以下是一个创建用户个人资料表的 SQL 示例：
+
+```sql
+-- 创建用户个人资料表
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  username TEXT UNIQUE,
+  avatar_url TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE
+);
+
+-- 启用行级安全策略
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- 创建安全策略
+CREATE POLICY "公开可读取用户资料" 
+  ON profiles 
+  FOR SELECT 
+  USING (true);
+
+CREATE POLICY "用户可以更新自己的资料" 
+  ON profiles 
+  FOR UPDATE 
+  USING (auth.uid() = id);
+
+-- 创建触发器，当用户注册时自动创建资料
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, username, avatar_url, updated_at)
+  VALUES (NEW.id, NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'avatar_url', NOW());
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+```
+
+你可以在 Supabase 控制台的 "SQL Editor" 中执行此 SQL 代码。
+
+## 总结
+
+通过本文的步骤，你已经成功实现了使用 Supabase 和 GitHub OAuth 的用户认证功能。这种方式有以下优势：
+
+1. **简化开发流程**：不需要自己实现复杂的认证逻辑
+2. **提高安全性**：OAuth 由专业的第三方服务处理
+3. **改善用户体验**：用户无需创建新账号，使用已有的 GitHub 账号即可登录
+4. **获取额外信息**：可以获取用户在 GitHub 上的信息（如头像、用户名等）
+
+此外，Supabase 还支持多种其他认证方式，如电子邮件/密码、谷歌、Facebook 等，你可以根据需求添加更多的登录选项。
+
+最后，别忘了在生产环境部署前，更新相关的回调 URL 和其他设置。对于生产环境，还应该考虑添加更多的安全措施，如设置合适的 CORS 策略和 API 限制。
+
+## 相关资源
+
+- [Supabase 官方文档](https://supabase.com/docs)
+- [Next.js 官方文档](https://nextjs.org/docs)
+- [GitHub OAuth 文档](https://docs.github.com/en/developers/apps/building-oauth-apps)
+- [@supabase/supabase-js](https://github.com/supabase/supabase-js) 
