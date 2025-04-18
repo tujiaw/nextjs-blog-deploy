@@ -1,0 +1,9 @@
+*.mdx
+.next
+node_modules
+.git
+.gitignore
+.cursorignore
+.cursorrules
+.cursorconfig
+.contentlayer
