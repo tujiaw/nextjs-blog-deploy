@@ -66,6 +66,8 @@ Manual模式是Cursor中用于精确、定向代码修改的模式，只根据�
 
 Cursor默认会将代码库向量化后存储在向量数据库中，当文件有变化时会增量更新。
 
+通过配置.cursorignore文件来忽略不希望被向量化存储的文件，如：node的node_modules，python的.venv目录等。
+
 ![code index](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745132515656-1745132517515.png)
 
 ## Rules
@@ -84,4 +86,83 @@ Rules在设置里作为一个独立的设置项说明他是很重要的。
 ### 自动生成Rules
 ![rules](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745134711006-1745134713584.gif)
 
+在项目目录下的.cursor/rules目录下自动生成以mdc为后缀的rule文件。
+
 ### Rule Type
+四种类型，应用rules更加灵活
+* Always：总是应用到模型上下文中
+* Auto Attached: 设置文件名、后缀匹配规则
+* Agent Requested：给规则设置描述，Agent根据此描述来判断使用使用
+* Manual：对话时手动@此规则
+
+![rule types](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745153397786-1745153399288.gif)
+
+## 强大的@能力
+新开会话时会默认将当前打开的文件@进去。
+非常常用的功能，告诉Cursor你想让模型关注的资源：
+* 文件，目录，代码
+* 文档：一些官方文档或者通过url新增自定义文档
+* Rules：明确指定使用需要使用的rules
+* 历史对话：引用历史对话
+* 最近的改动
+* Linter Errors：捕获代码中的错误和警告，保证代码质量，发现潜在的代码问题
+* 使用内置工具：web、git、终端
+
+![at](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745154607370-1745154608777.gif)
+
+# MCP
+模型上下文协议（Model Context Protocol / MCP） 是一个开放的协议，它描述了应用程序如何向 LLMs 提供上下文和工具。可以将 MCP 看作 Cursor 的插件系统-它允许您通过标准化接口将 Agent 连接到各种数据源和工具，从而扩展 Agent 的功能。
+
+## MCP资源
+* [https://smithery.ai/](https://smithery.ai/) 使用简单，对小白用户友好，提供了统一的安装方法，一条命令就安装好了，有调试能力。
+![smithery](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745157232126-1745157234441.gif)
+
+* [https://mcp.so/](https://mcp.so/) 资源较丰富，有热度排行榜，有调试能力。
+![rank](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745158417054-1745158419117.gif)
+
+* [https://github.com/punkpeye/awesome-mcp-servers](https://github.com/punkpeye/awesome-mcp-servers) 已有40.4k Star
+
+* [https://modelcontextprotocol.io/examples](https://modelcontextprotocol.io/examples) 官方推荐
+
+* [https://cline.bot/mcp-marketplace](https://cline.bot/mcp-marketplace) cline MCP市场
+
+## 推荐好用MCP服务
+* playwright
+
+![playwright](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745163944911-1745163946317.gif)
+
+* 高德地图
+
+![gaode maps](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745159779745-1745159781576.png)
+
+## MCP服务调试
+连接到MCP服务，查看工具列表，手动传入参数调用工具
+* 开源项目：https://github.com/modelcontextprotocol/inspector
+* 开启服务：npx @modelcontextprotocol/inspector --config C:/Users/jave.tu/.cursor/mcp.json --server mythink
+* 浏览器上打开：http://127.0.0.1:6274
+![mcp inspector](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745159549504-1745159551451.png)
+
+## 限制
+![tool count](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745072751959-1745072753514.png)
+
+MCP 是一个创新但仍在快速发展的协议。使用时需注意以下几点限制：
+
+1. 工具数量限制：
+   - 问题：某些 MCP 服务器或用户可能有大量可用工具。
+   - 当前限制：Cursor 目前只能向 agent 发送前 40 个工具。
+
+2. 远程开发兼容性：
+   - 通信方式：Cursor 直接从本地机器与 MCP 服务器通信（通过 stdio 或 sse）。
+   - 潜在问题：在 SSH 或其他远程开发环境中，MCP 服务器可能无法正常工作。
+
+3. MCP 资源支持：
+   - MCP 服务器功能：提供工具和资源两种主要功能。
+   - 当前支持：Cursor 目前只支持工具功能，可执行 MCP 服务器提供的工具并使用输出。
+   - 资源支持：目前尚未实现，但计划在未来版本中添加。
+
+4. 服务易断开：
+   - 尝试重新开关或者刷新一下
+
+这些限制会在后续持续优化。
+
+
