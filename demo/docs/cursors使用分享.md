@@ -210,7 +210,7 @@ Smithery上最火的mcp server，@smithery-ai/server-sequential-thinking（563k�
 它会打开一个本地链接让你选样式风格。
 ![magic](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745232327785-1745232328974.png)
 
-* desktop-commander
+* desktop-commander：操作桌面文件、进程等。Cursor已经内置了强大的Shell能力，所以此工具在这类智能IDE中没有什么发挥空间。
 
 ## MCP服务调试
 连接到MCP服务，查看工具列表，手动传入参数调用工具
