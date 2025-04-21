@@ -3,13 +3,55 @@
 # 官方定义
 Cursor一是款全新的智能IDE，与AI无缝集成。
 
-## 关于
-![Cursor about](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745060395920-1745060397893.png)
+AI将会彻底改变而非简单替代开发者的工作方式，由此开发的门槛将会变低。以前经常说人人都是产品经理，现在可以说人人都是开发者。
 
-让Agent解释一下这个图：
+## 开发模式的改变
+由高级语言过度到自然语言
+```mermaid
+graph TD
+    subgraph "AI辅助编程模式"
+        A2[开发者] -->|使用自然语言| B2[Cursor/AI工具]
+        B2 -->|生成代码| C2[验证结果]
+        C2 -->|反馈问题| A2
+        A2 -->|迭代优化提示| B2
+    end
+
+    subgraph "传统编程模式"
+        A1[开发者] -->|使用编程语言| B1[传统IDE]
+        B1 -->|编写代码| C1[验证结果]
+        C1 -->|发现问题| A1
+    end
+```
+
+## Cursor逐渐模糊开发中的各种界限：
+* 语言：大家都是全栈开发人员，不再区分各种语言，是前端还是后端
+* 角色：产品、设计、程序员都能编写软件
+
+## Cursor的最终目标
+让世界上的任何人都更容易生产软件。当然，还有很长的路要走，据Cursor创始人所言，目前只完成了愿景的2%到3%。
+
+## 关于
+![Cursor about](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745243025543-1745243026890.png)
+
+让Agent解释一下各组件之间的关系：
 > 根据图片生成Cursor所使用到的开源组件之间关系的mermaid图，简要介绍每个组件，以md格式写入到docs目录下。
 
-![Cursor components](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745060501726-1745060504287.png)
+```mermaid
+graph TD
+    A[Cursor v0.49.2<br>现代化智能IDE]
+    B[VSCode v1.96.2<br>核心编辑器框架]
+    C[Electron v34.3.4<br>跨平台桌面开发框架]
+    D[Chromium v132.0.6834.210<br>开源的浏览器项目]
+    E[NodeJS v20.18.3<br>跨平台JavaScript运行时]
+    F[V8 v13.2.152.41<br>JavaScript引擎]
+    
+    A --> B
+    B --> C
+    C --> D
+    C --> E
+    D --> F
+    E --> F
+```
 
 
 # 三大对话模式
