@@ -101,7 +101,7 @@ Manual模式是Cursor中用于精确、定向代码修改的模式，只根据�
 ![model select](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745213948998-1745213950269.gif)
 
 在models模型列表里勾选后才能使用。
-* Auto：自动模式，Cursor帮你选择使用最合适的模型。如果不知道怎么选就用这种，体验下来对话速度相对快很多。
+* Auto：自动模式，Cursor帮你选择使用最合适的模型。如果不知道怎么选就用这种，体验下来对话速度相对快很多。如果想要更强大的模型还是自己选择，不同模型能力差别还是蛮大的。
 * Thinking：使用推理模型，非推理模型将不被使用
 
 # 特性
@@ -156,6 +156,9 @@ Agent根据当前项目情况自动生成合适的rules。
 * Manual：对话时手动@此规则
 
 ![rule types](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745153397786-1745153399288.gif)
+
+## 自动生成 commit message
+![commit](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745292945871-1745292946740.gif)
 
 # 强大的@能力
 ![at](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745154607370-1745154608777.gif)
