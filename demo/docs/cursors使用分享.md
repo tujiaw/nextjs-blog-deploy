@@ -114,40 +114,58 @@ Manual模式是Cursor中用于精确、定向代码修改的模式，只根据�
 
 # 特性
 ## Tab
-智能预测，智能补全，多行修改。
+智能补全：根据上下文自动补全代码
+智能预测：预测下一步可能的代码
+多行修改：支持同时修改多行相似代码
 
 ![tab](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745211917903-1745211918916.gif)
 
 ## 局部编辑
-选中要修改的文本块，使用快捷键Ctrl+k打开。
+选中要修改的文本块，使用快捷键Ctrl+k打开AI助手，支持连续对话：
+* Alt + Enter：快速获取AI回答，不会修改当前文本
+* Enter：让AI直接修改当前选中的文本
 
-![update](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745212519961-1745212521175.gif)
+![update2](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745321627192-1745321628070.gif)
 
-## 新对话（支持多Tab）
+## 多会话管理
 ![multi tab](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745212862323-1745212863176.gif)
-* 在合适的时候开启新会话
-* 新问题跟当前会话历史消息无关时
-* 发现总是得不到你要的答案时，尝试新会话避免记忆干扰
-* 减少token消耗，防止token超限
-* 多会话并行（按住Alt键+鼠标点击加号或者Ctrl+T）
+
+### 开启新会话的时机
+* 当新问题与当前会话上下文无关时
+* 当前会话无法得到满意答案时
+* 需要避免历史消息干扰时
+* 需要控制token消耗时
+
+### 多会话操作
+* 快捷键：按住Alt键+点击加号或使用Ctrl+T
+* 支持多个会话并行处理不同任务
+* 每个会话独立维护上下文，互不影响
 
 ## 代码库索引
-使用RAG技术来准确访问代码库。
+Cursor使用RAG(检索增强生成)技术来智能访问和理解代码库。
 
-Cursor默认会将代码库向量化后存储在向量数据库中，当文件有变化时会增量更新。
+代码库会被自动向量化并存储在向量数据库中。当文件发生变化时，系统会自动进行增量更新，确保索引始终保持最新。
 
-通过配置.cursorignore文件来忽略不希望被向量化存储的文件，如：node的node_modules，python的.venv目录等。
+可以通过.cursorignore文件配置来排除不需要被向量化的文件和目录，比如:
+- Node.js项目的node_modules目录
+- Python项目的.venv虚拟环境目录
+- 其他大型二进制文件或临时文件
 
 ![code index](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745132515656-1745132517515.png)
 
 ## Rules
-Rules在设置里作为一个独立的设置项说明他是很重要的。
-类似System prompt但是更加灵活，不同对话使用不同的rule。
-当应用rule时会将其包含在模型上下文的开始处。这可以增强模型的提示，使其模型给出更加准确的回答。
+Rules 是 Cursor 中一个重要的功能设置项。它类似于 System Prompt，但提供了更大的灵活性，允许为不同的对话场景配置不同的规则。
+
+当应用 Rule 时，它会被添加到模型上下文的开头，作为重要的提示信息。这种机制可以：
+- 增强模型的上下文理解能力
+- 引导模型生成更准确的回答
+- 确保回答符合项目的特定要求
+
+通过合理配置 Rules，可以显著提升 AI 助手的表现，使其更好地适应不同的开发场景。
 
 ### 写好Rules
 关于项目的信息，开发环境、技术框架、项目结构等。
-一些好用的Rules: [Awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorrules)
+一些优秀的Rules模板: [Awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorrules)
 
 ### 自动生成Rules
 Agent根据当前项目情况自动生成合适的rules。
