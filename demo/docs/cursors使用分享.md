@@ -106,7 +106,7 @@ Manual模式是Cursor中用于精确、定向代码修改的模式，只根据�
 
 # 特性
 ## Tab
-智能补全，多行修改
+智能预测，智能补全，多行修改。
 
 ![tab](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745211917903-1745211918916.gif)
 
@@ -169,16 +169,26 @@ Cursor内置的工程能力，虽然有时候你不使用@功能Agent也能帮�
 * 明确告诉大模型你需要什么能力（如：shell，git，web等）
 
 新开会话时会默认将当前打开的文件@进去。
+新加的文件如果在@文件列表里没有找到可以直接拖进去。
 
 非常常用的功能，告诉Cursor你想让模型关注的资源：
-* 文件，目录，代码
-* 文档：一些官方文档或者通过url新增自定义文档
-* Rules：明确指定使用需要使用的rules
-* 历史对话：引用历史对话
-* 最近的改动
-* Linter Errors：捕获代码中的错误和警告，保证代码质量，发现潜在的代码问题
-* 使用内置工具：web、git、终端
+## 文件，目录，代码
+Cursor不能直接读取word，excel等格式的文件，需要转换为文本格式如：csv，json，html等
 
+## 文档
+Cursor提供了一些官方文档，你还可以通过url新增自定义文档，类似如知识库
+
+## Rules
+明确指定需要使用的rules，Manual类型的Rules必须使用@才生效
+
+## 最近的修改
+将最近修改的代码作为上下文提供给大模型
+
+## Linter Errors
+捕获代码中的错误和警告，保证代码质量，发现潜在的代码问题。
+如果你的项目在Cursor中启动，Agent可以一边修改代码一边运行，运行中终端终端报的错会自动修复。
+
+* 使用内置工具：web、git、终端
 
 # MCP
 模型上下文协议（Model Context Protocol / MCP） 是一个开放的协议，它描述了应用程序如何向 LLMs 提供上下文和工具。可以将 MCP 看作 Cursor 的插件系统-它允许您通过标准化接口将 Agent 连接到各种数据源和工具，从而扩展 Agent 的功能。
@@ -244,7 +254,7 @@ MCP 是一个创新但仍在快速发展的协议。使用时需注意以下几�
    - 服务易断开： 尝试重新开关或者刷新一下，显示红点或者绿点但是没有显示工具列表
     ![mcp error](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745228654304-1745228655197.png)
 
-4. 性能不够，速度太慢了（Firebase Studio快很多）。
+4. 性能不够：速度太慢了（Firebase Studio快很多）。
    
 
 这些限制会在后续持续优化。
