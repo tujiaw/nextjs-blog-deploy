@@ -56,7 +56,7 @@ graph TD
 ```
 
 
-# 三大对话模式
+# 四大对话模式
 ![chat mode](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745214258343-1745214259934.gif)
 
 ## Ask
@@ -97,12 +97,20 @@ Manual模式是Cursor中用于精确、定向代码修改的模式，只根据�
 如果要进行与此项目无关的对话，应该使用这种模式。
 此模式速度比较快
 
+## 自定义模式
+自由组合你想要的能力。
+
+![custom modes](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745306818780-1745306819633.gif)
+
+内置工具列表：
+![all tools](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745306324373-1745306325271.png)
+
 # 模型选择
 ![model select](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745213948998-1745213950269.gif)
 
 在models模型列表里勾选后才能使用。
 * Auto：自动模式，Cursor帮你选择使用最合适的模型。如果不知道怎么选就用这种，体验下来对话速度相对快很多。如果想要更强大的模型还是自己选择，不同模型能力差别还是蛮大的。
-* Thinking：使用推理模型，非推理模型将不被使用
+* Thinking：使用推理模型，非推理模型将不被使用。
 
 # 特性
 ## Tab
@@ -160,23 +168,35 @@ Agent根据当前项目情况自动生成合适的rules。
 ## 自动生成 commit message
 ![commit](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745292945871-1745292946740.gif)
 
+## Restore checkpoint
+Commit + Restore checkpoint 大模型乱改了也不怕
+* 验证完一个功能就Commit一下
+* 大模型修改完如果不是你想要的就点击一下Restore checkpoint
+
 # 强大的@能力
-![at](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745154607370-1745154608777.gif)
+![at](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745316996282-1745316997433.gif)
 
 Cursor内置的工程能力，虽然有时候你不使用@功能Agent也能帮我们进行规划，但是使用@有很多好处：
-* 使大模型规划更加聚焦，减少不必要的反思步骤，避免乱改你的代码库。
+* 使大模型规划更加聚焦，减少不必要的反思步骤，避免乱改你的代码库
 * Agent快速定位关键位置，否则大模型会全局查找，而且而且很可能找错（如：名称相同的）
 * 明确告诉大模型你需要什么能力（如：shell，git，web等）
 
 新开会话时会默认将当前打开的文件@进去。
-新加的文件如果在@文件列表里没有找到可以直接拖进去。
+如果新加的文件在@列表里没有找到可以直接拖进去。
 
-非常常用的功能，告诉Cursor你想让模型关注的资源：
 ## 文件，目录，代码
-Cursor不能直接读取word，excel等格式的文件，需要转换为文本格式如：csv，json，html等
+Cursor还不能直接读取word，excel等格式的文件，需要转换为文本格式如：csv，json，html等。
+前缀`#`可以更快速的选择文件，中间使用`@`和`#`需要打一个空格
 
+**这里的文件、目录、代码等是项目内，项目外的需要借助Shell或者MCP服务来实现**
+
+整理目录文件的Demo：
+![file tool](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745316367872-1745316373334.gif)
+****
 ## 文档
 Cursor提供了一些官方文档，你还可以通过url新增自定义文档，类似如知识库
+
+![docs](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745316795610-1745316796824.gif)
 
 ## Rules
 明确指定需要使用的rules，Manual类型的Rules必须使用@才生效
@@ -186,25 +206,33 @@ Cursor提供了一些官方文档，你还可以通过url新增自定义文档�
 
 ## Linter Errors
 捕获代码中的错误和警告，保证代码质量，发现潜在的代码问题。
-如果你的项目在Cursor中启动，Agent可以一边修改代码一边运行，运行中终端终端报的错会自动修复。
+如果你的项目在Cursor中启动，Agent可以一边修改代码一边运行，运行中终端报的错会自动修复。
 
-* 使用内置工具：web、git、终端
+## 历史对话
+当你需要参考历史对话中的信息时。
+
+## 使用内置工具：Web、Git、终端
 
 # MCP
 模型上下文协议（Model Context Protocol / MCP） 是一个开放的协议，它描述了应用程序如何向 LLMs 提供上下文和工具。可以将 MCP 看作 Cursor 的插件系统-它允许您通过标准化接口将 Agent 连接到各种数据源和工具，从而扩展 Agent 的功能。
 
 ## MCP资源
-* [https://smithery.ai/](https://smithery.ai/) 使用简单，对小白用户友好，提供了统一的安装方法，一条命令就安装好了，有调试能力。
+* [https://smithery.ai](https://smithery.ai) 
+  使用简单，对小白用户友好，提供了统一的安装方法，一条命令就安装好了，有调试能力。
 ![smithery](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745157232126-1745157234441.gif)
 
-* [https://mcp.so/](https://mcp.so/) 资源较丰富，有热度排行榜，有调试能力。
+* [https://mcp.so/](https://mcp.so/) 
+  资源较丰富，有热度排行榜，有调试能力。
 ![rank](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745158417054-1745158419117.gif)
 
-* [https://github.com/punkpeye/awesome-mcp-servers](https://github.com/punkpeye/awesome-mcp-servers) 已有40.4k Star
+* [https://github.com/punkpeye/awesome-mcp-servers](https://github.com/punkpeye/awesome-mcp-servers) 
+  Github上40.4k Star
 
-* [https://modelcontextprotocol.io/examples](https://modelcontextprotocol.io/examples) 官方推荐
+* [https://modelcontextprotocol.io/examples](https://modelcontextprotocol.io/examples)
+  官方推荐
 
-* [https://cline.bot/mcp-marketplace](https://cline.bot/mcp-marketplace) cline MCP市场
+* [https://cline.bot/mcp-marketplace](https://cline.bot/mcp-marketplace) 
+  cline MCP市场
 
 ## 推荐好用MCP服务
 * server-sequential-thinking
@@ -225,7 +253,7 @@ Smithery上最火的mcp server，@smithery-ai/server-sequential-thinking（563k�
 它会打开一个本地链接让你选样式风格。
 ![magic](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745232327785-1745232328974.png)
 
-* desktop-commander：操作桌面文件、目录、进程等。Cursor已经内置了强大的Shell能力，所以此工具在这类智能IDE中没有什么发挥空间。
+* desktop-commander：操作桌面文件、目录、进程等。Cursor已经内置了强大的Shell能力，用Shell也能实现。
 
 ## MCP服务调试
 连接到MCP服务，查看工具列表，手动传入参数调用工具
