@@ -7,6 +7,12 @@ interface Project {
 
 const projectsData: Project[] = [
   {
+    title: 'AI Image Generator',
+    description: '一款基于人工智能的图像生成工具，通过文字描述生成高质量图像，支持多种模型和参数调整。包含负面提示词、图像尺寸和引导性参数等高级功能。',
+    imgSrc: '/static/images/ai-image-generator.png',
+    href: '/projects/image',
+  },
+  {
     title: '超级待办',
     description: '一个使用Supabase存储数据的现代化待办事项应用，支持多用户、黑暗模式及实时更新。',
     imgSrc: '/static/images/todo-app.png',
