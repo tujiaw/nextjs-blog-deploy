@@ -91,13 +91,13 @@ export default function ImageGeneration() {
         signal: signal
       })
       const data = await response.json()
-      if (data.images && data.images[0]) {
-        const newImage = data.images[0].url
-        // Add to history (at the end, so newest is at the bottom)
-        setImageHistory(prev => [
-          ...prev,
-          { url: newImage, size: formData.image_size }
-        ])
+      if (data.images && data.images.length > 0) {
+        // 遍历所有图片并添加到历史记录
+        const newImages = data.images.map(img => ({
+          url: img.url,
+          size: formData.image_size
+        }))
+        setImageHistory(prev => [...prev, ...newImages])
       }
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
