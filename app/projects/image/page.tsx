@@ -11,7 +11,6 @@ const imageSizeOptions = ['1024x1024', '960x1280', '768x1024', '720x1440', '720x
 
 export default function ImageGeneration() {
   const [loading, setLoading] = useState(false)
-  const [generatedImage, setGeneratedImage] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [imageHistory, setImageHistory] = useState<{url: string, size: string}[]>([])
   const [showFullImage, setShowFullImage] = useState(false)
@@ -94,7 +93,6 @@ export default function ImageGeneration() {
       const data = await response.json()
       if (data.images && data.images[0]) {
         const newImage = data.images[0].url
-        setGeneratedImage(newImage)
         // Add to history (at the end, so newest is at the bottom)
         setImageHistory(prev => [
           ...prev,
@@ -143,7 +141,6 @@ export default function ImageGeneration() {
 
   const clearHistory = () => {
     setImageHistory([])
-    setGeneratedImage('')
   }
 
   const viewOriginalImage = (url: string) => {
@@ -181,7 +178,7 @@ export default function ImageGeneration() {
       />
 
       {/* Right Column - Chat Interface */}
-      <div className={`transition-all duration-300 ease-in-out flex-1 flex flex-col ${sidebarOpen ? 'ml-0' : 'ml-0'} max-w-full h-full`}>
+      <div className="transition-all duration-300 ease-in-out flex-1 flex flex-col max-w-full h-full">
         <div className="p-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm flex justify-between items-center">
           <div>
             <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">AI Image Generator</h1>
