@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Andrej Karpathy | AI研究员 & 工程师</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #6366F1;
+            --primary-hover: #4F46E5;
+            --secondary: #10B981;
+            --background: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text: #1F2937;
+            --text-secondary: #4B5563;
+            --border: #E5E7EB;
+            --code-bg: #F3F4F6;
+            --timeline-dot: #6366F1;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            scroll-behavior: smooth;
+        }
+
+        body.dark-mode {
+            --primary: #818CF8;
+            --primary-hover: #6366F1;
+            --secondary: #34D399;
+            --background: #111827;
+            --card-bg: #1F2937;
+            --text: #F9FAFB;
+            --text-secondary: #D1D5DB;
+            --border: #374151;
+            --code-bg: #282A36;
+            --timeline-dot: #818CF8;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.2s ease-in-out;
+        }
+
+        a:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            font-weight: 500;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.375rem;
+            text-decoration: none;
+            transition: all 0.2s ease-in-out;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: width 0.3s ease;
+            z-index: -1;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            text-decoration: none;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .btn:hover::before {
+            width: 100%;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .badge {
+            display: inline-block;
+            background-color: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .badge:hover {
+            background-color: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            position: sticky;
+            top: 0;
+            background-color: var(--background);
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .d-flex {
+            display: flex;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        .gap-8 {
+            gap: 2rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-8 {
+            margin-bottom: 2rem;
+        }
+
+        .mt-4 {
+            margin-top: 1rem;
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0;
+        }
+
+        .nav-logo {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--text);
+            text-decoration: none;
+            position: relative;
+            padding: 0.5rem;
+        }
+
+        .nav-logo::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-logo:hover::after {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            font-weight: 500;
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-link:hover::after {
+            transform: scaleX(1);
+        }
+
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 3rem 0;
+            gap: 2rem;
+        }
+
+        .hero-content {
+            flex: 1;
+        }
+
+        .hero-image {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        .hero-image::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 70px;
+            height: 70px;
+            border-top: 4px solid var(--primary);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px 0 0 0;
+            z-index: -1;
+            animation: pulse 3s infinite;
+        }
+
+        .hero-image::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            right: -20px;
+            width: 70px;
+            height: 70px;
+            border-bottom: 4px solid var(--secondary);
+            border-right: 4px solid var(--secondary);
+            border-radius: 0 0 8px 0;
+            z-index: -1;
+            animation: pulse 3s infinite 1.5s;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.6;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.6;
+            }
+        }
+
+        .hero-image img {
+            max-width: 350px;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 4px solid var(--card-bg);
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            filter: grayscale(20%);
+        }
+
+        .hero-image img:hover {
+            transform: translateY(-10px) rotate(2deg);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            filter: grayscale(0%);
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient 8s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            max-width: 600px;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -0.5rem;
+            left: 0;
+            width: 50%;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            border-radius: 2px;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .social-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--card-bg);
+            color: var(--text);
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .social-link:hover {
+            transform: translateY(-3px) rotate(10deg);
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .section {
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--border);
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .card:hover::before {
+            width: 8px;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 2px;
+            background-color: var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .timeline-item:nth-child(1) { animation-delay: 0.1s; }
+        .timeline-item:nth-child(2) { animation-delay: 0.2s; }
+        .timeline-item:nth-child(3) { animation-delay: 0.3s; }
+        .timeline-item:nth-child(4) { animation-delay: 0.4s; }
+        .timeline-item:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -2rem;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+            background-color: var(--timeline-dot);
+            border: 3px solid var(--background);
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-item:hover::before {
+            transform: scale(1.3);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+
+        .timeline-date {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-company {
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .skill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .skill {
+            background-color: var(--code-bg);
+            color: var(--text-secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .skill:hover {
+            background-color: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        footer {
+            padding: 2rem 0;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                flex-direction: column-reverse;
+                text-align: center;
+                padding: 2rem 0;
+            }
+
+            .hero-title {
+                font-size: 2.25rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.125rem;
+            }
+
+            .hero-image img {
+                max-width: 250px;
+            }
+
+            .social-links {
+                justify-content: center;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .section-title {
+                text-align: center;
+                display: block;
+            }
+
+            .section-title::after {
+                left: 25%;
+                width: 50%;
+            }
+
+            .card::before {
+                width: 100%;
+                height: 4px;
+            }
+
+            .card:hover::before {
+                height: 6px;
+            }
+        }
+
+        /* Scroll to top button */
+        #scroll-top {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--card-bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 99;
+        }
+
+        #scroll-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #scroll-top:hover {
+            background-color: var(--primary);
+            color: white;
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav class="nav">
+                <a href="#" class="nav-logo">AK</a>
+                <div class="nav-links">
+                    <a href="#about" class="nav-link">关于我</a>
+                    <a href="#experience" class="nav-link">工作经验</a>
+                    <a href="#projects" class="nav-link">项目</a>
+                    <a href="#publications" class="nav-link">发表论文</a>
+                    <a href="#talks" class="nav-link">演讲</a>
+                </div>
+            </nav>
+        </header>
+
+        <section class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">Andrej Karpathy</h1>
+                <p class="hero-subtitle">AI研究员、工程师和教育者。我喜欢在大型数据集上训练深度神经网络 🧠🤖💥</p>
+                <div class="d-flex gap-4">
+                    <a href="#contact" class="btn">联系我</a>
+                    <a href="#projects" class="btn btn-outline">查看我的作品</a>
+                </div>
+                <div class="social-links">
+                    <a href="https://twitter.com/karpathy" class="social-link" aria-label="Twitter">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
+                        </svg>
+                    </a>
+                    <a href="https://github.com/karpathy" class="social-link" aria-label="GitHub">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                        </svg>
+                    </a>
+                    <a href="https://youtube.com/@AndrejKarpathy" class="social-link" aria-label="YouTube">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
+                            <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
+                        </svg>
+                    </a>
+                    <a href="https://linkedin.com/in/andrejkarpathy" class="social-link" aria-label="LinkedIn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                            <rect x="2" y="9" width="4" height="12"></rect>
+                            <circle cx="4" cy="4" r="2"></circle>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="https://karpathy.ai/assets/me_new.jpg" alt="Andrej Karpathy" />
+            </div>
+        </section>
+
+        <section id="about" class="section">
+            <h2 class="section-title">关于我</h2>
+            <div class="card">
+                <p>我是一名AI研究员、工程师和教育者，热衷于构建能够理解和生成语言、图像和其他数据的系统。目前，我是Eureka Labs的创始人，这是一家AI+教育公司。</p>
+                
+                <p>在我的职业生涯中，我一直处于AI研究和开发的前沿，从OpenAI的创始成员，到特斯拉的AI高级总监领导Autopilot计算机视觉团队，再到最近回到OpenAI，改进了ChatGPT上的GPT-4。</p>
+                
+                <p>我坚信教育和知识共享的价值。我创建了关于AI和深度学习的流行教育内容，包括斯坦福大学的CS231n卷积神经网络课程，并运营一个YouTube频道，提供有关大型语言模型的技术讲座。</p>
+                
+                <div class="skill-list">
+                    <span class="skill">深度学习</span>
+                    <span class="skill">计算机视觉</span>
+                    <span class="skill">自然语言处理</span>
+                    <span class="skill">大型语言模型</span>
+                    <span class="skill">PyTorch</span>
+                    <span class="skill">TensorFlow</span>
+                    <span class="skill">神经网络</span>
+                    <span class="skill">Python</span>
+                    <span class="skill">Transformer架构</span>
+                    <span class="skill">强化学习</span>
+                    <span class="skill">AI研究</span>
+                    <span class="skill">技术教育</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="experience" class="section">
+            <h2 class="section-title">工作经验</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-date">2024 - 至今</div>
+                    <h3 class="timeline-title">创始人</h3>
+                    <div class="timeline-company">Eureka Labs</div>
+                    <p>创立了Eureka Labs，这是一家新的AI+教育公司，专注于使用人工智能开发创新教育方法。</p>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-date">2023 - 2024</div>
+                    <h3 class="timeline-title">AI工程师</h3>
+                    <div class="timeline-company">OpenAI</div>
+                    <p>回到OpenAI，组建了一个专注于改进ChatGPT上的GPT-4的小团队。为高级语言模型的开发和增强做出了贡献。</p>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-date">2017 - 2022</div>
+                    <h3 class="timeline-title">AI高级总监</h3>
+                    <div class="timeline-company">特斯拉</div>
+                    <p>领导特斯拉Autopilot的计算机视觉团队，监督内部数据标注、神经网络训练以及在自定义推理芯片上的生产部署。专注于为特斯拉不断增长的车队开发全自动驾驶功能。</p>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-date">2015 - 2017</div>
+                    <h3 class="timeline-title">研究科学家 & 创始成员</h3>
+                    <div class="timeline-company">OpenAI</div>
+                    <p>作为OpenAI的创始成员，进行了前沿AI技术的研究，为组织的早期发展和方向做出了贡献。</p>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-date">2011 - 2015</div>
+                    <h3 class="timeline-title">博士生</h3>
+                    <div class="timeline-company">斯坦福大学</div>
+                    <p>进行了以卷积/循环神经网络及其在计算机视觉、自然语言处理及其交叉领域应用为重点的研究。由斯坦福视觉实验室的李飞飞教授指导。</p>
+                    <p>设计并担任斯坦福大学CS231n：视觉识别卷积神经网络课程的主要讲师，该课程成为斯坦福最大的课程之一。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="projects" class="section">
+            <h2 class="section-title">主要项目</h2>
+            <div class="d-flex flex-col gap-8">
+                <div class="card">
+                    <h3 class="mb-4">micrograd</h3>
+                    <p>一个微型标量自动微分引擎（具有强大功能！:)），它实现了在动态构建的DAG上的反向传播（反向模式自动微分）和一个具有类PyTorch API的小型神经网络库。</p>
+                    <div class="d-flex gap-4 mt-4">
+                        <a href="https://github.com/karpathy/micrograd" class="btn btn-outline">GitHub仓库</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="mb-4">char-rnn</h3>
+                    <p>一个使用Torch中的LSTM/GRU/RNN构建的字符级语言模型。这个项目变得广受欢迎，与我的"循环神经网络的不合理有效性"博客文章相关。</p>
+                    <div class="d-flex gap-4 mt-4">
+                        <a href="https://github.com/karpathy/char-rnn" class="btn btn-outline">GitHub仓库</a>
+                        <a href="https://karpathy.github.io/2015/05/21/rnn-effectiveness/" class="btn btn-outline">博客文章</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="mb-4">arxiv-sanity</h3>
+                    <p>一个驯服arXiv上压倒性论文洪流的工具。它允许研究人员发现相关论文，按相似度搜索/排序，并获得推荐。部署在arxiv-sanity.com上，后来重新实现为arxiv-sanity-lite。</p>
+                    <div class="d-flex gap-4 mt-4">
+                        <a href="https://github.com/karpathy/arxiv-sanity-preserver" class="btn btn-outline">GitHub仓库</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="mb-4">neuraltalk2</h3>
+                    <p>一个早期的(lua)Torch图像标注项目，为图像生成自然语言描述。后来与Justin Johnson一起扩展为密集标注。</p>
+                    <div class="d-flex gap-4 mt-4">
+                        <a href="https://github.com/karpathy/neuraltalk2" class="btn btn-outline">GitHub仓库</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="mb-4">ConvNetJS</h3>
+                    <p>一个完全用JavaScript编写的深度学习库。实现了基于Web的演示，可以完全在浏览器中训练卷积神经网络。这导致了后来的项目，如tSNEJS、REINFORCEjs、recurrentjs和JS中的GAN。</p>
+                    <div class="d-flex gap-4 mt-4">
+                        <a href="https://github.com/karpathy/convnetjs" class="btn btn-outline">GitHub仓库</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="publications" class="section">
+            <h2 class="section-title">精选论文</h2>
+            <div class="d-flex flex-col gap-8">
+                <div class="card">
+                    <div class="timeline-date">ICML 2017</div>
+                    <h3 class="mb-4">World of Bits: An Open-Domain Platform for Web-Based Agents</h3>
+                    <p>Tianlin (Tim) Shi, Andrej Karpathy, Linxi (Jim) Fan, Jonathan Hernandez, Percy Liang</p>
+                    <div class="badge">机器学习</div>
+                    <div class="badge">Web代理</div>
+                </div>
+                
+                <div class="card">
+                    <div class="timeline-date">ICLR 2017</div>
+                    <h3 class="mb-4">PixelCNN++: A PixelCNN Implementation with Discretized Logistic Mixture Likelihood and Other Modifications</h3>
+                    <p>Tim Salimans, Andrej Karpathy, Xi Chen, Diederik P. Kingma, and Yaroslav Bulatov</p>
+                    <div class="badge">生成模型</div>
+                    <div class="badge">深度学习</div>
+                </div>
+                
+                <div class="card">
+                    <div class="timeline-date">CVPR 2016 (口头报告)</div>
+                    <h3 class="mb-4">DenseCap: Fully Convolutional Localization Networks for Dense Captioning</h3>
+                    <p>Justin Johnson*, Andrej Karpathy*, Li Fei-Fei (*共同贡献)</p>
+                    <div class="badge">计算机视觉</div>
+                    <div class="badge">图像标注</div>
+                </div>
+                
+                <div class="card">
+                    <div class="timeline-date">CVPR 2015 (口头报告)</div>
+                    <h3 class="mb-4">Deep Visual-Semantic Alignments for Generating Image Descriptions</h3>
+                    <p>Andrej Karpathy, Li Fei-Fei</p>
+                    <div class="badge">计算机视觉</div>
+                    <div class="badge">自然语言处理</div>
+                </div>
+                
+                <div class="card">
+                    <div class="timeline-date">NIPS 2014</div>
+                    <h3 class="mb-4">Deep Fragment Embeddings for Bidirectional Image-Sentence Mapping</h3>
+                    <p>Andrej Karpathy, Armand Joulin, Li Fei-Fei</p>
+                    <div class="badge">深度学习</div>
+                    <div class="badge">图像-文本</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="talks" class="section">
+            <h2 class="section-title">精选演讲</h2>
+            <div class="d-flex flex-col gap-8">
+                <div class="card">
+                    <h3 class="mb-4">GPU Mode 2024</h3>
+                    <p>讨论了GPU加速AI和深度学习技术的最新进展。</p>
+                </div>
+                
+                <div class="card">
+                    <h3 class="mb-4">GPT的现状 @ 微软Build 2023</h3>
+                    <p>GPT架构、能力和未来方向的全面概述。</p>
+                    <div class="d-flex gap-4 mt-4">
+                        <a href="https://build.microsoft.com/en-US/sessions/db3f4859-cd30-4445-a0cd-553c3304f8e2" class="btn btn-outline">观看演讲</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="mb-4">Lex Fridman播客 2022</h3>
+                    <p>深入讨论神经网络、特斯拉Autopilot和AI的未来。</p>
+                    <div class="d-flex gap-4 mt-4">
+                        <a href="https://lexfridman.com/andrej-karpathy/" class="btn btn-outline">观看播客</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="mb-4">特斯拉AI日 2021</h3>
+                    <p>展示了特斯拉的AI架构和自动驾驶技术愿景。</p>
+                    <div class="d-flex gap-4 mt-4">
+                        <a href="https://www.youtube.com/watch?v=j0z4FweCy4M" class="btn btn-outline">观看演示</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="mb-4">全自动驾驶的AI @ CVPR 2021</h3>
+                    <p>实现全自动驾驶能力的AI方法概述。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="section">
+            <h2 class="section-title">联系方式</h2>
+            <div class="card">
+                <p>联系我的最佳方式是通过社交媒体或我的网站。</p>
+                <div class="social-links">
+                    <a href="https://twitter.com/karpathy" class="social-link" aria-label="Twitter">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
+                        </svg>
+                    </a>
+                    <a href="https://github.com/karpathy" class="social-link" aria-label="GitHub">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                        </svg>
+                    </a>
+                    <a href="https://youtube.com/@AndrejKarpathy" class="social-link" aria-label="YouTube">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
+                            <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
+                        </svg>
+                    </a>
+                    <a href="https://linkedin.com/in/andrejkarpathy" class="social-link" aria-label="LinkedIn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                            <rect x="2" y="9" width="4" height="12"></rect>
+                            <circle cx="4" cy="4" r="2"></circle>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>© 2024 Andrej Karpathy. 版权所有。</p>
+        </footer>
+    </div>
+
+    <button id="scroll-top" aria-label="回到顶部">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+    </button>
+
+    <script src="karpathy-dark-mode.js"></script>
+    <script>
+        // Scroll to top functionality
+        const scrollTopBtn = document.getElementById('scroll-top');
+        
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+        });
+        
+        scrollTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // Animate elements when they enter the viewport
+        const animateOnScroll = () => {
+            const cards = document.querySelectorAll('.card');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animation = 'fadeIn 0.6s ease forwards';
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            cards.forEach(card => {
+                observer.observe(card);
+                // Initial state
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+            });
+        };
+        
+        // Run animations when DOM is loaded
+        document.addEventListener('DOMContentLoaded', animateOnScroll);
+    </script>
+</body>
+</html> 

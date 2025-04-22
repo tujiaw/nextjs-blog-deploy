@@ -28,7 +28,9 @@ graph TD
 * 角色：产品、设计、程序员都能编写软件
 
 ## Cursor的最终目标
-让世界上的任何人都更容易生产软件。当然，还有很长的路要走，据Cursor创始人所言，目前只完成了愿景的2%到3%。
+让世界上的任何人都更容易生产软件。
+
+当然，还有很长的路要走，据Cursor创始人所言，目前只完成了愿景的2%到3%。
 
 ## 关于
 ![Cursor about](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745243025543-1745243026890.png)
@@ -156,14 +158,16 @@ Agent根据当前项目情况自动生成合适的rules。
 ![rule types](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745153397786-1745153399288.gif)
 
 # 强大的@能力
+![at](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745154607370-1745154608777.gif)
+
 Cursor内置的工程能力，虽然有时候你不使用@功能Agent也能帮我们进行规划，但是使用@有很多好处：
 * 使大模型规划更加聚焦，减少不必要的反思步骤，避免乱改你的代码库。
 * Agent快速定位关键位置，否则大模型会全局查找，而且而且很可能找错（如：名称相同的）
 * 明确告诉大模型你需要什么能力（如：shell，git，web等）
 
-非常常用的功能，告诉Cursor你想让模型关注的资源：
 新开会话时会默认将当前打开的文件@进去。
 
+非常常用的功能，告诉Cursor你想让模型关注的资源：
 * 文件，目录，代码
 * 文档：一些官方文档或者通过url新增自定义文档
 * Rules：明确指定使用需要使用的rules
@@ -172,7 +176,6 @@ Cursor内置的工程能力，虽然有时候你不使用@功能Agent也能帮�
 * Linter Errors：捕获代码中的错误和警告，保证代码质量，发现潜在的代码问题
 * 使用内置工具：web、git、终端
 
-![at](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745154607370-1745154608777.gif)
 
 # MCP
 模型上下文协议（Model Context Protocol / MCP） 是一个开放的协议，它描述了应用程序如何向 LLMs 提供上下文和工具。可以将 MCP 看作 Cursor 的插件系统-它允许您通过标准化接口将 Agent 连接到各种数据源和工具，从而扩展 Agent 的功能。
@@ -235,11 +238,10 @@ MCP 是一个创新但仍在快速发展的协议。使用时需注意以下几�
    - MCP 服务器功能：提供工具和资源两种主要功能。
    - 当前支持：Cursor 目前只支持工具功能，可执行 MCP 服务器提供的工具并使用输出。
    - 资源支持：目前尚未实现，但计划在未来版本中添加。
+   - 服务易断开： 尝试重新开关或者刷新一下，显示红点或者绿点但是没有显示工具列表
+    ![mcp error](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745228654304-1745228655197.png)
 
-4. 服务易断开：
-   - 尝试重新开关或者刷新一下
-   - 显示红点或者绿点但是没有显示工具列表
-   ![mcp error](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745228654304-1745228655197.png)
+4. 性能不够，速度太慢了（Firebase Studio快很多）。
    
 
 这些限制会在后续持续优化。
