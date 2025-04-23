@@ -1,11 +1,11 @@
 # Cursor使用分享
 
 # 官方定义
-Cursor一是款全新的智能IDE，与AI无缝集成。
+Cursor是一款全新的智能IDE，与AI无缝集成。
 
 
 ## 开发模式的改变
-由高级语言过度到自然语言
+由高级语言过渡到自然语言
 ```mermaid
 graph TD
     subgraph "AI辅助编程模式"
@@ -60,17 +60,18 @@ graph TD
 # 应用场景
 虽然Cursor是一个智能IDE，但并不是只能用来开发。
 
-**用Cursor打开你要工作的目录，这样它才会对你的目录有全面的了解，如果不放心先备份下**
+**用Cursor打开你要工作的目录，这样它才会对你的目录有全面的了解，如果不放心可以先备份一下**
 
 ![indexing](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745371290908-1745371291882.png)
 
 ## 写作
 基本能力，可以使用Web搜索，引用本地文件，@ url等来获取写作所需引用的资源。
+强烈建议在完成文档编写后，让Cursor检查一下语句是否通顺。它只会对语法进行优化和修正错别字，不会对内容做大幅改动。
 
 ![write](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745373858278-1745373859053.gif)
 
 ## 数据分析、处理
-直接把文档给是Cursor再告诉你的需求。目前只能处理文本文件，word、excel、pdf等格式Cursor会自动安装相应的Python库，通过编码来解决。
+直接把文档给Cursor再告诉它你的需求。目前只能处理文本文件，对于word、excel、pdf等格式，Cursor会自动安装相应的Python库，通过编码来解决。
 
 ## 知识库
 Cursor会对当前目录下的文件进行向量化后存储。
@@ -90,10 +91,10 @@ Cursor会对当前目录下的文件进行向量化后存储。
 ![chat mode](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745214258343-1745214259934.gif)
 
 ## Ask
-Ask模式是Cursor中的“只读”对话模式，允许你通过AI搜索和查询代码库内容，但不会自动修改任何文件。
+Ask模式是Cursor中的"只读"对话模式，允许你通过AI搜索和查询代码库内容，但不会自动修改任何文件。
 
-只说不做，相对于Agent没有手脚的能力，
-拥有检索当前项目、访问Web的能力，无MCP能力。
+这种模式只说不做，相对于Agent没有"手脚"的能力，
+拥有检索当前项目、访问Web的能力，但无MCP能力。
 
 ![baidu hot search](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745070842843-1745070844538.png)
 
@@ -103,7 +104,7 @@ Ask模式是Cursor中的“只读”对话模式，允许你通过AI搜索和查
 Agent模式是Cursor中最自动化的AI编码模式，能够自主探索、规划并执行复杂的代码库变更，具备全工具访问和多步任务处理能力。
 仅此模式支持MCP能力。
 
-![baidu hot search](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745231888510-1745231889971.gif)
+![agent mode](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745231888510-1745231889971.gif)
 
 ### 能力
 * 自主操作：独立探索您的代码库，识别相关文件，并做出必要的更改
@@ -140,7 +141,7 @@ Manual模式是Cursor中用于精确、定向代码修改的模式，只根据�
 
 在models模型列表里勾选后才能使用。
 ## Auto：自动模式
-Cursor帮你选择使用最合适的模型（平衡性能和精度），如果不知道怎么选就用这种。体验下来对话速度相对快一些，如果想要更强大的模型还是自己选择，不同模型能力差别还是蛮大的。
+Cursor帮你选择使用最合适的模型（平衡性能和精度），如果不知道怎么选就用这种模式。体验下来对话速度相对快一些，如果想要更强大的模型还是自己选择，不同模型之间的能力差别还是蛮大的。
 
 ## Thinking
 使用推理模型，非推理模型将不被使用。
@@ -151,7 +152,8 @@ Cursor帮你选择使用最合适的模型（平衡性能和精度），如果�
 智能补全：根据上下文自动补全代码
 多行修改：支持同时修改多行相似代码
 
-同类产品中据说Cursor的Tab能力目前是最强的，它的背后是由定制模型驱动的。
+甚至写代码的时候你可能会一路Tab，Tab，Tab体验非常丝滑。
+同类产品中据说Cursor的Tab能力目前是最强的，它背后是由定制模型驱动的。
 
 ![tab](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745211917903-1745211918916.gif)
 
@@ -215,7 +217,7 @@ Agent根据当前项目情况自动生成合适的rules。
 四种类型，应用rules更加灵活
 * Always：总是应用到模型上下文中
 * Auto Attached: 设置文件名、后缀匹配规则
-* Agent Requested：给规则设置描述，Agent根据此描述来判断使用使用
+* Agent Requested：给规则设置描述，Agent根据此描述来判断是否使用
 * Manual：对话时手动@此规则
 
 ![rule types](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745153397786-1745153399288.gif)
@@ -224,7 +226,7 @@ Agent根据当前项目情况自动生成合适的rules。
 ![commit](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745292945871-1745292946740.gif)
 
 ## Restore checkpoint
-Commit + Restore checkpoint 大模型乱改了也不怕
+Git Commit + Restore checkpoint 大模型乱改了也不怕
 * 验证完一个功能就Commit一下
 * 大模型修改完如果不是你想要的就点击一下Restore checkpoint
 
@@ -233,7 +235,7 @@ Commit + Restore checkpoint 大模型乱改了也不怕
 
 Cursor内置的工程能力，虽然有时候你不使用@功能Agent也能帮我们进行规划，但是使用@有很多好处：
 * 使大模型规划更加聚焦，减少不必要的反思步骤，避免乱改你的代码库
-* Agent快速定位关键位置，否则大模型会全局查找，而且而且很可能找错（如：名称相同的）
+* Agent快速定位关键位置，否则大模型会全局查找，而且很可能找错（如：名称相同的）
 * 明确告诉大模型你需要什么能力（如：shell，git，web等）
 
 新开会话时会默认将当前打开的文件@进去。
@@ -241,15 +243,15 @@ Cursor内置的工程能力，虽然有时候你不使用@功能Agent也能帮�
 
 ## @文件，目录，代码
 Cursor还不能直接读取word，excel等格式的文件，需要转换为文本格式如：csv，json，html等。
-前缀`#`可以更快速的选择文件，中间使用`@`和`#`需要打一个空格
+前缀`#`可以更快速地选择文件，中间使用`@`和`#`需要打一个空格。
 
-**这里的文件、目录、代码等是项目内，项目外的需要借助Shell或者MCP服务来实现**
+**这里的文件、目录、代码等是项目内的，项目外的需要借助Shell或者MCP服务来实现**
 
 整理目录文件的Demo：
 ![file tool](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745316367872-1745316373334.gif)
 ****
 ## @文档
-Cursor提供了一些官方文档，你还可以通过url新增自定义文档，类似如知识库
+Cursor提供了一些官方文档，你还可以通过url新增自定义文档，类似知识库
 
 ![docs](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745316795610-1745316796824.gif)
 
@@ -292,11 +294,11 @@ Cursor提供了一些官方文档，你还可以通过url新增自定义文档�
 ## 推荐好用MCP服务
 * server-sequential-thinking
   
-Smithery上最火的mcp server，@smithery-ai/server-sequential-thinking（563k）结构化思维，提供动态规划和反思的能力。
+Smithery上最火的mcp server，@smithery-ai/server-sequential-thinking（563k）提供结构化思维、动态规划和反思的能力。
 
 但是，在Cursor这样强大的Client上反而作用不大，因为它的Agent已经有这样的能力了，而且集成得更好。
 
-对于自开发的Client或者能力没那么强的Client可以接入尝试下。
+对于自开发的Client或者能力没那么强的Client可以尝试接入使用。
 
 * playwright：自动化操作浏览器（获取html后context容易超限）
 ![playwright](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745163944911-1745163946317.gif)
@@ -314,7 +316,7 @@ Smithery上最火的mcp server，@smithery-ai/server-sequential-thinking（563k�
 连接到MCP服务，查看工具列表，手动传入参数调用工具
 * 开源项目：https://github.com/modelcontextprotocol/inspector
 * 开启服务：npx @modelcontextprotocol/inspector --config C:/Users/jave.tu/.cursor/mcp.json --server mythink
-* 浏览器上打开：http://127.0.0.1:6274
+* 在浏览器上打开：http://127.0.0.1:6274
 ![mcp inspector](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745159549504-1745159551451.png)
 
 ## 限制
