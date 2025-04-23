@@ -5,7 +5,8 @@ Cursor是一款全新的智能IDE，与AI无缝集成。
 
 
 ## 开发模式的改变
-由高级语言过渡到自然语言
+由高级语言过渡到自然语言（机器语言->汇编语言->**高级语言->自然语言**）
+
 ```mermaid
 graph TD
     subgraph "AI辅助编程模式"
@@ -26,7 +27,7 @@ AI将会彻底改变而非简单替代开发者的工作方式，由此开发的
 
 ## Cursor逐渐模糊开发中的各种界限：
 * 语言：大家都是全栈开发人员，不再区分各种语言，是前端还是后端
-* 角色：产品、设计、程序员都能编写软件
+* 角色：产品、设计、程序员等都能编写软件
 
 ## Cursor的最终目标
 让世界上的任何人都更容易生产软件。
@@ -60,18 +61,22 @@ graph TD
 # 应用场景
 虽然Cursor是一个智能IDE，但并不是只能用来开发。
 
-**用Cursor打开你要工作的目录，这样它才会对你的目录有全面的了解，如果不放心可以先备份一下**
+**用Cursor打开你要工作的目录，这样它才会对你的目录有全面的了解，如果不放心可以先备份一下。**
 
 ![indexing](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745371290908-1745371291882.png)
 
 ## 写作
-基本能力，可以使用Web搜索，引用本地文件，@ url等来获取写作所需引用的资源。
+基础能力，可以使用Web搜索，引用本地文件，@ url等来获取写作所需引用的资源。
+
 强烈建议在完成文档编写后，让Cursor检查一下语句是否通顺。它只会对语法进行优化和修正错别字，不会对内容做大幅改动。
 
 ![write](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745373858278-1745373859053.gif)
 
-## 数据分析、处理
-直接把文档给Cursor再告诉它你的需求。目前只能处理文本文件，对于word、excel、pdf等格式，Cursor会自动安装相应的Python库，通过编码来解决。
+## 数据生成、分析、处理
+生成语料、测试数据（造数）。
+
+直接把文档给Cursor再告诉它你的需求。
+目前只能处理文本文件（txt/markdown/csv/json/html等），对于word、excel、pdf等格式，Cursor会自动安装相应的Python库，通过编码来解决。
 
 ## 知识库
 Cursor会对当前目录下的文件进行向量化后存储。
@@ -101,8 +106,7 @@ Ask模式是Cursor中的"只读"对话模式，允许你通过AI搜索和查询�
 适合分析、解读、学习项目，思考、探索、头脑风暴等不需要修改的场景。
 
 ## Agent
-Agent模式是Cursor中最自动化的AI编码模式，能够自主探索、规划并执行复杂的代码库变更，具备全工具访问和多步任务处理能力。
-仅此模式支持MCP能力。
+Agent模式是Cursor中最自动化的AI编码模式，能够自主探索、规划并执行复杂的代码库变更，具备全工具访问和多步任务处理能力，支持MCP能力。
 
 ![agent mode](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745231888510-1745231889971.gif)
 
@@ -112,7 +116,7 @@ Agent模式是Cursor中最自动化的AI编码模式，能够自主探索、规�
 * 上下文理解：构建对您的项目结构和依赖关系的全面理解
 * 多步规划：将复杂任务分解成可管理的步骤并按顺序执行
 
-### Cot工作流
+### 内置Cot工作流
 * 理解需求
 * 检索代码库
 * 制定计划
@@ -134,6 +138,7 @@ Manual模式是Cursor中用于精确、定向代码修改的模式，只根据�
 ![custom modes](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745306818780-1745306819633.gif)
 
 内置工具列表：
+
 ![all tools](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745306324373-1745306325271.png)
 
 # 模型选择
