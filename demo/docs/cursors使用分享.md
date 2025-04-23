@@ -3,7 +3,6 @@
 # 官方定义
 Cursor一是款全新的智能IDE，与AI无缝集成。
 
-AI将会彻底改变而非简单替代开发者的工作方式，由此开发的门槛将会变低。以前经常说人人都是产品经理，现在可以说人人都是开发者。
 
 ## 开发模式的改变
 由高级语言过度到自然语言
@@ -23,6 +22,8 @@ graph TD
     end
 ```
 
+AI将会彻底改变而非简单替代开发者的工作方式，由此开发的门槛将会变低。以前经常说人人都是产品经理，以后可以说人人都是开发者。
+
 ## Cursor逐渐模糊开发中的各种界限：
 * 语言：大家都是全栈开发人员，不再区分各种语言，是前端还是后端
 * 角色：产品、设计、程序员都能编写软件
@@ -33,6 +34,7 @@ graph TD
 当然，还有很长的路要走，据Cursor创始人所言，目前只完成了愿景的2%到3%。
 
 ## 关于
+版本相关信息
 ![Cursor about](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745243025543-1745243026890.png)
 
 让Agent解释一下各组件之间的关系：
@@ -55,6 +57,34 @@ graph TD
     E --> F
 ```
 
+# 应用场景
+虽然Cursor是一个智能IDE，但并不是只能用来开发。
+
+**用Cursor打开你要工作的目录，这样它才会对你的目录有全面的了解，如果不放心先备份下**
+
+![indexing](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745371290908-1745371291882.png)
+
+## 写作
+基本能力，可以使用Web搜索，引用本地文件，@ url等来获取写作所需引用的资源。
+
+![write](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745373858278-1745373859053.gif)
+
+## 数据分析、处理
+直接把文档给是Cursor再告诉你的需求。目前只能处理文本文件，word、excel、pdf等格式Cursor会自动安装相应的Python库，通过编码来解决。
+
+## 知识库
+Cursor会对当前目录下的文件进行向量化后存储。
+
+![search content](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745375024101-1745375025051.png)
+
+![search file](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745373071415-1745373072321.gif)
+
+## 编程
+演示，从硅基流动上获取一个免费的生图模型，给Cursor一个API文档链接让它生成一个支持全参数的生成图片的对话式页面。
+
+第一个Prompt很重要，生成的原型要大体符合需求，后面优化起来才容易些。
+
+![image demo](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745386554768-1745386555982.gif)
 
 # 四大对话模式
 ![chat mode](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745214258343-1745214259934.gif)
@@ -109,14 +139,19 @@ Manual模式是Cursor中用于精确、定向代码修改的模式，只根据�
 ![model select](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745213948998-1745213950269.gif)
 
 在models模型列表里勾选后才能使用。
-* Auto：自动模式，Cursor帮你选择使用最合适的模型。如果不知道怎么选就用这种，体验下来对话速度相对快很多。如果想要更强大的模型还是自己选择，不同模型能力差别还是蛮大的。
-* Thinking：使用推理模型，非推理模型将不被使用。
+## Auto：自动模式
+Cursor帮你选择使用最合适的模型（平衡性能和精度），如果不知道怎么选就用这种。体验下来对话速度相对快一些，如果想要更强大的模型还是自己选择，不同模型能力差别还是蛮大的。
+
+## Thinking
+使用推理模型，非推理模型将不被使用。
 
 # 特性
 ## Tab
-智能补全：根据上下文自动补全代码
 智能预测：预测下一步可能的代码
+智能补全：根据上下文自动补全代码
 多行修改：支持同时修改多行相似代码
+
+同类产品中据说Cursor的Tab能力目前是最强的，它的背后是由定制模型驱动的。
 
 ![tab](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745211917903-1745211918916.gif)
 
@@ -145,6 +180,8 @@ Manual模式是Cursor中用于精确、定向代码修改的模式，只根据�
 Cursor使用RAG(检索增强生成)技术来智能访问和理解代码库。
 
 代码库会被自动向量化并存储在向量数据库中。当文件发生变化时，系统会自动进行增量更新，确保索引始终保持最新。
+
+每十分钟检测一次，最大支持1000个文件，每个文件的大小限制未知。
 
 可以通过.cursorignore文件配置来排除不需要被向量化的文件和目录，比如:
 - Node.js项目的node_modules目录
@@ -202,7 +239,7 @@ Cursor内置的工程能力，虽然有时候你不使用@功能Agent也能帮�
 新开会话时会默认将当前打开的文件@进去。
 如果新加的文件在@列表里没有找到可以直接拖进去。
 
-## 文件，目录，代码
+## @文件，目录，代码
 Cursor还不能直接读取word，excel等格式的文件，需要转换为文本格式如：csv，json，html等。
 前缀`#`可以更快速的选择文件，中间使用`@`和`#`需要打一个空格
 
@@ -211,25 +248,25 @@ Cursor还不能直接读取word，excel等格式的文件，需要转换为文�
 整理目录文件的Demo：
 ![file tool](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745316367872-1745316373334.gif)
 ****
-## 文档
+## @文档
 Cursor提供了一些官方文档，你还可以通过url新增自定义文档，类似如知识库
 
 ![docs](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745316795610-1745316796824.gif)
 
-## Rules
+## @Rules
 明确指定需要使用的rules，Manual类型的Rules必须使用@才生效
 
-## 最近的修改
+## @最近的修改
 将最近修改的代码作为上下文提供给大模型
 
-## Linter Errors
+## @Linter Errors
 捕获代码中的错误和警告，保证代码质量，发现潜在的代码问题。
 如果你的项目在Cursor中启动，Agent可以一边修改代码一边运行，运行中终端报的错会自动修复。
 
-## 历史对话
+## @历史对话
 当你需要参考历史对话中的信息时。
 
-## 使用内置工具：Web、Git、终端
+## @内置工具：Web、Git、终端
 
 # MCP
 模型上下文协议（Model Context Protocol / MCP） 是一个开放的协议，它描述了应用程序如何向 LLMs 提供上下文和工具。可以将 MCP 看作 Cursor 的插件系统-它允许您通过标准化接口将 Agent 连接到各种数据源和工具，从而扩展 Agent 的功能。
