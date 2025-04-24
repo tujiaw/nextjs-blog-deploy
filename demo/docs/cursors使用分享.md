@@ -324,29 +324,55 @@ Smithery上最火的mcp server，@smithery-ai/server-sequential-thinking（563k�
 * 在浏览器上打开：http://127.0.0.1:6274
 ![mcp inspector](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745159549504-1745159551451.png)
 
+## MCP服务没有被调用
+我们在使用中经常会遇到想要调用的MCP服务没有被调用的情况，该如何解决？
+
+### 原因
+* 工具数量超出限制
+* MCP服务连接失败
+* 使用了内置工具 - Cursor会默认使用内置工具，如果MCP工具的能力与其重复，可能不会被调用
+* 存在功能重复的工具
+* 模型能力不足
+
+### 解决方法
+在Rules中或对话时明确指定使用Sequential Thinking服务
+```
+Rule: Always Use Sequential Thinking  
+When executing tasks:  
+- MustInclude: SequentialThinking  
+- Validate: Task decomposition into subtasks
+```
+
+优先使用指定服务
+```
+- SequentialThinking: Enabled  
+- SearchProvider: BraveSearch (default)  
+- ExternalModels: OpenRouter (Gemini 2.5 Pro fallback)
+```
+
 ## 限制
-![tool count](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745072751959-1745072753514.png)
 
 MCP 是一个创新但仍在快速发展的协议。使用时需注意以下几点限制：
 
-1. 工具数量限制：
+1. 服务不稳定：
+   - 连接易断开：尝试重新开关或者刷新一下，显示红点或者绿点但是没有显示工具列表
+   - ![mcp error](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745228654304-1745228655197.png)
+
+2. 工具数量限制：
    - 问题：某些 MCP 服务器或用户可能有大量可用工具。
    - 当前限制：Cursor 目前只能向 agent 发送前 40 个工具。
+   - ![tool count](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745072751959-1745072753514.png)
 
-2. 远程开发兼容性：
+3. 远程开发兼容性：
    - 通信方式：Cursor 直接从本地机器与 MCP 服务器通信（通过 stdio 或 sse）。
    - 潜在问题：在 SSH 或其他远程开发环境中，MCP 服务器可能无法正常工作。
 
-3. MCP 资源支持：
+4. MCP 资源支持：
    - MCP 服务器功能：提供工具和资源两种主要功能。
    - 当前支持：Cursor 目前只支持工具功能，可执行 MCP 服务器提供的工具并使用输出。
    - 资源支持：目前尚未实现，但计划在未来版本中添加。
-   - 服务易断开： 尝试重新开关或者刷新一下，显示红点或者绿点但是没有显示工具列表
-    ![mcp error](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745228654304-1745228655197.png)
-
-4. 性能不够：速度太慢了（Firebase Studio快很多）。
+    
    
-
 这些限制会在后续持续优化。
 
 
