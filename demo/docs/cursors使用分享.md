@@ -268,7 +268,7 @@ Cursor提供了一些官方文档，你还可以通过url新增自定义文档�
 
 ## @Linter Errors
 捕获代码中的错误和警告，保证代码质量，发现潜在的代码问题。
-如果你的项目在Cursor中启动，Agent可以一边修改代码一边运行，运行中终端报的错会自动修复。
+如果你的项目在Cursor中启动，Agent可以一边写代码一边修复错误。
 
 ## @历史对话
 当你需要参考历史对话中的信息时。
@@ -301,11 +301,13 @@ Cursor提供了一些官方文档，你还可以通过url新增自定义文档�
   
 Smithery上最火的mcp server，@smithery-ai/server-sequential-thinking（563k）提供结构化思维、动态规划和反思的能力。
 
-但是，在Cursor这样强大的Client上反而作用不大，因为它的Agent已经有这样的能力了，而且集成得更好。
+不过，由于Cursor这样的强大客户端已经内置了这些功能，并且集成得更加完善。
 
-对于自开发的Client或者能力没那么强的Client可以尝试接入使用。
+因此，这些MCP服务更适合那些自主开发的客户端，或者功能相对简单的客户端来集成使用。
 
 [对think工具的详细分析](https://www.anthropic.com/engineering/claude-think-tool)
+
+![think tool](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745478088139-1745478088855.gif)
 
 * playwright：自动化操作浏览器（获取html后context容易超限）
 ![playwright](https://fibmocuqjpkyzrzoydzq.supabase.co/storage/v1/object/public/drop2/uploads/pasted-image-1745163944911-1745163946317.gif)
