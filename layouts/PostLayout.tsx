@@ -95,7 +95,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
           >
             <TableOfContents
               toc={toc}
-              className="overflow-hidden pt-8 xl:sticky xl:top-[8rem] xl:max-h-[calc(100vh-8rem)] xl:pr-4 xl:pt-10"
+              className="overflow-hidden pt-8 xl:sticky xl:top-[0rem] xl:max-h-[calc(100vh-8rem)] xl:pr-4 xl:pt-10"
               data-toc-container={true}
             />
             <div className="divide-y divide-gray-200 dark:divide-gray-700 xl:row-span-2 xl:pb-0">
