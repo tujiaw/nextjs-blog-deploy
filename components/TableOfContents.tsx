@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { clsx } from 'clsx'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Menu } from 'lucide-react'
 
 import { Link } from '@/components/ui'
 
@@ -15,19 +15,21 @@ type TocItem = {
 interface TableOfContentsProps {
   toc: TocItem[]
   className?: string
+  'data-toc-container'?: boolean
 }
 
 const TableOfContents = (props: TableOfContentsProps) => {
-  const { toc, className } = props
+  const { toc, className, ...rest } = props
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [isVisible, setIsVisible] = useState(true)
 
   useEffect(() => {
     const handleIntersection = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
+      for (const entry of entries) {
         if (entry.isIntersecting) {
           setActiveId(`#${entry.target.id}`)
         }
-      })
+      }
     }
 
     const observer = new IntersectionObserver(handleIntersection, {
@@ -50,53 +52,78 @@ const TableOfContents = (props: TableOfContentsProps) => {
       }
     }
 
-    toc.forEach(({ url }) => {
+    for (const { url } of toc) {
       const element = safelyGetElement(url)
-
       if (element) {
         observer.observe(element)
       }
-    })
+    }
 
     return () => {
-      toc.forEach(({ url }) => {
+      for (const { url } of toc) {
         const element = safelyGetElement(url)
-
         if (element) {
           observer.unobserve(element)
         }
-      })
+      }
     }
   }, [toc])
 
-  return (
-    <details className={clsx('space-y-4 [&_.chevron-right]:open:rotate-90', className)} open>
-      <summary className="flex cursor-pointer items-center gap-1 marker:content-none">
-        <ChevronRight
-          size={20}
-          strokeWidth={1.5}
-          className="chevron-right rotate-0 transition-transform"
-        />
-        <span className="text-base font-medium">Table of Contents</span>
-      </summary>
+  const toggleVisibility = useCallback(() => {
+    setIsVisible(!isVisible)
+  }, [isVisible])
 
-      <ul className="scrollbar-hidden flex flex-col space-y-2 pr-2">
-        {toc.map(({ value, depth, url }) => (
-          <li
-            key={url}
-            className={clsx(
-              'text-sm text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200',
-              {
-                'text-gray-800 dark:text-primary-600': activeId === url,
-              }
-            )}
-            style={{ paddingLeft: (depth - 2) * 16 }}
-          >
-            <Link href={url}>{value}</Link>
-          </li>
-        ))}
-      </ul>
-    </details>
+  return (
+    <div 
+      className={clsx(
+        'transition-all duration-300',
+        className,
+        isVisible ? 'w-full' : 'w-8'
+      )}
+      {...rest}
+    >
+      <button 
+        type="button"
+        className="flex cursor-pointer items-center gap-1 bg-transparent border-0 p-0 text-left" 
+        onClick={toggleVisibility}
+        aria-expanded={isVisible}
+        aria-label={isVisible ? "隐藏目录" : "显示目录"}
+      >
+        {isVisible ? (
+          <>
+            <ChevronRight
+              size={20}
+              strokeWidth={1.5}
+              className="rotate-90 transition-transform duration-300"
+            />
+            <span className="text-base font-medium">目录</span>
+          </>
+        ) : (
+          <Menu size={20} strokeWidth={1.5} className="transition-transform duration-300" />
+        )}
+      </button>
+
+      {isVisible && (
+        <div className="mt-4">
+          <ul className="scrollbar-hidden flex flex-col space-y-2 pr-2">
+            {toc.map(({ value, depth, url }) => (
+              <li
+                key={url}
+                className={clsx(
+                  'text-sm text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200',
+                  {
+                    'text-gray-800 dark:text-primary-600': activeId === url,
+                  }
+                )}
+                style={{ paddingLeft: (depth - 2) * 16 }}
+              >
+                <Link href={url}>{value}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   )
 }
 
