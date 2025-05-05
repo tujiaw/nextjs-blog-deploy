@@ -26,19 +26,27 @@ export const metadata: Metadata = {
     template: `%s | ${siteMetadata.title}`,
   },
   description: siteMetadata.description,
+  keywords: siteMetadata.keywords,
+  authors: [{ name: siteMetadata.author }],
+  creator: siteMetadata.author,
+  publisher: siteMetadata.title,
   openGraph: {
     title: siteMetadata.title,
     description: siteMetadata.description,
     url: './',
     siteName: siteMetadata.title,
     images: [siteMetadata.socialBanner],
-    locale: 'en_US',
+    locale: siteMetadata.locale,
     type: 'website',
   },
   alternates: {
     canonical: './',
     types: {
       'application/rss+xml': `${siteMetadata.siteUrl}/feed.xml`,
+    },
+    languages: {
+      'zh-CN': `${siteMetadata.siteUrl}/`,
+      'en-US': `${siteMetadata.siteUrl}/en/`,
     },
   },
   robots: {
@@ -56,7 +64,12 @@ export const metadata: Metadata = {
     title: siteMetadata.title,
     card: 'summary_large_image',
     images: [siteMetadata.socialBanner],
+    description: siteMetadata.description,
   },
+  verification: {
+    google: 'your-google-site-verification-code',
+  },
+  category: 'technology',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -68,6 +81,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${space_grotesk.variable} scroll-smooth`}
       suppressHydrationWarning
     >
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="baidu-site-verification" content="your-baidu-site-verification-code" />
+        <meta name="sogou_site_verification" content="your-sogou-site-verification-code" />
+        <meta name="360-site-verification" content="your-360-site-verification-code" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="application-name" content={siteMetadata.title} />
+      </head>
       <Script 
         async 
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4311958594666995"
@@ -111,6 +133,39 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Footer />
           </SectionContainer>
         </ThemeProviders>
+        <Script id="schema-org" type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            'url': siteMetadata.siteUrl,
+            'name': siteMetadata.title,
+            'description': siteMetadata.description,
+            'author': {
+              '@type': 'Person',
+              'name': siteMetadata.author
+            },
+            'publisher': {
+              '@type': 'Organization',
+              'name': siteMetadata.title,
+              'logo': {
+                '@type': 'ImageObject',
+                'url': `${siteMetadata.siteUrl}${siteMetadata.siteLogo}`
+              }
+            },
+            'potentialAction': {
+              '@type': 'SearchAction',
+              'target': `${siteMetadata.siteUrl}/search?q={search_term_string}`,
+              'query-input': 'required name=search_term_string'
+            },
+            'sameAs': [
+              siteMetadata.github,
+              siteMetadata.x,
+              siteMetadata.facebook,
+              siteMetadata.youtube,
+              siteMetadata.linkedin
+            ]
+          })}
+        </Script>
       </body>
     </html>
   )

@@ -3,8 +3,8 @@ const siteMetadata = {
   title: "Ningto's Blog",
   author: 'ningto.com',
   headerTitle: "Ningto's Blog",
-  description: 'Welcome to my blog! Stay Hungry, Stay Foolish.',
-  language: 'en-us',
+  description: 'Welcome to my blog, a personal space where I share technology, life experiences, and reflections.',
+  language: 'zh-CN',
   theme: 'system', // system, dark or light
   siteUrl: 'https://ningto.com',
   siteRepo: 'https://github.com/tujiaw/nextjs-blog-deploy',
@@ -22,9 +22,17 @@ const siteMetadata = {
   instagram: 'https://www.instagram.com',
   medium: 'https://medium.com',
   bluesky: 'https://bsky.app/',
-  locale: 'en-US',
+  locale: 'zh-CN',
   // set to true if you want a navbar fixed to the top
   stickyNav: false,
+  // SEO优化：添加关键词
+  keywords: '技术博客, Web开发, JavaScript, React, NextJS, 前端开发, 编程',
+  // SEO优化：添加备用描述
+  alternateDescription: '技术分享与个人思考，专注前端开发与全栈技术的博客平台',
+  // 添加更新频率信息，帮助搜索引擎了解内容更新频率
+  updateFrequency: 'weekly',
+  // 添加网站版权信息
+  copyright: `© ${new Date().getFullYear()} Ningto's Blog. All rights reserved.`,
   analytics: {
     // If you want to use an analytics provider you have to add it to the
     // content security policy in the `next.config.js` file.
