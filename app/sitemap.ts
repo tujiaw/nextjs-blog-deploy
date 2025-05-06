@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     .map((post) => ({
       url: `${siteUrl}/${post.path}`,
       lastModified: post.lastmod || post.date,
-      changeFrequency: 'monthly',
+      changeFrequency: 'monthly' as const,
       priority: 0.8,
     }))
 
@@ -21,31 +21,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: `${siteUrl}`,
       lastModified: new Date().toISOString().split('T')[0],
-      changeFrequency: 'daily', 
+      changeFrequency: 'daily' as const, 
       priority: 1.0,
     },
     {
       url: `${siteUrl}/blog`,
       lastModified: new Date().toISOString().split('T')[0],
-      changeFrequency: 'daily',
+      changeFrequency: 'daily' as const,
       priority: 0.9,
     },
     {
       url: `${siteUrl}/projects`,
       lastModified: new Date().toISOString().split('T')[0],
-      changeFrequency: 'weekly',
+      changeFrequency: 'weekly' as const,
       priority: 0.7,
     },
     {
       url: `${siteUrl}/about`,
       lastModified: new Date().toISOString().split('T')[0],
-      changeFrequency: 'monthly',
+      changeFrequency: 'monthly' as const,
       priority: 0.6,
     },
     {
       url: `${siteUrl}/tags`,
       lastModified: new Date().toISOString().split('T')[0],
-      changeFrequency: 'weekly',
+      changeFrequency: 'weekly' as const,
       priority: 0.5,
     },
   ]
