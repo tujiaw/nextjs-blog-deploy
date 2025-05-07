@@ -88,6 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="sogou_site_verification" content="your-sogou-site-verification-code" />
         <meta name="360-site-verification" content="your-360-site-verification-code" />
         <meta name="format-detection" content="telephone=no" />
+        <meta name="google-site-verification" content="TXBeCdq8cjW-fzw7tzZ2p39Xmkgcm_24qIQhbYKEsVw" />
         <meta name="application-name" content={siteMetadata.title} />
       </head>
       <Script 
