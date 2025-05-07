@@ -85,8 +85,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="baidu-site-verification" content="your-baidu-site-verification-code" />
-        <meta name="sogou_site_verification" content="your-sogou-site-verification-code" />
-        <meta name="360-site-verification" content="your-360-site-verification-code" />
+        <meta name="sogou_site_verification" content="F8HUpVCecD" />
+        <meta name="360-site-verification" content="0cd3e18aac31c87a9b46ab55fdb8841e" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="google-site-verification" content="TXBeCdq8cjW-fzw7tzZ2p39Xmkgcm_24qIQhbYKEsVw" />
         <meta name="application-name" content={siteMetadata.title} />
