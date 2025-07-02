@@ -122,15 +122,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       />
       
       {/* Dify Chatbot Custom Styles */}
-      <style jsx global>{`
-        #dify-chatbot-bubble-button {
-          background-color: #1C64F2 !important;
-        }
-        #dify-chatbot-bubble-window {
-          width: 24rem !important;
-          height: 40rem !important;
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          #dify-chatbot-bubble-button {
+            background-color: #1C64F2 !important;
+          }
+          #dify-chatbot-bubble-window {
+            width: 24rem !important;
+            height: 40rem !important;
+          }
+        `
+      }} />
       
       <link
         rel="apple-touch-icon"

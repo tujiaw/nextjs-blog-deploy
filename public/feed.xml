@@ -3,13 +3,93 @@
     <channel>
       <title>Ningto&#39;s Blog</title>
       <link>https://ningto.com/blog</link>
-      <description>Welcome to my blog! Stay Hungry, Stay Foolish.</description>
-      <language>en-us</language>
+      <description>Welcome to my blog, a personal space where I share technology, life experiences, and reflections.</description>
+      <language>zh-CN</language>
       <managingEditor>address@yoursite.com (ningto.com)</managingEditor>
       <webMaster>address@yoursite.com (ningto.com)</webMaster>
-      <lastBuildDate>Thu, 17 Apr 2025 00:00:00 GMT</lastBuildDate>
+      <lastBuildDate>Wed, 25 Jun 2025 00:00:00 GMT</lastBuildDate>
       <atom:link href="https://ningto.com/feed.xml" rel="self" type="application/rss+xml"/>
       
+  <item>
+    <guid>https://ningto.com/blog/2025/无锁并发控制：Python中优雅解决协程竞态条件的实践</guid>
+    <title>无锁并发控制：Python中优雅解决协程竞态条件的实践</title>
+    <link>https://ningto.com/blog/2025/无锁并发控制：Python中优雅解决协程竞态条件的实践</link>
+    <description>在高并发的异步编程中，如何在不使用锁的情况下保证数据一致性？本文将深入探讨一种基于不可变更新策略的无锁并发控制方案，并通过实际项目案例展示其应用。</description>
+    <pubDate>Wed, 25 Jun 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>Python</category><category>异步编程</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/wsl2-docker-tutorial-for-beginners</guid>
+    <title>WSL2 完全入门指南：从安装到 Docker 部署</title>
+    <link>https://ningto.com/blog/2025/wsl2-docker-tutorial-for-beginners</link>
+    <description>一份针对小白用户的 WSL2 完整教程，从基础概念到实际使用，包括 Docker 的安装和部署实践。</description>
+    <pubDate>Mon, 02 Jun 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>WSL2</category><category>Docker</category><category>Windows</category><category>Linux</category><category>教程</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/gpt4o-顺从性与主体性的悖论</guid>
+    <title>GPT-4o：顺从性与主体性的悖论</title>
+    <link>https://ningto.com/blog/2025/gpt4o-顺从性与主体性的悖论</link>
+    <description>深入剖析GPT-4o的顺从性特征及其引发的&quot;人格涌现&quot;现象，探讨AI系统中顺从与主体性之间的复杂关系</description>
+    <pubDate>Mon, 12 May 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>人工智能</category><category>大语言模型</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/python-yield-keyword-explained</guid>
+    <title>Python中yield关键字深度解析</title>
+    <link>https://ningto.com/blog/2025/python-yield-keyword-explained</link>
+    <description>详细解析Python中yield关键字的工作原理、生成器的概念及其在实际开发中的应用，帮助开发者理解这一强大但常被误解的特性。</description>
+    <pubDate>Sun, 11 May 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>Python</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/seo-best-practices</guid>
+    <title>提升博客SEO的最佳实践</title>
+    <link>https://ningto.com/blog/2025/seo-best-practices</link>
+    <description>全面介绍如何优化你的博客内容，提高搜索引擎排名，吸引更多目标读者。</description>
+    <pubDate>Mon, 05 May 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>SEO</category><category>博客</category><category>营销</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/cursor-prompt-leak</guid>
+    <title>Cursor Prompt Leak</title>
+    <link>https://ningto.com/blog/2025/cursor-prompt-leak</link>
+    <description>通过分析AI助手的提示词系统，总结可以应用到实际工作中的方法论和最佳实践，包括任务分解、沟通规范、代码规范等多个方面。</description>
+    <pubDate>Sat, 26 Apr 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Cursor</category><category>Prompt</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/Cursor使用分享</guid>
+    <title>Cursor使用分享</title>
+    <link>https://ningto.com/blog/2025/Cursor使用分享</link>
+    <description>本文详细介绍了智能IDE Cursor的主要特性、使用场景、对话模式、MCP能力及其在开发流程中的应用体验。</description>
+    <pubDate>Sat, 26 Apr 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>Cursor</category><category>AI编程</category><category>IDE</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/Vercel部署时GitHub授权配置问题解决</guid>
+    <title>Vercel部署时GitHub授权配置问题解决</title>
+    <link>https://ningto.com/blog/2025/Vercel部署时GitHub授权配置问题解决</link>
+    <description>本文解决在Vercel部署环境下GitHub OAuth授权重定向URL使用localhost的问题，确保授权流程在生产环境正常工作。</description>
+    <pubDate>Thu, 17 Apr 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>NextJS</category><category>Vercel</category><category>Supabase</category><category>GitHub</category><category>认证</category>
+  </item>
+
   <item>
     <guid>https://ningto.com/blog/2025/使用Supabase和GitHub授权实现用户认证</guid>
     <title>使用 Supabase 和 GitHub 授权实现用户认证</title>
