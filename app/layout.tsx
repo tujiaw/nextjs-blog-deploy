@@ -96,6 +96,42 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4311958594666995"
         crossOrigin="anonymous"
       />
+      
+      {/* Dify Chatbot Configuration */}
+      <Script id="dify-config">
+        {`
+          window.difyChatbotConfig = {
+            token: 'y36BrO837K4wOZx3',
+            systemVariables: {
+              // user_id: 'YOU CAN DEFINE USER ID HERE',
+              // conversation_id: 'YOU CAN DEFINE CONVERSATION ID HERE, IT MUST BE A VALID UUID',
+            },
+            userVariables: {
+              // avatar_url: 'YOU CAN DEFINE USER AVATAR URL HERE',
+              // name: 'YOU CAN DEFINE USER NAME HERE',
+            },
+          }
+        `}
+      </Script>
+      
+      {/* Dify Chatbot Embed Script */}
+      <Script
+        src="https://udify.app/embed.min.js"
+        id="y36BrO837K4wOZx3"
+        defer
+      />
+      
+      {/* Dify Chatbot Custom Styles */}
+      <style jsx global>{`
+        #dify-chatbot-bubble-button {
+          background-color: #1C64F2 !important;
+        }
+        #dify-chatbot-bubble-window {
+          width: 24rem !important;
+          height: 40rem !important;
+        }
+      `}</style>
+      
       <link
         rel="apple-touch-icon"
         sizes="76x76"
