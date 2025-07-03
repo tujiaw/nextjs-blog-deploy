@@ -100,11 +100,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* Dify Chatbot Configuration */}
       <Script id="dify-config">
         {`
+          // 生成随机用户ID
+          function generateChatId() {
+            return 'chat_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+          }
+          
           window.difyChatbotConfig = {
             token: 'y36BrO837K4wOZx3',
             systemVariables: {
-              // user_id: 'YOU CAN DEFINE USER ID HERE',
-              // conversation_id: 'YOU CAN DEFINE CONVERSATION ID HERE, IT MUST BE A VALID UUID',
+              user_id: 'ningto_com',
+              conversation_id: generateChatId(),
             },
             userVariables: {
               // avatar_url: 'YOU CAN DEFINE USER AVATAR URL HERE',
