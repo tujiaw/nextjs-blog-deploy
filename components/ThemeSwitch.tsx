@@ -77,10 +77,16 @@ const ThemeSwitch = () => {
   // When mounted on client, now we can show the UI
   useEffect(() => {
     setMounted(true)
-    // 从localStorage获取仙尘光标状态
-    const isEnabled = localStorage.getItem('fairyDustCursor') === 'true'
-    setIsFairyDustEnabled(isEnabled)
   }, [])
+
+  // 单独处理仙尘光标状态，避免 hydration 错误
+  useEffect(() => {
+    if (mounted) {
+      // 从localStorage获取仙尘光标状态
+      const isEnabled = localStorage.getItem('fairyDustCursor') === 'true'
+      setIsFairyDustEnabled(isEnabled)
+    }
+  }, [mounted])
 
   const toggleFairyDust = () => {
     const newState = !isFairyDustEnabled

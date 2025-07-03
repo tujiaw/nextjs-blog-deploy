@@ -136,35 +136,44 @@ function fairyDustCursor(isStart: boolean) {
 }
 
 export default function FairyDustCursor({ isEnabled }: { isEnabled: boolean }) {
-  const cursorContainerRef = useRef<HTMLDivElement>(null)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // 先清理现有的容器和效果
-      const existingContainer = document.querySelector('.js-cursor-container')
-      if (existingContainer) {
-        existingContainer.remove()
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isMounted) return
+
+    // 先清理现有的容器和效果
+    const existingContainer = document.querySelector('.js-cursor-container')
+    if (existingContainer) {
+      existingContainer.remove()
+    }
+    fairyDustCursor(false)
+
+    // 如果需要启用，创建新容器并初始化
+    if (isEnabled) {
+      const container = document.createElement('div')
+      container.className = 'js-cursor-container'
+      document.body.appendChild(container)
+      fairyDustCursor(true)
+    }
+
+    return () => {
+      // 清理
+      const container = document.querySelector('.js-cursor-container')
+      if (container) {
+        container.remove()
       }
       fairyDustCursor(false)
-
-      // 如果需要启用，创建新容器并初始化
-      if (isEnabled) {
-        const container = document.createElement('div')
-        container.className = 'js-cursor-container'
-        document.body.appendChild(container)
-        fairyDustCursor(true)
-      }
-
-      return () => {
-        // 清理
-        const container = document.querySelector('.js-cursor-container')
-        if (container) {
-          container.remove()
-        }
-        fairyDustCursor(false)
-      }
     }
-  }, [isEnabled])
+  }, [isEnabled, isMounted])
+
+  // 只在客户端渲染
+  if (!isMounted) {
+    return null
+  }
 
   return null
 }

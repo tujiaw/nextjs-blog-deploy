@@ -7,13 +7,13 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 // You might need to insert additional domains in script-src if you are using external services
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline' giscus.app analytics.umami.is *.googletagmanager.com cdn.jsdelivr.net code.jquery.com *.googlesyndication.com *.google.com *.googleadservices.com *.doubleclick.net udify.app *.udify.app dify.ai *.dify.ai;
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' data: mediastream: blob: filesystem: giscus.app analytics.umami.is *.googletagmanager.com googletagmanager.com cdn.jsdelivr.net code.jquery.com *.googlesyndication.com *.google.com *.googleadservices.com *.doubleclick.net udify.app *.udify.app dify.ai *.dify.ai *.dify.dev *.r2.cloudflarestorage.com https://paulrosen.github.io *.sentry.io http://localhost:* http://127.0.0.1:* https://analytics.google.com https://www.google-analytics.com https://api.github.com;
   style-src 'self' 'unsafe-inline' cdn.jsdelivr.net fonts.googleapis.com;
   img-src * blob: data:;
   media-src *.s3.amazonaws.com;
   connect-src *;
   font-src 'self' fonts.gstatic.com cdn.jsdelivr.net data:;
-  frame-src giscus.app *.googlesyndication.com *.doubleclick.net udify.app *.udify.app dify.ai *.dify.ai;
+  frame-src giscus.app *.googlesyndication.com *.doubleclick.net udify.app *.udify.app dify.ai *.dify.ai *.dify.dev;
 `
 
 const securityHeaders = [
@@ -50,7 +50,7 @@ const securityHeaders = [
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Feature-Policy
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=()',
+    value: 'camera=(), microphone=(self), geolocation=()',
   },
 ]
 
@@ -96,6 +96,10 @@ module.exports = () => {
       })
 
       return config
+    },
+    experimental: {
+      optimizeCss: true,
+      optimizePackageImports: ['lucide-react'],
     },
   })
 }
