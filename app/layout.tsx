@@ -97,48 +97,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         crossOrigin="anonymous"
       />
       
-      {/* Dify Chatbot Configuration */}
-      <Script id="dify-config">
-        {`
-          // 生成随机用户ID
-          function generateChatId() {
-            return 'chat_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
-          }
-          
-          window.difyChatbotConfig = {
-            token: 'y36BrO837K4wOZx3',
-            systemVariables: {
-              user_id: 'ningto_com',
-              conversation_id: generateChatId(),
-            },
-            userVariables: {
-              // avatar_url: 'YOU CAN DEFINE USER AVATAR URL HERE',
-              // name: 'YOU CAN DEFINE USER NAME HERE',
-            },
-          }
-        `}
-      </Script>
-      
-      {/* Dify Chatbot Embed Script */}
-      <Script
-        src="https://udify.app/embed.min.js"
-        id="y36BrO837K4wOZx3"
-        defer
-      />
-      
-      {/* Dify Chatbot Custom Styles */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          #dify-chatbot-bubble-button {
-            background-color: #1C64F2 !important;
-          }
-          #dify-chatbot-bubble-window {
-            width: 24rem !important;
-            height: 40rem !important;
-          }
-        `
-      }} />
-      
       <link
         rel="apple-touch-icon"
         sizes="76x76"
