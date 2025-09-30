@@ -1,0 +1,114 @@
+---
+title: 'Ubuntu下安装Zsh及常用用法指南'
+date: '2025-09-30'
+tags: ['Linux', 'Tools', 'Tips', 'Shell']
+draft: false
+summary: '本文介绍了在Ubuntu系统中通过临时或永久更换阿里源的方式安装Zsh，并分享了Zsh的常用配置与技巧'
+---
+
+# Ubuntu下安装Zsh及常用用法指南
+
+## 一、安装Zsh
+### 1. 临时使用阿里源（不改系统配置）
+```bash
+ sudo bash -c '
+ codename=$(lsb_release -cs)
+ tmp=$(mktemp)
+ cat > "$tmp" <<EOF
+ deb http://mirrors.aliyun.com/ubuntu/ $codename main restricted universe multiverse
+ deb http://mirrors.aliyun.com/ubuntu/ $codename-updates main restricted universe multiverse
+ deb http://mirrors.aliyun.com/ubuntu/ $codename-backports main restricted universe multiverse
+ deb http://mirrors.aliyun.com/ubuntu/ $codename-security main restricted universe multiverse
+ EOF
+ apt-get -o Dir::Etc::sourcelist="$tmp" -o Dir::Etc::sourceparts="-" update &&
+ apt-get -o Dir::Etc::sourcelist="$tmp" -o Dir::Etc::sourceparts="-" install -y zsh
+ rm -f "$tmp"
+ '
+```
+
+### 2. 永久改为阿里源（持久化）
+```bash
+# 备份原配置文件
+sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
+
+# 替换官方源为阿里源
+sudo sed -i 's|http://.*.archive.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list
+sudo sed -i 's|http://security.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list
+
+# 更新并安装Zsh
+sudo apt update
+sudo apt install -y zsh
+```
+
+## 二、Zsh常用用法
+### 1. 基础配置：.zshrc文件
+Zsh的配置文件位于`~/.zshrc`，所有自定义设置都可以在这里添加。
+
+### 2. 别名（Aliases）
+别名可以简化常用命令，例如：
+```bash
+# 在~/.zshrc中添加
+alias ll='ls -l'
+alias gs='git status'
+alias gc='git commit'
+# 生效配置
+source ~/.zshrc
+```
+
+### 3. 自动补全
+Zsh默认支持强大的自动补全功能，可通过`Tab`键触发，支持命令、参数、文件路径等补全。
+
+### 4. 主题（Themes）
+Zsh支持多种主题，可通过修改`~/.zshrc`中的`ZSH_THEME`变量切换：
+```bash
+# 常用主题推荐
+ZSH_THEME="robbyrussell" # 默认主题
+ZSH_THEME="agnoster"       # 带图标和路径的主题
+ZSH_THEME="powerlevel10k"  # 高度可定制的主题
+```
+
+### 5. 插件（Plugins）
+通过插件可以扩展Zsh的功能，常用插件管理框架是`oh-my-zsh`：
+#### （1）安装oh-my-zsh
+```bash
+# 使用curl安装
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+# 使用wget安装
+sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+```
+#### （2）常用插件
+在`~/.zshrc`中的`plugins`数组中添加插件：
+```bash
+plugins=( git zsh-syntax-highlighting zsh-autosuggestions )
+```
+- `git`：提供Git命令的快捷方式（如`ga`=git add）。
+- `zsh-syntax-highlighting`：语法高亮，显示正确/错误的命令颜色。
+- `zsh-autosuggestions`：根据历史记录自动建议命令，按`→`键接受。
+
+### 6. 历史记录
+Zsh的历史记录保存在`~/.zsh_history`中，常用命令：
+```bash
+history # 查看历史记录
+!100    # 执行历史记录中第100条命令
+!!      # 执行上一条命令
+```
+可在`~/.zshrc`中配置历史记录大小：
+```bash
+HISTSIZE=10000   # 内存中保存的历史记录条数
+SAVEHIST=10000   # 文件中保存的历史记录条数
+```
+
+### 7. 目录跳转
+- `cd ..`：返回上一级目录（可简写为`..`）。
+- `cd -`：返回上一次所在目录。
+- `pushd <目录>`：将当前目录压入栈，并跳转到指定目录。
+- `popd`：从栈中弹出目录并跳转。
+- `dirs`：查看目录栈。
+
+### 8. 其他技巧
+- **Glob模式**：`*.txt`匹配所有.txt文件，`**/*.sh`匹配所有子目录中的.sh文件。
+- **命令替换**：`$(ls)`或``ls``可将命令输出作为参数。
+- **参数展开**：`${var:-default}`若var为空，则使用default值。
+
+## 三、总结
+Zsh是一款强大的Shell工具，通过合理配置别名、主题和插件，可以极大提升终端使用效率。本文介绍的安装方法和常用技巧涵盖了Zsh的基础使用，希望对大家有所帮助。
