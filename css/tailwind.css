@@ -35,6 +35,41 @@
   --z-index-80: 80;
 }
 
+/* Typography plugin custom styles */
+.prose {
+  --tw-prose-body: #374151;
+  --tw-prose-headings: #111827;
+  --tw-prose-links: #ec4899;
+  --tw-prose-links-hover: #db2777;
+  --tw-prose-links-underline: #f472b6;
+  --tw-prose-bold: #111827;
+  --tw-prose-code: #ec4899;
+  --tw-prose-pre-code: #e5e7eb;
+  --tw-prose-pre-bg: #1f2937;
+}
+
+.dark .prose {
+  --tw-prose-body: #d1d5db;
+  --tw-prose-headings: #f3f4f6;
+  --tw-prose-links: #ec4899;
+  --tw-prose-links-hover: #f472b6;
+  --tw-prose-links-underline: #f472b6;
+  --tw-prose-bold: #f3f4f6;
+  --tw-prose-code: #f472b6;
+  --tw-prose-pre-code: #e5e7eb;
+  --tw-prose-pre-bg: #1f2937;
+}
+
+.prose h1,
+.prose h2 {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.prose h3 {
+  font-weight: 600;
+}
+
 
 .task-list-item::before {
   @apply hidden;
