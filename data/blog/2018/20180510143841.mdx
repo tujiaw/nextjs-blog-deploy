@@ -1,7 +1,7 @@
 ---
 title: 'bug修复，for循环倒叙遍历的时候千万不要用size_t等无符号整型'
 date: '2018-05-10'
-tags: ['C/C++']
+tags: ['C++']
 draft: false
 summary: 2018 年 5 月 10 日的 C/C++相关文章指出，for 循环倒叙遍历勿用 size_t 等无符号整型，如上述代码，size_t 为无符号整型，i 为 0 时继续减会变为 UINT_MAX 导致越界崩溃，结论是逆序遍历用 int 别用 size_t。 
 ---

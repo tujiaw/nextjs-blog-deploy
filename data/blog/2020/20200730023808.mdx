@@ -1,7 +1,7 @@
 ---
 title: '多线程锁key处理'
 date: '2020-07-30'
-tags: ['C/C++']
+tags: ['C++']
 draft: false
 summary: 主要目的是保证多线程处理同一 key 消息的线程安全和顺序性。通过缓存消息、解析 key、分配线程等步骤实现，关键在于递减索引数和等待索引为 0 以保证顺序执行，代码包含多种类如 MessagePack、NetMessageCache 等，外部调用 init 和 dispatchMessage 函数。 
 ---
