@@ -1,5 +1,41 @@
 @import "tailwindcss";
 
+@theme {
+  --font-family-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  --color-primary-50: #fdf2f8;
+  --color-primary-100: #fce7f3;
+  --color-primary-200: #fbcfe8;
+  --color-primary-300: #f9a8d4;
+  --color-primary-400: #f472b6;
+  --color-primary-500: #ec4899;
+  --color-primary-600: #db2777;
+  --color-primary-700: #be185d;
+  --color-primary-800: #9d174d;
+  --color-primary-900: #831843;
+
+  --line-height-11: 2.75rem;
+  --line-height-12: 3rem;
+  --line-height-13: 3.25rem;
+  --line-height-14: 3.5rem;
+
+  --z-index-60: 60;
+  --z-index-70: 70;
+  --z-index-80: 80;
+}
+
+
 .task-list-item::before {
   @apply hidden;
 }
