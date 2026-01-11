@@ -7,66 +7,36 @@
 
 /* Code title styles */
 .remark-code-title {
-  border-top-left-radius: 0.25rem;
-  border-top-right-radius: 0.25rem;
-  background-color: #374151;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-  font-family: ui-monospace, monospace;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #e5e7eb;
-}
-
-.dark .remark-code-title {
-  background-color: #1f2937;
+  @apply rounded-t bg-gray-700 px-5 py-3 font-mono text-sm font-bold text-gray-200 dark:bg-gray-800;
 }
 
 .remark-code-title + div > pre {
-  margin-top: 0;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+  @apply mt-0 rounded-t-none;
 }
 
 /* Code block styles */
 .code-highlight {
-  float: left;
-  min-width: 100%;
+  @apply float-left min-w-full;
 }
 
 .code-line {
-  margin-left: -1rem;
-  margin-right: -1rem;
-  display: block;
-  border-left: 4px solid transparent;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  @apply -mx-4 block border-l-4 border-transparent pl-4 pr-4;
 }
 
 .code-line.inserted {
-  background-color: rgba(34, 197, 94, 0.2);
+  @apply bg-green-500/20;
 }
 
 .code-line.deleted {
-  background-color: rgba(239, 68, 68, 0.2);
+  @apply bg-red-500/20;
 }
 
 .highlight-line {
-  margin-left: -1rem;
-  margin-right: -1rem;
-  border-left: 4px solid #ec4899;
-  background-color: rgba(55, 65, 81, 0.5);
+  @apply -mx-4 border-l-4 border-primary-500 bg-gray-700/50;
 }
 
 .line-number::before {
-  margin-left: -0.5rem;
-  margin-right: 1rem;
-  display: inline-block;
-  width: 1rem;
-  text-align: right;
-  color: #9ca3af;
+  @apply -ml-2 mr-4 inline-block w-4 text-right text-gray-400;
   content: attr(line);
 }
 
