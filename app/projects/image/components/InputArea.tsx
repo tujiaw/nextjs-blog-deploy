@@ -3,7 +3,7 @@
 import React from 'react'
 
 interface InputAreaProps {
-  textareaRef: React.RefObject<HTMLTextAreaElement>
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>
   formData: {
     prompt: string
   }

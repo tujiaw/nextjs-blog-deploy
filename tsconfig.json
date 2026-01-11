@@ -2,7 +2,11 @@
   "compilerOptions": {
     "incremental": true,
     "target": "ES6",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
@@ -14,15 +18,27 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/components/*": ["components/*"],
-      "@/data/*": ["data/*"],
-      "@/layouts/*": ["layouts/*"],
-      "@/css/*": ["css/*"],
-      "@/lib/*": ["lib/*"],
-      "contentlayer/generated": ["./.contentlayer/generated"]
+      "@/components/*": [
+        "components/*"
+      ],
+      "@/data/*": [
+        "data/*"
+      ],
+      "@/layouts/*": [
+        "layouts/*"
+      ],
+      "@/css/*": [
+        "css/*"
+      ],
+      "@/lib/*": [
+        "lib/*"
+      ],
+      "contentlayer/generated": [
+        "./.contentlayer/generated"
+      ]
     },
     "plugins": [
       {
@@ -45,7 +61,11 @@
     "layouts/**/*.tsx",
     "types/**/*.d.ts",
     "app/**/*.ts",
-    "app/**/*.tsx"
+    "app/**/*.tsx",
+    ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "data/blog"]
+  "exclude": [
+    "node_modules",
+    "data/blog"
+  ]
 }

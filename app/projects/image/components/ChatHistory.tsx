@@ -3,7 +3,7 @@
 import React from 'react'
 
 interface ChatHistoryProps {
-  chatContainerRef: React.RefObject<HTMLDivElement>
+  chatContainerRef: React.RefObject<HTMLDivElement | null>
   imageHistory: {url: string, size: string}[]
   viewOriginalImage: (url: string) => void
 }

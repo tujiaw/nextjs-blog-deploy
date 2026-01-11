@@ -68,10 +68,6 @@ module.exports = () => {
     basePath,
     reactStrictMode: true,
     pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
-    eslint: {
-      dirs: ['app', 'components', 'layouts', 'scripts'],
-      ignoreDuringBuilds: true,
-    },
     images: {
       remotePatterns: [
         {
@@ -97,6 +93,7 @@ module.exports = () => {
 
       return config
     },
+    turbopack: {}, // Enable webpack config for Turbopack
     experimental: {
       optimizeCss: true,
       optimizePackageImports: ['lucide-react'],

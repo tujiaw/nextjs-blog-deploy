@@ -1,9 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: false
----
-Rule: Always Use Sequential Thinking  
-When executing tasks:  
-- MustInclude: SequentialThinking  
-- Validate: Task decomposition into subtasks  
