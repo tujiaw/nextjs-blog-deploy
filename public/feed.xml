@@ -7,9 +7,19 @@
       <language>zh-CN</language>
       <managingEditor>address@yoursite.com (ningto.com)</managingEditor>
       <webMaster>address@yoursite.com (ningto.com)</webMaster>
-      <lastBuildDate>Tue, 30 Sep 2025 00:00:00 GMT</lastBuildDate>
+      <lastBuildDate>Mon, 12 Jan 2026 00:00:00 GMT</lastBuildDate>
       <atom:link href="https://ningto.com/feed.xml" rel="self" type="application/rss+xml"/>
       
+  <item>
+    <guid>https://ningto.com/blog/2026/claude-code-best-practices</guid>
+    <title>Claude Code 最佳实践</title>
+    <link>https://ningto.com/blog/2026/claude-code-best-practices</link>
+    <description>本文介绍了在各种代码库、语言和环境中使用 Claude Code 的最佳实践、技巧和工作流程，帮助开发者更有效地使用这款强大的 AI 编程助手。</description>
+    <pubDate>Mon, 12 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>Claude</category><category>AI编程</category><category>开发工具</category><category>最佳实践</category>
+  </item>
+
   <item>
     <guid>https://ningto.com/blog/2025/installing-zsh-on-ubuntu-usage-guide-2025-09-30</guid>
     <title>Ubuntu下安装Zsh及常用用法指南</title>
