@@ -28,10 +28,17 @@ export async function generateMetadata(props: {
 export const generateStaticParams = async () => {
   const tagCounts = tagData as Record<string, number>
   const tagKeys = Object.keys(tagCounts)
-  return tagKeys.map((tag) => ({
-    tag: encodeURIComponent(tag),
-  }))
+  // Only pre-generate static pages for tags without special characters
+  // Tags with +, /, or non-ASCII will be handled dynamically
+  return tagKeys
+    .filter((tag) => /^[a-zA-Z0-9_-]+$/.test(tag))
+    .map((tag) => ({
+      tag: tag,
+    }))
 }
+
+// Allow dynamic params for special characters like C++
+export const dynamicParams = true
 
 export default async function TagPage(props: { params: Promise<{ tag: string }> }) {
   const params = await props.params

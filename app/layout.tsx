@@ -18,6 +18,7 @@ const space_grotesk = Space_Grotesk({
   display: 'swap',
   variable: '--font-space-grotesk',
   preload: false,
+  adjustFontFallback: true,
 })
 
 export const metadata: Metadata = {
