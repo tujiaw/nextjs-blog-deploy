@@ -36,6 +36,9 @@
       "@/lib/*": [
         "lib/*"
       ],
+      "@/app/*": [
+        "app/*"
+      ],
       "contentlayer/generated": [
         "./.contentlayer/generated"
       ]
