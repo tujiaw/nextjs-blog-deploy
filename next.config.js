@@ -85,14 +85,8 @@ module.exports = () => {
         },
       ]
     },
-    webpack: (config, options) => {
-      config.module.rules.push({
-        test: /\.svg$/,
-        use: ['@svgr/webpack'],
-      })
-
-      return config
-    },
+    // Webpack 配置已移除 - 迁移到 Turbopack
+    // SVG 现在通过 React 组件导入 (components/Logo.tsx)
     turbopack: {}, // Enable webpack config for Turbopack
     experimental: {
       optimizeCss: true,
