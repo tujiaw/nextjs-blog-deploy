@@ -427,7 +427,7 @@
     <description>本文推荐一个简单易用的 C++11 线程池实现，支持任务排队、线程管理及等待任务完成等功能。示例代码展示了如何创建线程池并提交任务。</description>
     <pubDate>Tue, 08 Oct 2024 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -637,7 +637,7 @@
     <description>C++20 引入模块特性以解决头文件问题。模块由 interface 和 implementation 组成，使用 import 导入，如 example 模块示例。命名应遵循规范，像 math 模块。模块能提升代码维护重用性，编译快、组织简单、冲突少。</description>
     <pubDate>Wed, 05 Apr 2023 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -707,7 +707,7 @@
     <description>IE 浏览器获取元素样式时，常规方式获取不了。文中给出正确方法，包括一系列函数如 bstr2str、str2bstr 等，通过这些函数可获取元素的样式属性。先获取“style”属性的 DISPATCH 值，再获取“cssText”属性值并转换为字符串。</description>
     <pubDate>Fri, 22 Jul 2022 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -737,7 +737,7 @@
     <description>这是一个 C++ 的 beast websocket 示例，包含客户端和服务器代码。客户端发送随机生成的文本消息并接收服务器响应，服务器接收客户端消息并回显。客户端通过连接本地主机的 2236 端口进行通信，服务器在 127.0.0.1 的 2236 端口监听新连接。</description>
     <pubDate>Sun, 06 Mar 2022 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -757,7 +757,7 @@
     null
     <pubDate>Wed, 03 Nov 2021 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -797,7 +797,7 @@
     null
     <pubDate>Tue, 10 Aug 2021 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -847,7 +847,7 @@
     null
     <pubDate>Fri, 11 Jun 2021 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -927,7 +927,7 @@
     null
     <pubDate>Fri, 28 May 2021 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Boost</category>
+    <category>cpp</category><category>Boost</category>
   </item>
 
   <item>
@@ -1127,7 +1127,7 @@
     null
     <pubDate>Thu, 08 Apr 2021 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -1197,7 +1197,7 @@
     null
     <pubDate>Tue, 16 Mar 2021 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Qt</category><category>C++</category>
+    <category>Qt</category><category>cpp</category>
   </item>
 
   <item>
@@ -1247,7 +1247,7 @@
     null
     <pubDate>Fri, 26 Feb 2021 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -1257,7 +1257,7 @@
     null
     <pubDate>Fri, 26 Feb 2021 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -1297,7 +1297,7 @@
     null
     <pubDate>Thu, 25 Feb 2021 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -1407,7 +1407,7 @@
     <description>介绍 jemalloc C++实践，包括下载、解压、编译安装，给出 c++ 测试源码及 CMakeLists，展示编译测试过程和链接 jemalloc 的情况，还可通过环境变量配置满足特殊要求，相关内容可参考[https://github.com/jemalloc/jemalloc/blob/dev/TUNING.md]</description>
     <pubDate>Fri, 27 Nov 2020 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -1417,7 +1417,7 @@
     <description>文章介绍 C++11 实现的 defer 功能，内部 lambda 表达式捕获引用，同一作用域先定义后执行。通过 define 及连接符使局部变量名唯一，使用起来方便，给出源码及用法示例，如在不同函数中使用 defer 输出特定信息。</description>
     <pubDate>Wed, 25 Nov 2020 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -1487,7 +1487,7 @@
     <description>介绍 Qt 中 JSON 读写，提供便捷 C++ API。封装 json 字符串与 QVariantMap 转换函数。展示读取和写入 json 文件的代码，注意写入时需指定 utf8 编码，避免中文转换失败。</description>
     <pubDate>Tue, 22 Sep 2020 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Qt</category><category>C++</category>
+    <category>Qt</category><category>cpp</category>
   </item>
 
   <item>
@@ -1527,7 +1527,7 @@
     <description>介绍 QtCharts 使用，其在 Qt5.7 后包含，包含重要类如 QChart 等。给出 demo 截图及相关源码，包含 MyChart 类的定义和实现，用于展示图表等功能。</description>
     <pubDate>Thu, 03 Sep 2020 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Qt</category><category>C++</category>
+    <category>Qt</category><category>cpp</category>
   </item>
 
   <item>
@@ -1547,7 +1547,7 @@
     <description>用新 visual studio 编译老代码，Debug 时 QString 的 toStdString 和 toStdWString 触发“Expression _BLOCK_TYPE_IS_VALID(pHead-&gt;nBlockUse)”错误，换成特定转换函数就没事，原因可能与内存有关，需分析 QString 源码。</description>
     <pubDate>Mon, 31 Aug 2020 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -1577,7 +1577,7 @@
     <description>主要目的是保证多线程处理同一 key 消息的线程安全和顺序性。通过缓存消息、解析 key、分配线程等步骤实现，关键在于递减索引数和等待索引为 0 以保证顺序执行，代码包含多种类如 MessagePack、NetMessageCache 等，外部调用 init 和 dispatchMessage 函数。</description>
     <pubDate>Thu, 30 Jul 2020 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -1607,7 +1607,7 @@
     <description>线上出现日期赋值异常，经调查确定是 localtime 函数线程不安全导致。通过 demo 模拟，多个线程运行时 t2 的时间会误赋值给 t1。应使用线程安全的 localtime，如在 windows 下直接使用 localtime，linux 下使用 localtime_r。</description>
     <pubDate>Thu, 23 Jul 2020 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Linux</category><category>C++</category><category>Bug</category>
+    <category>Linux</category><category>cpp</category><category>Bug</category>
   </item>
 
   <item>
@@ -1657,7 +1657,7 @@
     <description>介绍了 malloc_trim 和 SetProcessWorkingSetSize 两个内存相关函数。malloc_trim 是 linux 平台函数，可释放堆上可用内存；SetProcessWorkingSetSize 是 windows 平台函数，可设置进程工作集大小，将不使用内存交换到虚拟内存，频繁调用会降低性能。</description>
     <pubDate>Thu, 11 Jun 2020 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -1807,7 +1807,7 @@
     <description>介绍获取本地 IP 地址的方法，C/C++中 Windows 和 Linux 平台都支持的代码，先通过不同方式获取，再给出 Qt 的写法，代码清爽，可获取本地 IP 地址。</description>
     <pubDate>Tue, 28 Apr 2020 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -1817,7 +1817,7 @@
     <description>解决连接 qqpidd 时报错的问题</description>
     <pubDate>Thu, 23 Apr 2020 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2017,7 +2017,7 @@
     <description>文章主要介绍 linux C++进程 CPU 占用 100%的排查方法。先通过 top -c 查看进程，若日志无异常则找到出现问题的线程 ID，用 gdb attach 目标进程，通过 info threads 找到对应线程，输入 thread 及编号后 bt 查看信息，最后 detach 退出调试。</description>
     <pubDate>Wed, 04 Sep 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Linux</category><category>C++</category>
+    <category>Linux</category><category>cpp</category>
   </item>
 
   <item>
@@ -2027,7 +2027,7 @@
     <description>总结：linux C++内存释放后进程内存未降，因系统内存分配原理，mmap释放后归还给系统，brk释放后若高地址内存块未释放则低地址内存块不还。可用 malloc_trim(0)强制归还给系统，还可通过 mallopt 优化内存。</description>
     <pubDate>Fri, 30 Aug 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Linux</category><category>C++</category>
+    <category>Linux</category><category>cpp</category>
   </item>
 
   <item>
@@ -2057,7 +2057,7 @@
     <description>这是 C++ 智能指针简单实现代码，仅用于学习，生产勿用。通过模板类`SmartPtr`及内部结构`Counter`实现计数功能。测试代码展示了其基本用法，包括对象创建、赋值和销毁等操作。</description>
     <pubDate>Mon, 05 Aug 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2347,7 +2347,7 @@
     <description>C++是系统级语言，易学难精。文章介绍其高级特性、常见误解及易错点，如全局变量构造析构顺序、局部变量初始化、std::sort 比较函数等，还涉及 vector 底层实现等 32 个方面，帮助提升对 C++的了解与编程效率。</description>
     <pubDate>Thu, 02 May 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2367,7 +2367,7 @@
     <description>C++中保证指针对象正确销毁，可通过 RAII 惯用法或 std::unique_ptr。RAII 需自定义类保证对象在作用域结束时销毁，std::unique_ptr 可自动管理对象并在离开作用域时释放，还可自定义销毁函数，能更方便地处理资源管理。</description>
     <pubDate>Fri, 19 Apr 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2377,7 +2377,7 @@
     <description>文章介绍 boost asio 获取本机 IP 地址的代码，只获取 IPV4 地址且多个用分号间隔。在 Linux 上原方法可能失败，给出 Linux 上获取本地 IP 的代码，通过遍历 ifaddrs 获取 IPv4 和 IPv6 地址。</description>
     <pubDate>Fri, 19 Apr 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Boost</category>
+    <category>cpp</category><category>Boost</category>
   </item>
 
   <item>
@@ -2407,7 +2407,7 @@
     <description>介绍 qpid C++接口简单封装，处理队列、订阅消息，发送同步、异步、推送消息的方法及示例代码，简单易用，满足大部分场景，源码在[github 源码](https://github.com/tujiaw/qpid-example)。</description>
     <pubDate>Fri, 12 Apr 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>MQ</category>
+    <category>cpp</category><category>MQ</category>
   </item>
 
   <item>
@@ -2447,7 +2447,7 @@
     <description>介绍 Apache Ignite c++在 linux 下的编译安装，包括环境设置、编译过程（可能出现的多种错误及解决办法）、安装及验证，还给出了 demo 链接，需注意不要直接拉 github 代码编译，要从官网下载。</description>
     <pubDate>Fri, 29 Mar 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Linux</category><category>C++</category>
+    <category>Linux</category><category>cpp</category>
   </item>
 
   <item>
@@ -2457,7 +2457,7 @@
     <description>客户端使用 QSortFilterProxyModel 时，频繁更新 model 致 table 行排序不正确。虽可手动调用 sort 及 invalidate，却在特定操作时会崩溃。可关 dynamicSortFilter 用 Timer 控制排序，通过相关函数控制触发间隔及在 model changed 槽函数启动 timer 来解决此问题。</description>
     <pubDate>Wed, 27 Mar 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category><category>Qt</category>
+    <category>Windows</category><category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -2487,7 +2487,7 @@
     <description>在 Qt 中，show 用于显示窗口，raise 可将窗口置于最前。但主窗口点击时子窗口可能遮挡，此时需用 activateWindow 和 raise 解决。show 显示窗口及子窗口，showNormal 恢复最大化或最小化窗口，raise 提升窗口，activateWindow 设置活动窗口并可与 raise 配合确保窗口置顶。</description>
     <pubDate>Tue, 05 Mar 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>Qt</category><category>C++</category>
+    <category>Windows</category><category>Qt</category><category>cpp</category>
   </item>
 
   <item>
@@ -2507,7 +2507,7 @@
     <description>文章主要解决多线程处理相同产品数据错乱问题，介绍两种方法。方法一是将相同产品 ID 消息放同一线程处理，分配 n 个 Worker 按序执行；方法二是收到消息时上锁，只锁产品，相同产品只允许一个线程处理，代码分别给出两种方法的实现。</description>
     <pubDate>Mon, 18 Feb 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Linux</category>
+    <category>cpp</category><category>Linux</category>
   </item>
 
   <item>
@@ -2517,7 +2517,7 @@
     <description>介绍 C++保证函数在超时时间内返回的方法。通过两个接口 execTimeout 实现，利用 shared_from_this 避免智能指针释放，启动新线程执行函数，demo 展示正常返回和超时返回，代码包含 TimeoutGuard 类的实现。</description>
     <pubDate>Thu, 24 Jan 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2527,7 +2527,7 @@
     <description>文章介绍跨平台获取当前进程内存，“Resident set size”很重要。提供了获取进程峰值和当前驻留集大小的函数，在不同操作系统（如 Windows、Linux 等）有不同实现方式，给出了相应源码。</description>
     <pubDate>Thu, 17 Jan 2019 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2547,7 +2547,7 @@
     <description>文章介绍 STL 容器循环 erase 迭代器失效，以 std::map 为例，给出 C++11 和 C++03 两种写法。C++03 中 iter++可避免迭代器失效，而 C++11 写法在某些 linux 编译器不支持，同时指出错误写法会造成崩溃。</description>
     <pubDate>Thu, 20 Dec 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2557,7 +2557,7 @@
     <description>介绍 qpid 相关笔记，包括查看队列及连接信息、删除队列、qpid-tool 用法、消息处理相关操作（如 session.acknowledge、session.sync）及不同类型 exchange（queue、topic）的特点和使用方式。</description>
     <pubDate>Fri, 14 Dec 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>MQ</category>
+    <category>cpp</category><category>MQ</category>
   </item>
 
   <item>
@@ -2587,7 +2587,7 @@
     <description>介绍 qpid-cpp Windows 编译，需先安装 boost 等，下载源码解压后用 CMake 配置，因缺 boost 设 BOOST_ROOT 路径，后用 vs 编译 ALL_BUILD 和 INSTALL，即便有 setlocal 错误，qpid-cpp 也已安装在 C:\Program Files (x86)\qpid-cpp 目录下。</description>
     <pubDate>Tue, 27 Nov 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category><category>MQ</category>
+    <category>Windows</category><category>cpp</category><category>MQ</category>
   </item>
 
   <item>
@@ -2617,7 +2617,7 @@
     <description>Qt 客户端多开需注意本地配置、进程名及全局信息。可通过 RunGuard 类保证同一程序仅运行一个进程，多开时要保证目录和进程名不同，若已有进程运行则打开其主窗口。</description>
     <pubDate>Mon, 15 Oct 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category><category>Windows</category>
+    <category>cpp</category><category>Qt</category><category>Windows</category>
   </item>
 
   <item>
@@ -2627,7 +2627,7 @@
     <description>本文讨论C++浮点型计算的陷阱，特别是浮点型转整型时会丢失小数部分，并推荐使用C++11的std::lround函数来正确处理转换。</description>
     <pubDate>Sat, 29 Sep 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2647,7 +2647,7 @@
     <description>Qt connect 函数的 Qt::ConnectionType 参数决定信号投递和槽函数执行方式。有 Auto、Direct、Queued、BlockingQueued、Unique 等值，分别对应不同线程下的信号槽处理情况，可根据需求选择使用。</description>
     <pubDate>Tue, 25 Sep 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -2677,7 +2677,7 @@
     <description>文章主要比较 QKeyEvent 和 shortcut 的按键信息，通过 setShortcut 给 button 设置快捷方式，用 QKeyEvent 的 modifiers 和 key 函数获取按键，将其转换为 QKeySequence 后与 shortcut 比较，经处理使格式一致，常见组合键判断没问题但不排除特殊情况。</description>
     <pubDate>Mon, 03 Sep 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -2697,7 +2697,7 @@
     null
     <pubDate>Thu, 02 Aug 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2717,7 +2717,7 @@
     <description>本文通过一张图展示Google C++代码规范，包含命名规则、代码结构和注释风格等内容。</description>
     <pubDate>Fri, 13 Jul 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2777,7 +2777,7 @@
     <description>本文介绍了Boost.Asio库的使用技巧和基本概念，涵盖I/O服务、Proactor模型、缓冲区管理、I/O对象、信号处理、定时器和strand等功能。</description>
     <pubDate>Fri, 15 Jun 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Boost</category>
+    <category>cpp</category><category>Boost</category>
   </item>
 
   <item>
@@ -2787,7 +2787,7 @@
     <description>本文介绍字符串和单词翻转的实现方法，提供C++和C#的代码示例，展示如何通过分段反序实现特定翻转效果。</description>
     <pubDate>Mon, 11 Jun 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2797,7 +2797,7 @@
     <description>总结 c++ 性能优化策略：从程序架构到具体细节，如避免过度继承、合理使用对象复合等；优化构造函数、变量定义等；善用内联、stl 等，还包括缓存、多线程等方面的技巧。</description>
     <pubDate>Sun, 03 Jun 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2807,7 +2807,7 @@
     <description>本文展示了C++中有理数(Rational)类的实现方法，包含基本运算和相关功能。</description>
     <pubDate>Sat, 02 Jun 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2817,7 +2817,7 @@
     <description>总结 C++ 相关内容：虚基类需 virtual 析构，std::auto_ptr 有风险用 unique_ptr 替代，重载 operator&amp;()用 std::addressof，不支持重载函数模板及名称空间问题，基类派生类成员变量初始化顺序等，还提到一些其他用法及注意事项。</description>
     <pubDate>Sat, 19 May 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2827,7 +2827,7 @@
     <description>收集 C++ Windows 实用函数，含头文件依赖，如获取系统内存等信息、字符串编码转换、目标是否存在等 17 个函数，涵盖内存、线程、时间、文件等方面操作，方便开发使用。</description>
     <pubDate>Fri, 18 May 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Windows</category>
+    <category>cpp</category><category>Windows</category>
   </item>
 
   <item>
@@ -2837,7 +2837,7 @@
     <description>2018 年 5 月 10 日的 C/C++相关文章指出，for 循环倒叙遍历勿用 size_t 等无符号整型，如上述代码，size_t 为无符号整型，i 为 0 时继续减会变为 UINT_MAX 导致越界崩溃，结论是逆序遍历用 int 别用 size_t。</description>
     <pubDate>Thu, 10 May 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2847,7 +2847,7 @@
     <description>本文介绍 C++ String 正确实现及关键点，包括构造函数等必要操作，列举要点如成员初始化列表顺序等，还给出简化代码及相关注意事项，如字符串需以&#39;\0&#39;结尾、赋值操作符参数传值等。</description>
     <pubDate>Wed, 09 May 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -2877,7 +2877,7 @@
     <description>遇到 C/C++ 和 Qt 中的内存释放问题，操作复杂时释放会崩溃。通过保存待删指针，10 秒空闲时销毁解决。代码中定义 DelayDestory 类，提供实例获取及删除操作方法，通过定时器控制删除时机。</description>
     <pubDate>Mon, 19 Mar 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -2887,7 +2887,7 @@
     <description>文章主要讲 C/C++ 和 Qt 中解决输入框搜索延迟问题。通过设置 200 毫秒输入间隔时间，利用 Timer 控制搜索，先停止再重新开始计时，还优化了 Timer 触发逻辑，避免用户快速输入时带来问题。</description>
     <pubDate>Mon, 19 Mar 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -2897,7 +2897,7 @@
     <description>文章介绍 Qt 自定义 Tooltip，从 QDialog 继承，设置无边框属性，鼠标点击其他处自动关闭及自动析构等操作。给出 tooltip.h 和 tooltip.cpp 源码，用法为 Tooltip::popup(QCursor::pos(), &quot;hello&quot;)。</description>
     <pubDate>Fri, 09 Mar 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -2957,7 +2957,7 @@
     <description>介绍了 QTableView 多选，需了解 setSelectionBehavior 和 setSelectionMode 接口。初始化后用特定代码达不到要求，需使用 select 接口的新用法，封装了 selectMulRows 方法实现多选。</description>
     <pubDate>Tue, 09 Jan 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -2977,7 +2977,7 @@
     <description>桌面客户端主线程即 UI 线程，异步获取数据常在子线程，不能直接操作 UI。介绍两种将子线程数据抛到 UI 层处理的方法：一是调用和接收在一起，通过信号槽机制；二是调用和接收分开，用 signalDispatch 类以信号方式 emit 结果，可实现多个 UI 窗口数据同步。</description>
     <pubDate>Fri, 05 Jan 2018 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category><category>Windows</category>
+    <category>cpp</category><category>Qt</category><category>Windows</category>
   </item>
 
   <item>
@@ -3037,7 +3037,7 @@
     <description>介绍 Qt API 设计原则，包括一致、易掌握、强大等特质，如极简、完备等。强调静态多态和基于属性的 API，举例说明好、差及值得斟酌的案例，还提及属性间关联处理及特殊值或重置方法等，有原文链接及译文稿。</description>
     <pubDate>Fri, 17 Nov 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -3047,7 +3047,7 @@
     <description>总结：介绍 C++相关 API 设计原则，如值与对象（指针 vs 引用等）、虚函数（避免过度使用等）、关于 const（输入参数、返回值等方面），并提及 Qt 中的实践及相关注意事项，还对比不同情况下的选择。</description>
     <pubDate>Fri, 17 Nov 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -3057,7 +3057,7 @@
     <description>总结：介绍 API 设计原则，包括语义文档、命名艺术、避免陷阱等方面，以 QProgressBar 等案例展示实际应用，强调抽象类等问题，还提及相关 Qt 类的改进，如去掉 QGLayoutIterator 等，原文链接为[API Design Principles – Qt Wiki](http://qt-project.org/wiki/API-Design-Principles)。</description>
     <pubDate>Fri, 17 Nov 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -3107,7 +3107,7 @@
     <description>这是常用 CRT 字符串函数的源码，包含 memcpy、memset、strcat 等 14 个函数，分别实现了内存复制、内存设置、字符串连接等功能，代码简洁且实用。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3117,7 +3117,7 @@
     <description>总结：文章通过示例代码展示如何为含指向（抽象）基类指针的类定义拷贝构造函数或复制操作符，如 Fred 类利用 Shape 类的 clone 函数进行相关操作，代码清晰易懂。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3127,7 +3127,7 @@
     <description>这是 C++实现的大数相乘代码。通过两个循环计算乘积，再处理进位和输出。还给出了 C++的字符串实现版本，同样通过循环和进位处理得到结果，去除前导 0 后输出。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3137,7 +3137,7 @@
     <description>KMP 算法是改进字符串匹配算法，利用匹配失败信息快速匹配，通过实现 next()函数包含模式串局部匹配信息。文中还给出求子串 nextval[]数组的步骤及代码，如 GetNextValue 和 KmpSearch 函数，最后展示了在特定字符串中的搜索示例。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3147,7 +3147,7 @@
     <description>文章介绍将长度为 n 的字符串向左循环移动 m 位的方法，通过先切分字符串为两部分并分别逆序，最后对整个字符串逆序实现。给出 C++代码示例，包含相关函数定义及主函数测试。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3157,7 +3157,7 @@
     <description>文章介绍将字符串中单词倒序的方法，先整体倒序，再逐个单词倒序。通过`ReverseString`函数实现字符串倒序，`ReverseAllWord`函数先整体倒序后逐个单词倒序。代码示例在`_tmain`函数中进行了测试。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3167,7 +3167,7 @@
     <description>字符编解码故事：起初 ASCII 用于美国，后世界各国使用计算机，中国制定 GB2312 等编码，各国有不同编码致交流困难。ISO 推出 UNICODE 用两字节统一表示所有字符，后有多种 UTF 标准。记事本中 GB2312 编码与 UTF8 编码易产生冲撞，还有多种编码形式及转换函数，如 MultiByteToWideChar 和 WideCharToMultiByte。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -3177,7 +3177,7 @@
     <description>介绍 C++多态实现原理，用 virtual 申明虚函数，类有虚表和对象虚指针，多态分类和函数多态，虚函数结合动态绑定实现多态，虚表在构造函数中创建初始化，总结类有虚表等内容，还对比了早期绑定和迟绑定，及类和函数多态性差异。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3197,7 +3197,7 @@
     <description>文章主要讨论基于 TCP 开发通讯程序的封包和拆包问题。TCP 是“流”协议易出现“粘包”，需在发送端封包、接收端拆包。介绍了多种封包拆包方式，如动态缓冲区暂存、利用底层缓冲区等，并给出相关代码示例。UDP 不存在拆包问题。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3207,7 +3207,7 @@
     <description>介绍了 STL 中 transform 的用法，通过不同函数指针实现对容器元素的操作，如对向量元素加 1、两向量元素相加等，还可用于字符串大小写转换，代码示例清晰展示其功能。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3217,7 +3217,7 @@
     <description>这是 C 语言日历程序，输入年月显示当前日历，按左右方向键可显示上月或下月日历，按其他键两次退出。通过函数判断闰年及计算星期数，循环输出日历，可根据输入动态调整。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3237,7 +3237,7 @@
     <description>介绍 C++读写 XML 文件的 Libxml2 库，给出相关代码示例。包括打开文件、解析文件、写入文件及查找节点等操作，代码有读写 XML 文件的具体实现及测试案例，示例文件内容也一并给出。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3247,7 +3247,7 @@
     <description>文章介绍了 C/C++ 头文件宏定义，包括各种条件判断、数组元素计数、断言等宏的定义，如`G_BEGIN_DECLS`等，还定义了相关的辅助函数如`_Assert`等。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3257,7 +3257,7 @@
     <description>本文提供了C++标准库容器的选择指南，帮助开发者根据实际需求选择合适的数据结构。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3277,7 +3277,7 @@
     <description>实现了模拟 glib 中双链表的部分功能。包含头文件`GList.h`定义双链表结构及相关函数声明，`GList.c`实现各函数，如`g_list_alloc`分配内存等，`main.c`进行测试，展示添加、遍历等操作及链表长度等信息。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3297,7 +3297,7 @@
     <description>2017 年 10 月 24 日回顾当年 MFC 信息管理系统毕业设计，曾想弄 UDP 日志服务程序，用 MFC 做单文档应用。参照孙鑫教程学两月后做毕设，功能随意加，最后成学习试验品。现公布源码，数据库连不上部分已注释，VC6.0 可编译运行。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Windows</category>
+    <category>cpp</category><category>Windows</category>
   </item>
 
   <item>
@@ -3317,7 +3317,7 @@
     <description>总结 STL 进阶内容：包含多种容器及操作，如打印容器元素、排序、查找等，还涉及迭代器、仿函数等，多种容器特性及适用场景不同，如 vector、deque、list 等，同时介绍了类似 shared_ptr 的智能指针等。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3327,7 +3327,7 @@
     <description>此代码实现表达式求值，通过栈实现。`Precede`函数获取运算符优先级，`Operate`函数进行运算。`EvaluateExpression`函数遍历表达式，根据优先级进行操作数和运算符的处理，最终返回结果。主函数测试了该功能。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3337,7 +3337,7 @@
     <description>介绍了使用 Boost 库读写 XML 文件的示例代码。通过`load`函数读取`testConfigRead.xml`文件内容并存储到结构体`TestConfig`中，通过`save`函数将结构体内容写入`testConfigWrite.xml`文件，展示了 Boost 库在 XML 操作方面的便捷性。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Boost</category>
+    <category>cpp</category><category>Boost</category>
   </item>
 
   <item>
@@ -3367,7 +3367,7 @@
     <description>介绍 log4cxx 编译与使用，需下载相关文件并解压，运行批处理文件（遇问题需下载 sed），用 vs 打开文件编译得 log4cxx.lib 和 dll，使用时包含头文件、lib 和 dll 文件，配置文件可灵活记日志，还可封装为 Logger 类。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3397,7 +3397,7 @@
     <description>文章介绍 visual stdio 不同目录下文件重名及类重名问题及解决方法。先给出特定目录结构及代码，编译时出现 warning 因同名 obj 文件导致类编译出错，简单改文件名可解决但会造成重复定义，加命名空间可解决。还可在重复 cpp 文件属性中修改输出文件对象文件名避免重名。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -3407,7 +3407,7 @@
     <description>本文为 C、C++常用函数备份，包含获取当前毫秒数、获取格式化时间等多种函数，如`GetCurrentMilliseconds()`、`GetTimeString()`等，还有字节大小格式化、产生随机字符串等功能函数，满足多种编程需求。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3417,7 +3417,7 @@
     <description>总结：文章涵盖 C、C++ 诸多面试题及相关知识，如 new 与 delete、继承组合优缺点等，详细阐述各知识点并给出答案及解释，还涉及多种数据类型转换等内容。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3427,7 +3427,7 @@
     <description>这是关于 C、C++的面试题整理，包含打印源文件信息、main 主函数执行后代码执行、判断编译语言、整数数组排序、链表相关、程序输出分析、找第二大整数、寻找子串位置、判断单链表是否有环、指针找错、标准函数编写、头文件相关、C++调用 C 函数、String 实现、函数调用输出等多方面内容，还包括一些具体代码示例和解答。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3447,7 +3447,7 @@
     <description>介绍在 Windows 中设置 `std::cout` 输出颜色的方法，包含 ConsoleColor.h 头文件，通过定义不同颜色的函数及操作符重载来实现，如 `blue`、`red` 等函数可设置相应颜色输出。</description>
     <pubDate>Tue, 24 Oct 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3507,7 +3507,7 @@
     <description>C++本身无反射，protobuf 可实现。介绍其两种用途：通过 proto 对象名字创建对象，通过 Message 初始化和获取成员变量值，不知具体子类时可通过 key 获取或设置值，如获取 int32 值和设置 int32 值，其他类型同理。</description>
     <pubDate>Sat, 30 Sep 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3537,7 +3537,7 @@
     <description>本文介绍了使用C++模拟实现QThreadPool的过程，涵盖线程池的核心组件设计与实现，包括任务调度、线程管理及同步机制。</description>
     <pubDate>Thu, 21 Sep 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3547,7 +3547,7 @@
     <description>右值引用可避免不必要内存拷贝提高性能。如 std::string 示例，push_back 时加 std::move 避免深拷贝。自定义类需实现右值引用相关函数，std::move 只是返回右值类型调用类中操作，虽增加写库工作量，但方便用户且提升程序性能。</description>
     <pubDate>Thu, 21 Sep 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3557,7 +3557,7 @@
     <description>介绍 Qt 简单截屏，通过鼠标操作实现。定义 GrabWidget 类，包含多种鼠标事件处理函数，如移动、按下、释放等，可保存截取的图片。主函数创建并显示 GrabWidget 实例。</description>
     <pubDate>Mon, 18 Sep 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Qt</category><category>C++</category>
+    <category>Qt</category><category>cpp</category>
   </item>
 
   <item>
@@ -3567,7 +3567,7 @@
     <description>Qt 是跨平台 C++开发框架，含丰富类库与工具。有事件循环、事件过滤，通过 QEventLoop 处理自发和已发事件。信号槽机制可松耦合通信，新语法有编译期检查等优点。还有元对象、隐式共享与 d-pointer 技术、布局管理（多种布局可组合）、内存管理（自动或延迟销毁）等重要特性。</description>
     <pubDate>Mon, 18 Sep 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Qt</category><category>C++</category>
+    <category>Qt</category><category>cpp</category>
   </item>
 
   <item>
@@ -3577,7 +3577,7 @@
     <description>文章介绍 Qt 实现只启动一个实例的方法，涉及进程间通信。给出三种方案，重点展示共享内存的实现代码，通过 QSharedMemory 和 QSystemSemaphore 保证原子操作，用法示例中用随机 GUID 作为标识。</description>
     <pubDate>Mon, 18 Sep 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -3607,7 +3607,7 @@
     <description>介绍 WTL VS2013 安装，提供下载地址，详解解压后双击运行及处理不能运行的方法，还提及创建项目时向导脚本出错的解决办法及编译工程需包含头文件目录等，相关链接也有说明。</description>
     <pubDate>Fri, 01 Sep 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3707,7 +3707,7 @@
     <description>在 Qt 中，通过`qInstallMessageHandler(myMessageOutput)`在应用创建前设置日志处理函数。该函数根据不同类型输出带时间、文件、行号的日志，使用当天日期作为文件名，可指定打印文件，日志信息先输出到调试面板再写入文件。</description>
     <pubDate>Fri, 30 Jun 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -3727,7 +3727,7 @@
     <description>介绍 C++11 的线程相关内容，包括线程创建（std::thread）、互斥量（多种类型）、线程间同步（条件变量）、线程池等。通过代码示例详细展示其用法和注意事项，如独占式互斥量加解锁、递归式互斥量、允许超时的互斥量及避免死锁等。</description>
     <pubDate>Sat, 17 Jun 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -3747,7 +3747,7 @@
     <description>介绍了能让 QLabel 文本超出显示区域显示为“...”并带 tooltip 的 ElidedLabel 类。通过 paintEvent 处理文本绘制，超出则截断显示，且更新 elided 状态和 tooltip，代码包含类定义及实现。</description>
     <pubDate>Tue, 13 Jun 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -3757,7 +3757,7 @@
     <description>介绍了在 C/C++ 的 Qt 中，给 QPushButton 增加图标并显示在文本右边的方法。通过创建按钮、设置文本、图标及布局方向实现，如上述代码所示。</description>
     <pubDate>Tue, 13 Jun 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -3777,7 +3777,7 @@
     <description>介绍 Qt 大数据列表展示，用 QListWidget 等自定义子 widget 展示数据时易慢耗内存，原理是重用隐藏 widget 。组件有父 widget 和滚动条，基本方法有 showEvent 等，通过 m_widgets 缓存 widget ，重点是刷新数据到 widget ，文末有源码及展示效果。</description>
     <pubDate>Sat, 10 Jun 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -3787,7 +3787,7 @@
     <description>介绍了方形图片用 QLabel 显示成圆形的代码。通过自定义的 MaskLabel 类，在 paintEvent 中设置绘图参数，用 QPainterPath 画椭圆作为裁剪路径，实现方形图片的圆形显示。</description>
     <pubDate>Sat, 10 Jun 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -3797,7 +3797,7 @@
     <description>文章介绍 Qt 设置窗口标题和 exe 图标，以工程名“joke”为例，给窗口标题设图简单，需创建 QApplication 和 Dialog 等，给 exe 设图需新建 joke.rc 并粘贴特定文本，加入 pro 文件，在 vs 中加入 rc 文件，执行 qmake 后构建即可。</description>
     <pubDate>Sat, 10 Jun 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -3807,7 +3807,7 @@
     <description>此代码实现了 Windows 任务栏高亮功能。通过`startAlert`函数可设置高亮持续时间和超时时间来闪烁任务栏，`stopAlert`函数则停止高亮。利用`FLASHWINFO`结构体和`FlashWindowEx`函数来完成相关操作。</description>
     <pubDate>Sat, 10 Jun 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -3927,7 +3927,7 @@
     <description>Qt 应用在 XP（sp3）系统出现“无法定位程序输入点 strnlen 于动态链接库 msvcrt.dll 上”错误，含 D3Dcompiler_47.dll 和 opengl32sw.dll。可移除前者用后者，或在 QApplication 实例化前加代码强制 XP 不使用前者，参考相关 Qt 文档。</description>
     <pubDate>Tue, 25 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Windows</category><category>Qt</category>
+    <category>cpp</category><category>Windows</category><category>Qt</category>
   </item>
 
   <item>
@@ -3967,7 +3967,7 @@
     <description>本文介绍了常见排序算法，包括插入排序、及时终止的冒泡排序、终止不必要的选择排序和快速排序。分别给出了各算法的代码实现，通过模板函数提高通用性。</description>
     <pubDate>Mon, 17 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -3977,7 +3977,7 @@
     <description>介绍了类模板之单链表，包含 Chain.h 中定义的模板类 ChainNode 和 Chain，以及 Chain.cpp 中实现的各种函数，如构造、析构、插入、删除等操作，最后在 main.cpp 中进行了测试。</description>
     <pubDate>Mon, 17 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -3987,7 +3987,7 @@
     <description>此为统计程序实例个数的代码，在 Windows 下用 C/C++编写。通过共享数据段和特定消息，实现应用程序知晓自身运行实例个数，在 WinMain 函数中进行相关操作和消息传递。</description>
     <pubDate>Mon, 17 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -3997,7 +3997,7 @@
     <description>此 C++代码通过 Windows API 在文件末尾追加“hello”。先创建文件句柄，获取文件大小，创建文件映射对象，获取映射视图，将“hello”复制到文件末尾，最后解除映射和关闭句柄，实现了在文件末尾追加内容的功能。</description>
     <pubDate>Mon, 17 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4027,7 +4027,7 @@
     <description>本文介绍多文件统计字频，有 60 个文件如 zipin1.txt 到 zipin60.txt，格式相同词频不同。通过 C++代码实现将各文件相同词语词频相加并写至 main.txt，代码中定义 Word 类，在构造函数和更新函数中处理文件数据，最后输出结果，计算耗时。</description>
     <pubDate>Sun, 16 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Windows</category>
+    <category>cpp</category><category>Windows</category>
   </item>
 
   <item>
@@ -4037,7 +4037,7 @@
     <description>这是关于类模板之队列的代码。定义了`Queue`类模板，包含构造、析构、判断空满、获取首尾元素及添加删除元素等操作。在`main`函数中创建`Queue&lt;int&gt;`对象并进行操作演示。</description>
     <pubDate>Sun, 16 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4057,7 +4057,7 @@
     <description>此代码为获取指定文件夹下所有.txt 文件的名称及创建时间。通过`FindFirstFile`和`FindNextFile`函数遍历文件夹，将文件名存储在数组中并返回文件数量，最后关闭查找句柄。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4067,7 +4067,7 @@
     <description>介绍了在 Windows 的 C/C++中，通过初始化 gdiplus 环境，定义成员变量，在构造和析构函数中进行相应操作，实现 Gdiplus 与 GDI 混合的双缓冲代码，包括创建兼容 DC 和位图等操作。迁移于 2011 - 05 - 08。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4077,7 +4077,7 @@
     <description>介绍给对话框添加垂直滚动条的方法，通过消息映射宏、OnInitDialog 初始化及响应 WM_VSCROLL、WM_SIZE、WM_MOUSEWHEEL 等消息来实现，包括各消息处理函数的具体逻辑。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4087,7 +4087,7 @@
     <description>介绍 WTL CHyperLink 类用法，需含 atlctrlx.h 头文件，声明变量并在 OnInitDialog 函数中进行子类化等操作，在消息映射宏中响应事件，可实现点击链接打开指定网页。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4097,7 +4097,7 @@
     <description>这是一个 C/C++ 的 INI 文件操作类`CIniFile`，提供了获取和设置 INI 文件中值的各种方法，如获取字符串、整型数值、坐标等，以及写入、删除节等操作。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4107,7 +4107,7 @@
     <description>介绍了 WTL 自定义的常用类，包括设置背景图片的`CBitmapBkgnd`类、设置背景颜色及字体颜色的`CCtrlColor`类、自定义静态文本控件的`CMyStatic`类及`CCoolLabel`类，详细说明了各类的功能及用法。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4117,7 +4117,7 @@
     <description>文章介绍 WTL 对话框应用程序常用头文件，包括提前声明 CString 类的 _WTL_USE_CSTRING，以及 atlbase、atlapp 等多个用于基本类、窗口类、数据交换类等的头文件，方便开发。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4127,7 +4127,7 @@
     <description>文章介绍实现无标题栏对话框拖动的方法。有两种方案，常规思路繁琐且需处理诸多细节，第二种通过处理 WM_NCHITTEST 消息，在客户区模仿标题栏拖动行为实现，代码简单易理解，对话框其他对象照常工作。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4137,7 +4137,7 @@
     <description>文章介绍通过 WTL 的 IWebBrowser2 调用网页中 javascript 函数。给出简单含 js 网页代码，及相关 WebBrowser ActiveX 控件成员变量等操作，在 OnInitDialog 中导航到网页，OnOk 函数中测试执行 js 函数，还给出 WtlCallJavascript 函数，运行后可实现相应功能。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4147,7 +4147,7 @@
     <description>在 WTL 中，为使 WebBrowser 控件在自己窗口打开网页，需添加 IWebBrowser2 控件，创建时勾选相关选项并插入控件。通过代码实现运行后打开默认网页及解决同一窗口打开网页问题，还需处理编译错误和运行时响应事件等。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4157,7 +4157,7 @@
     <description>本文记录了在看孙鑫老师 vc++16 课聊天程序视频教程时遇到的两个 SOCKET 宽字符问题及解决方法。一是从 ip 地址控件获取值经转换后接收端显示乱码，通过 MultiByteToWideChar 转换为宽字符解决；二是 WSABUF 中 buf 只能接受 char*，需强制转换。作者表示对 SOCKET 宽字符处理仍需努力。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4167,7 +4167,7 @@
     <description>介绍表驱动法及函数指针应用。用表驱动法可简化获取每月天数的代码，函数指针可用于表驱动中，如处理不同 Event 的代码，通过定义结构体和表来实现更精致灵活的代码。但要注意函数指针的致命缺点，使用时需小心“类型陷阱”。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Design</category>
+    <category>cpp</category><category>Design</category>
   </item>
 
   <item>
@@ -4187,7 +4187,7 @@
     <description>STL 学习资料涵盖多种容器及相关内容，如 STL 介绍、stack 等特殊容器共同点、vector 等容器特点及使用区别、map 及 hash_map、set 等，还提及 bitset 用于处理二进制位有序集，各容器在存储、访问、操作等方面有不同特性。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4207,7 +4207,7 @@
     <description>单例模式是常用软件设计模式，保证类只有一个实例。通过静态方法获取实例，构造函数私有。多线程时需小心，可用互斥锁。文中用 C++代码展示了单例模式的实现及相关知识点，包括 static 成员变量和静态成员函数等，还给出了单例销毁的示例。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Design</category>
+    <category>cpp</category><category>Design</category>
   </item>
 
   <item>
@@ -4217,7 +4217,7 @@
     <description>总结：介绍了设计模式中的简单工厂模式，通过工厂类创建不同产品类实例。给出了 Product、Factory 等相关类的代码示例，包括虚析构函数等概念及 main 函数的使用。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Design</category>
+    <category>cpp</category><category>Design</category>
   </item>
 
   <item>
@@ -4237,7 +4237,7 @@
     <description>介绍了静态库的编写与调用。先新建 Win32 Console Project 生成 LibAdd.lib，再新增头文件和源文件。调用时新建 Test 工程，包含头文件，指定 LibAdd.lib 目录和名称，在 main 函数中测试，得到所需结果。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4247,7 +4247,7 @@
     <description>抽象工厂模式为产品家族提供统一创建接口，可在运行时创建系列产品族。文中以 Button 和 Border 为例，创建 Mac 和 Win 系列工厂，客户可根据需求选择创建。还给出了具体产品类和工厂类代码，以及适用性和优缺点等。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Design</category><category>C++</category>
+    <category>Design</category><category>cpp</category>
   </item>
 
   <item>
@@ -4267,7 +4267,7 @@
     <description>介绍内存文件映射用于进程间通信，Microsoft 加入支持可创建内存映射文件无需专门磁盘文件。创建文件映射对象后可像使用任务内存区域，共享数据时传入名称。进程不再需要可调用 CloseHandle 收回存储器，分普通文件和页文件，示例展示进程 1 和进程 2 的操作。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4277,7 +4277,7 @@
     <description>文章介绍在对话框上做“应用”按钮的方法。定义 WM_APPLY_TRUE 和 WM_APPLY_FALSE 消息，在 Main 对话框中实现消息映射和响应，还捕获全局消息，根据不同情况使“应用”按钮可用或不可用，用的是 WTL 且基本方法一致。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4287,7 +4287,7 @@
     <description>文章主要探讨 char 与 wchar_t，指出 char 存 ascii 码字符，wchar_t 存汉字等双字节字符。通过示例解释 char 存储汉字的原理及 memcpy_a 函数对 wchar_t 汉字串拷贝的方式，还提到用宽字符函数输出汉字需包含特定头文件和设置 locale。</description>
     <pubDate>Sat, 15 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4337,7 +4337,7 @@
     <description>QtCharts 提供易使用的图表组件，用 Qt Graphics View Framework 可轻松集成。需自行编译安装，步骤包括获取源代码、用 vs2015 x64 编译安装、安装帮助文档及编译运行 demo 程序，各步骤详细且可成功展示图表。</description>
     <pubDate>Sun, 02 Apr 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category><category>Qt</category>
+    <category>Windows</category><category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -4357,7 +4357,7 @@
     <description>文章介绍了 Windows 中判断窗口是否置顶、设置取消置顶及设置前景的方法。通过相关函数可实现这些操作，还定义了 WinParameter 类来解决特殊情况下设置失败问题，包含构造和析构函数。</description>
     <pubDate>Sat, 18 Mar 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4367,7 +4367,7 @@
     <description>介绍 Qt 自定义读取 qss 样式表，一般用 qss 配置控件样式，特殊情况需代码控制。通过代码解析 qss 中的样式属性，提供 init、style、attr 等函数，示例展示了 qss 样式及初始化读取样式的过程。</description>
     <pubDate>Fri, 17 Mar 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -4387,7 +4387,7 @@
     <description>文章介绍 C++获取输入法名字及调整输入法候选框位置。可通过窗口布局或 HKL 获取，给出获取名字的函数及调整位置的代码，还包含相关头文件，支持 win7 及以下系统。</description>
     <pubDate>Fri, 10 Mar 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4487,7 +4487,7 @@
     <description>文章介绍让程序只有一个实例运行的方法，开始加代码实现。有三种：一是找先前窗口实例并激活；二是用互斥对象，创建后判断是否已存在；三是用事件对象，创建后判断是否已存在，若已存在则直接返回。（迁移 2011 - 05 - 28）</description>
     <pubDate>Thu, 02 Feb 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4497,7 +4497,7 @@
     <description>文章介绍了进程或线程同步互斥的四种控制方法：临界区速度快可串行化访问公共资源；互斥量可跨进程控制资源访问；信号量允许多线程同时访问有限资源；事件可通知线程同步。并分别给出各方法的操作原语及 MFC 类的使用示例，还通过实例展示了临界区和事件的用法。</description>
     <pubDate>Thu, 02 Feb 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4507,7 +4507,7 @@
     <description>总结：内存映射文件是一种内存管理方法，可将文件映射到进程虚拟地址空间，无需文件 I/O 操作和缓冲处理，适合管理大尺寸文件。文中给出 C++代码示例，通过创建文件、映射文件视图等操作实现内存映射。</description>
     <pubDate>Thu, 02 Feb 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4517,7 +4517,7 @@
     <description>介绍了 WTL 按钮重绘的类及用法，需导入头文件，添加按钮控件并设 Ower Draw 属性为 True，在特定消息映射中添加代码，还给出了类的相关函数如 OnDrawItem 等的实现，可实现按钮不同状态下的位图绘制及相关操作。[from](http://www.codeproject.com/KB/wtl/mousetrack.aspx) （迁移 2011 - 05 - 09）</description>
     <pubDate>Thu, 02 Feb 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4527,7 +4527,7 @@
     <description>文章介绍 WTL 多页面显示实现方法，主对话框有三页面，设属性、成员变量，设置显示区域并创建页面，移动到指定区域，最后根据条件显示指定窗口，隐藏其他窗口，如显示第一页隐藏第二、三页。</description>
     <pubDate>Thu, 02 Feb 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4567,7 +4567,7 @@
     <description>介绍了一个老外写的好用 ToolTip，解决两个小问题（鼠标划上立马弹出又消失、提示框停留时间短），给出源码及用法，需写入头文件、继承类等，还可看源码函数了解其他用法。</description>
     <pubDate>Thu, 26 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4577,7 +4577,7 @@
     <description>2017 年 1 月 26 日记录为 CComboBox 控件增加系统字体名的过程。先定义并关联对象，再通过 EnumFontFamiliesEx 及回调函数获取字体名并添加到 CComboBox 中，注意相关参数设置和返回值，还需去掉带@号的字体名。</description>
     <pubDate>Thu, 26 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4587,7 +4587,7 @@
     <description>介绍了 DLL 的编写与调用，包括新建 DLL 类型应用程序（myDll.cpp）及调用（TestDll.cpp）的代码，还提及显式和隐式调用方式及相关函数，如 extern &quot;C&quot;、_declspec 等，以及一个 apr 中的例子。</description>
     <pubDate>Thu, 26 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4597,7 +4597,7 @@
     <description>介绍函数外初始化与函数内初始化，通过测试代码说明。函数内初始化需注意参数带&amp;，为传递指针引用；函数外初始化参数带&amp;或不带&amp;均可，传进来是同一地址。认为第二种方式符合分配释放原则。</description>
     <pubDate>Thu, 26 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4617,7 +4617,7 @@
     <description>介绍 WTL 安装到 VS2008 和 VS2010 的方法。WTL8.0 支持 VS2005 ，8.1 支持 VS2008 。安装时需注意解压、设置 VC++目录等步骤，若遇错误可参考相关资料解决，VS2010 安装需下载特定文件并按步骤操作。</description>
     <pubDate>Mon, 23 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
@@ -4627,7 +4627,7 @@
     <description>文章介绍了 UML 中类的关系，包括依赖、关联、聚合、组合和泛化。依赖是使用关系，关联是拥有关系，聚合和组合是整体 - 部分关系，聚合可分离，组合不可分离，泛化是父类与子类关系。并举例说明不同关系在不同问题域的表现和变化。</description>
     <pubDate>Sun, 22 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4637,7 +4637,7 @@
     <description>介绍 scanf、sscanf 中的正则表达式，包括定制扫描集、读入地址、丢弃空白符等。通过多个实验展示 sscanf 用正则表达式格式化输入后字符串的变化，如不同条件下的拷贝和过滤等，还提到 msdn 中 sscanf 声明及可直接用正则表达式等内容。</description>
     <pubDate>Sun, 22 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4677,7 +4677,7 @@
     <description>2017 年 1 月 22 日，文章介绍通过取出 GtkButton 里的 label 并更改其字体来改变 button 字体大小，利用 pango 相关代码实现，安装 gtk 后自带 pango。</description>
     <pubDate>Sun, 22 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Linux</category><category>C++</category>
+    <category>Linux</category><category>cpp</category>
   </item>
 
   <item>
@@ -4687,7 +4687,7 @@
     <description>const 可指定语义约束，编译器强制实施。函数参数加 const 有不同含义，返回值前加 const 及类成员函数后加 const 也有特定规则，如函数参数加 const 可限制被指物或指针，类成员函数后加 const 不能给成员变量赋值，可用 mutable 解决。</description>
     <pubDate>Sun, 22 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4707,7 +4707,7 @@
     <description>介绍类模板之栈，给出`myStack.h`、`myStack.cpp`和`main.cpp`代码。`myStack.h`定义类模板`CMyStack`，`myStack.cpp`实现其成员函数，`main.cpp`创建并使用`CMyStack&lt;int&gt;`对象进行操作，展示栈的基本功能。</description>
     <pubDate>Thu, 19 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4717,7 +4717,7 @@
     <description>介绍了可变参数，C 编译器提供宏处理，有 ANSI 标准形式和与 UNIX System V 兼容形式，通过 va_start、va_arg、va_end 处理参数，还给出具体代码示例，如 demo 函数和 CLogger 类的 Write 函数等。</description>
     <pubDate>Thu, 19 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4727,7 +4727,7 @@
     <description>介绍 libcurl 静态库编译需支持 XP 的相关内容，给出 github 地址。详细步骤为打开 curl/winbuild/MakefileBuild.vc 文件添加特定内容，在 VS2013 命令提示工具下 cd 到相应目录运行命令，最终在 curl/builds 目录可看到生成文件。</description>
     <pubDate>Mon, 16 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4747,7 +4747,7 @@
     <description>C++有 const_cast、static_cast、reinterpret_cast、dynamic_cast 等转型。const_cast 剥除 const 修饰符；static_cast 用于类的父子类转换需显式说明；reinterpret_cast 用于指针转换，字节数相同可按位转换；dynamic_cast 用于多态类型向下转型，执行运行期检查。</description>
     <pubDate>Sun, 15 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4757,7 +4757,7 @@
     <description>文章介绍了宽字符函数与普通 C 函数，如 iswalnum 等与 isalnum 等的对应关系，列举了多种宽字符函数及其对应的普通 C 函数，还提供了更多函数的查看链接。</description>
     <pubDate>Sun, 15 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4767,7 +4767,7 @@
     <description>介绍了 C++中 MyString 类的拷贝构造与赋值操作，若未自定义这两个操作，C++会生成缺省操作符，导致内存泄漏等问题，如 str1 和 str2 赋值后指向同一内存，析构时会出错。</description>
     <pubDate>Sun, 15 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category>
+    <category>cpp</category>
   </item>
 
   <item>
@@ -4887,7 +4887,7 @@
     <description>总结：2017 年 1 月 1 日的“Qt 自定义 MessageBox”，需继承自 QDialog，通过 exec 显示窗口，done 关闭窗口并返回值，与 C/C++及 Qt 相关。</description>
     <pubDate>Sun, 01 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>C++</category><category>Qt</category>
+    <category>cpp</category><category>Qt</category>
   </item>
 
   <item>
@@ -4897,7 +4897,7 @@
     <description>本文介绍了在 Windows 中用 C/C++获取剪切板中图片大小的代码。通过判断剪切板格式，打开剪切板，获取数据并转换为 DIB 结构，从而得到图片的宽度和高度，还提供了获取最后错误码的函数。</description>
     <pubDate>Sun, 01 Jan 2017 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
-    <category>Windows</category><category>C++</category>
+    <category>Windows</category><category>cpp</category>
   </item>
 
   <item>
