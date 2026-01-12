@@ -11,9 +11,9 @@
       <atom:link href="https://ningto.com/feed.xml" rel="self" type="application/rss+xml"/>
       
   <item>
-    <guid>https://ningto.com/blog/2025/Ubuntu下安装Zsh及常用用法指南-2025-09-30</guid>
+    <guid>https://ningto.com/blog/2025/installing-zsh-on-ubuntu-usage-guide-2025-09-30</guid>
     <title>Ubuntu下安装Zsh及常用用法指南</title>
-    <link>https://ningto.com/blog/2025/Ubuntu下安装Zsh及常用用法指南-2025-09-30</link>
+    <link>https://ningto.com/blog/2025/installing-zsh-on-ubuntu-usage-guide-2025-09-30</link>
     <description>本文介绍了在Ubuntu系统中通过临时或永久更换阿里源的方式安装Zsh，并分享了Zsh的常用配置与技巧</description>
     <pubDate>Tue, 30 Sep 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -21,9 +21,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/Docker-Docker-Compose部署与排查常用命令总结-2025-09-11</guid>
+    <guid>https://ningto.com/blog/2025/docker-docker-compose-deployment-and-troubleshooting-2025-09-11</guid>
     <title>Docker &amp; Docker Compose部署与排查常用命令总结</title>
-    <link>https://ningto.com/blog/2025/Docker-Docker-Compose部署与排查常用命令总结-2025-09-11</link>
+    <link>https://ningto.com/blog/2025/docker-docker-compose-deployment-and-troubleshooting-2025-09-11</link>
     <description>本文总结了应用容器化部署过程中Docker与Docker Compose的核心命令，覆盖构建、启动、日志查看、状态检查等部署全流程，以及部署失败时的排查工具与常见场景解决命令，帮助开发者快速定位问题并解决部署故障。</description>
     <pubDate>Thu, 11 Sep 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -31,19 +31,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/LangGraph入门指南构建长期运行的有状态AI代理-2025-09-10</guid>
-    <title>LangGraph入门指南：构建长期运行的有状态AI代理</title>
-    <link>https://ningto.com/blog/2025/LangGraph入门指南构建长期运行的有状态AI代理-2025-09-10</link>
-    <description>LangGraph是LangChain推出的低级别 orchestration框架，专注于构建长期运行、有状态的AI代理。本文介绍了其核心优势（持久化执行、人机协作、全面内存管理等）、快速入门例子（构建天气查询代理）、核心概念（图、状态、检查点）及生态整合，帮助开发者快速上手LangGraph。</description>
-    <pubDate>Wed, 10 Sep 2025 00:00:00 GMT</pubDate>
-    <author>address@yoursite.com (ningto.com)</author>
-    <category>AI</category><category>大模型</category><category>LLM</category><category>Tools</category><category>教程</category>
-  </item>
-
-  <item>
-    <guid>https://ningto.com/blog/2025/LangGraph最佳实践构建可靠有状态AI代理的关键策略-2025-09-10</guid>
+    <guid>https://ningto.com/blog/2025/langGraph-best-practices-strategies-for-reliable-stateful-ai-agents-2025-09-10</guid>
     <title>LangGraph最佳实践：构建可靠有状态AI代理的关键策略</title>
-    <link>https://ningto.com/blog/2025/LangGraph最佳实践构建可靠有状态AI代理的关键策略-2025-09-10</link>
+    <link>https://ningto.com/blog/2025/langGraph-best-practices-strategies-for-reliable-stateful-ai-agents-2025-09-10</link>
     <description>本文总结了LangGraph构建有状态AI代理的核心最佳实践，包括设计清晰的状态结构、强制使用检查点、利用子图模块化、合理引入人机协作及用LangSmith调试等，结合实战示例说明如何应用这些策略，帮助开发者构建可靠、可扩展的AI代理。</description>
     <pubDate>Wed, 10 Sep 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -51,9 +41,19 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/PostgreSQL创建索引锁表问题深度解析原因最佳实践与生产环境解决方案-2025-09-08</guid>
+    <guid>https://ningto.com/blog/2025/langGraph-guide-building-long-running-stateful-ai-agents-2025-09-10</guid>
+    <title>LangGraph入门指南：构建长期运行的有状态AI代理</title>
+    <link>https://ningto.com/blog/2025/langGraph-guide-building-long-running-stateful-ai-agents-2025-09-10</link>
+    <description>LangGraph是LangChain推出的低级别 orchestration框架，专注于构建长期运行、有状态的AI代理。本文介绍了其核心优势（持久化执行、人机协作、全面内存管理等）、快速入门例子（构建天气查询代理）、核心概念（图、状态、检查点）及生态整合，帮助开发者快速上手LangGraph。</description>
+    <pubDate>Wed, 10 Sep 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>大模型</category><category>LLM</category><category>Tools</category><category>教程</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/postgresql-index-locking-issue-analysis-2025-09-08</guid>
     <title>PostgreSQL创建索引锁表问题深度解析原因最佳实践与生产环境解决方案</title>
-    <link>https://ningto.com/blog/2025/PostgreSQL创建索引锁表问题深度解析原因最佳实践与生产环境解决方案-2025-09-08</link>
+    <link>https://ningto.com/blog/2025/postgresql-index-locking-issue-analysis-2025-09-08</link>
     <description>本文深入分析了PostgreSQL创建索引锁表的原因，结合大数据量场景给出最佳实践，包括并发创建、分批次操作、低峰期执行等，并提供生产环境中的解决步骤，帮助用户避免锁表对业务的影响。</description>
     <pubDate>Mon, 08 Sep 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -61,9 +61,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/Python提高效率的小技巧-2025-09-08</guid>
+    <guid>https://ningto.com/blog/2025/python-efficiency-tips-2025-09-08</guid>
     <title>Python提高效率的小技巧</title>
-    <link>https://ningto.com/blog/2025/Python提高效率的小技巧-2025-09-08</link>
+    <link>https://ningto.com/blog/2025/python-efficiency-tips-2025-09-08</link>
     <description>本文介绍了10条以上Python提高效率的小技巧，涵盖使用生成器、列表推导式、内置函数等多个方面，帮助开发者更高效地编写Python代码。</description>
     <pubDate>Mon, 08 Sep 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -71,9 +71,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/无锁并发控制：Python中优雅解决协程竞态条件的实践</guid>
+    <guid>https://ningto.com/blog/2025/lock-free-concurrency-control-in-python-coroutines</guid>
     <title>无锁并发控制：Python中优雅解决协程竞态条件的实践</title>
-    <link>https://ningto.com/blog/2025/无锁并发控制：Python中优雅解决协程竞态条件的实践</link>
+    <link>https://ningto.com/blog/2025/lock-free-concurrency-control-in-python-coroutines</link>
     <description>在高并发的异步编程中，如何在不使用锁的情况下保证数据一致性？本文将深入探讨一种基于不可变更新策略的无锁并发控制方案，并通过实际项目案例展示其应用。</description>
     <pubDate>Wed, 25 Jun 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -91,9 +91,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/gpt4o-顺从性与主体性的悖论</guid>
+    <guid>https://ningto.com/blog/2025/gpt4o-paradox-of-compliance-and-agency</guid>
     <title>GPT-4o：顺从性与主体性的悖论</title>
-    <link>https://ningto.com/blog/2025/gpt4o-顺从性与主体性的悖论</link>
+    <link>https://ningto.com/blog/2025/gpt4o-paradox-of-compliance-and-agency</link>
     <description>深入剖析GPT-4o的顺从性特征及其引发的&quot;人格涌现&quot;现象，探讨AI系统中顺从与主体性之间的复杂关系</description>
     <pubDate>Mon, 12 May 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -121,16 +121,6 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/Cursor使用分享</guid>
-    <title>Cursor使用分享</title>
-    <link>https://ningto.com/blog/2025/Cursor使用分享</link>
-    <description>本文详细介绍了智能IDE Cursor的主要特性、使用场景、对话模式、MCP能力及其在开发流程中的应用体验。</description>
-    <pubDate>Sat, 26 Apr 2025 00:00:00 GMT</pubDate>
-    <author>address@yoursite.com (ningto.com)</author>
-    <category>Cursor</category><category>AI编程</category><category>IDE</category>
-  </item>
-
-  <item>
     <guid>https://ningto.com/blog/2025/cursor-prompt-leak</guid>
     <title>Cursor Prompt Leak</title>
     <link>https://ningto.com/blog/2025/cursor-prompt-leak</link>
@@ -141,9 +131,19 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/Vercel部署时GitHub授权配置问题解决</guid>
+    <guid>https://ningto.com/blog/2025/cursor-usage-sharing</guid>
+    <title>Cursor使用分享</title>
+    <link>https://ningto.com/blog/2025/cursor-usage-sharing</link>
+    <description>本文详细介绍了智能IDE Cursor的主要特性、使用场景、对话模式、MCP能力及其在开发流程中的应用体验。</description>
+    <pubDate>Sat, 26 Apr 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>Cursor</category><category>AI编程</category><category>IDE</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/solve-vercel-deployment-github-auth-issues</guid>
     <title>Vercel部署时GitHub授权配置问题解决</title>
-    <link>https://ningto.com/blog/2025/Vercel部署时GitHub授权配置问题解决</link>
+    <link>https://ningto.com/blog/2025/solve-vercel-deployment-github-auth-issues</link>
     <description>本文解决在Vercel部署环境下GitHub OAuth授权重定向URL使用localhost的问题，确保授权流程在生产环境正常工作。</description>
     <pubDate>Thu, 17 Apr 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -151,9 +151,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/使用Supabase和GitHub授权实现用户认证</guid>
+    <guid>https://ningto.com/blog/2025/user-authentication-with-supabase-and-github-oauth</guid>
     <title>使用 Supabase 和 GitHub 授权实现用户认证</title>
-    <link>https://ningto.com/blog/2025/使用Supabase和GitHub授权实现用户认证</link>
+    <link>https://ningto.com/blog/2025/user-authentication-with-supabase-and-github-oauth</link>
     <description>本文详细介绍如何在 Next.js 应用中使用 Supabase 和 GitHub OAuth 实现用户认证功能，包括完整的配置流程和代码实现。</description>
     <pubDate>Thu, 17 Apr 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -171,9 +171,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/GPT-4.1-发布深度解读</guid>
+    <guid>https://ningto.com/blog/2025/deep-dive-into-gpt-4-1-release</guid>
     <title>OpenAI GPT-4.1发布深度解读</title>
-    <link>https://ningto.com/blog/2025/GPT-4.1-发布深度解读</link>
+    <link>https://ningto.com/blog/2025/deep-dive-into-gpt-4-1-release</link>
     <description>本文系统梳理了OpenAI最新发布的GPT-4.1系列模型的核心亮点、技术突破与行业意义，涵盖其上下文窗口、编码能力、多模态处理、指令遵循等方面的重大升级。</description>
     <pubDate>Wed, 16 Apr 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -181,9 +181,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/MCP实现原理</guid>
+    <guid>https://ningto.com/blog/2025/mcp-implementation-principles</guid>
     <title>大模型MCP协议实现原理与协议格式详解</title>
-    <link>https://ningto.com/blog/2025/MCP实现原理</link>
+    <link>https://ningto.com/blog/2025/mcp-implementation-principles</link>
     <description>本文面向AI/大模型开发者，系统梳理MCP协议的设计思想、分层架构、消息格式、典型能力、安全机制与开发实践，帮助读者深入理解和落地实现MCP协议。</description>
     <pubDate>Wed, 16 Apr 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -191,9 +191,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/DeepSeek Agent MCP实践</guid>
+    <guid>https://ningto.com/blog/2025/deepseek-agent-mcp-practice</guid>
     <title>DeepSeek Agent MCP实践</title>
-    <link>https://ningto.com/blog/2025/DeepSeek Agent MCP实践</link>
+    <link>https://ningto.com/blog/2025/deepseek-agent-mcp-practice</link>
     <description>本文介绍了如何使用DeepSeek AI模型和MCP框架构建一个多功能代理系统，包括天气查询、Shell命令执行和时间信息获取等功能的实践经验。</description>
     <pubDate>Mon, 07 Apr 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -201,9 +201,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/使用Responses-API实现Web搜索和状态管理</guid>
+    <guid>https://ningto.com/blog/2025/implementing-web-search-and-state-management-with-responses-api</guid>
     <title>使用Responses API实现Web搜索和状态管理</title>
-    <link>https://ningto.com/blog/2025/使用Responses-API实现Web搜索和状态管理</link>
+    <link>https://ningto.com/blog/2025/implementing-web-search-and-state-management-with-responses-api</link>
     <description>Responses API是一个新的API，专注于在使用OpenAI API时提供更大的简洁性和表达能力。它为多工具、多轮对话和多种模态而设计。</description>
     <pubDate>Sun, 06 Apr 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -211,9 +211,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/小型语言模型微调的适用场景</guid>
+    <guid>https://ningto.com/blog/2025/use-cases-for-fine-tuning-small-language-models</guid>
     <title>小型语言模型微调的适用场景</title>
-    <link>https://ningto.com/blog/2025/小型语言模型微调的适用场景</link>
+    <link>https://ningto.com/blog/2025/use-cases-for-fine-tuning-small-language-models</link>
     <description>Andrew Ng分享了他对何时应该以及何时不应该使用微调技术的见解，基于他在多家公司的观察。</description>
     <pubDate>Wed, 02 Apr 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -221,9 +221,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/DeepSeek-V3-0324 发布了啥</guid>
+    <guid>https://ningto.com/blog/2025/whats-new-in-deepseek-v3-0324</guid>
     <title>DeepSeek-V3-0324 发布了啥</title>
-    <link>https://ningto.com/blog/2025/DeepSeek-V3-0324 发布了啥</link>
+    <link>https://ningto.com/blog/2025/whats-new-in-deepseek-v3-0324</link>
     <description>DeepSeek在2025年3月24日发布了V3-0324版本，这次更新带来了显著的性能提升。新版本在推理能力、编程能力和中文语言处理方面都有重大突破，特别是在MMLU-Pro、GPQA等基准测试中取得了优异成绩。该模型采用MIT开源许可，包含约685亿参数，并支持高达128K的上下文长度，在AI领域树立了新的标杆。</description>
     <pubDate>Thu, 27 Mar 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -231,23 +231,23 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/掌握提示工程与功能测试</guid>
-    <title>掌握提示工程与功能测试：确保可靠的LLM输出</title>
-    <link>https://ningto.com/blog/2025/掌握提示工程与功能测试</link>
-    <description>如何通过包含输入/输出数据集的功能测试，以系统化方法评估提示，使复杂人工智能任务的提示工程更加可靠。</description>
-    <pubDate>Tue, 25 Mar 2025 00:00:00 GMT</pubDate>
-    <author>address@yoursite.com (ningto.com)</author>
-    <category>LLM</category><category>AI</category><category>Prompt</category>
-  </item>
-
-  <item>
-    <guid>https://ningto.com/blog/2025/面向AI开发经验总结</guid>
+    <guid>https://ningto.com/blog/2025/ai-oriented-development-experience-summary</guid>
     <title>面向AI开发经验总结</title>
-    <link>https://ningto.com/blog/2025/面向AI开发经验总结</link>
+    <link>https://ningto.com/blog/2025/ai-oriented-development-experience-summary</link>
     <description>总结在AI驱动开发过程中的经验和最佳实践，包括如何更好地利用AI助手进行开发。</description>
     <pubDate>Tue, 25 Mar 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
     <category>AI</category><category>LLM</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/mastering-prompt-engineering-and-functional-testing</guid>
+    <title>掌握提示工程与功能测试：确保可靠的LLM输出</title>
+    <link>https://ningto.com/blog/2025/mastering-prompt-engineering-and-functional-testing</link>
+    <description>如何通过包含输入/输出数据集的功能测试，以系统化方法评估提示，使复杂人工智能任务的提示工程更加可靠。</description>
+    <pubDate>Tue, 25 Mar 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>LLM</category><category>AI</category><category>Prompt</category>
   </item>
 
   <item>
@@ -261,9 +261,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/Cursor新手教程</guid>
+    <guid>https://ningto.com/blog/2025/cursor-tutorial-for-beginners</guid>
     <title>Cursor新手教程：最佳实践指南</title>
-    <link>https://ningto.com/blog/2025/Cursor新手教程</link>
+    <link>https://ningto.com/blog/2025/cursor-tutorial-for-beginners</link>
     <description>这份指南提供了使用AI代码编辑器Cursor的实用技巧，帮助你更高效地构建应用程序，无论你是初学者还是有经验的开发者。</description>
     <pubDate>Sun, 23 Mar 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -271,9 +271,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/我们应该怎样使用AI编程工具</guid>
+    <guid>https://ningto.com/blog/2025/how-to-use-ai-coding-tools-effectively</guid>
     <title>我们应该怎样使用AI编程工具</title>
-    <link>https://ningto.com/blog/2025/我们应该怎样使用AI编程工具</link>
+    <link>https://ningto.com/blog/2025/how-to-use-ai-coding-tools-effectively</link>
     <description>AI工具不仅改变了工程师的工作方式，还使更多人能够构建应用和网站。本文深入探讨了三类主要AI编程工具：通用AI聊天机器人、AI集成IDE助手和基于Web的应用生成器，分析它们的优缺点及实际应用案例，展示它们如何推动开发者生产力的新浪潮。</description>
     <pubDate>Sun, 23 Mar 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -281,19 +281,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/Python 包管理工具对比</guid>
-    <title>Python 包管理工具对比</title>
-    <link>https://ningto.com/blog/2025/Python 包管理工具对比</link>
-    <description>本文对Python生态中的各种包管理工具如pip、pipenv、conda、poetry、pdm、pip-tools、pyenv和uv进行了全面对比，帮助开发者选择最适合其项目需求的工具。</description>
-    <pubDate>Wed, 19 Mar 2025 00:00:00 GMT</pubDate>
-    <author>address@yoursite.com (ningto.com)</author>
-    <category>Python</category>
-  </item>
-
-  <item>
-    <guid>https://ningto.com/blog/2025/Python性能飙升的异步编程方法</guid>
+    <guid>https://ningto.com/blog/2025/asynchronous-programming-for-python-performance</guid>
     <title>Python性能飙升的异步编程方法</title>
-    <link>https://ningto.com/blog/2025/Python性能飙升的异步编程方法</link>
+    <link>https://ningto.com/blog/2025/asynchronous-programming-for-python-performance</link>
     <description>本文深入探讨Python异步编程的原理和方法，展示如何通过asyncio库处理I/O密集型任务，显著提升应用性能，包含实用案例和最佳实践。</description>
     <pubDate>Wed, 19 Mar 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -301,29 +291,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/RAG技术实现原理</guid>
-    <title>RAG技术实现原理</title>
-    <link>https://ningto.com/blog/2025/RAG技术实现原理</link>
-    <description>本文详细解析检索增强生成(RAG)技术的工作原理、架构组成和应用场景，介绍如何结合信息检索与生成模型提升大语言模型在知识密集型任务中的表现。</description>
-    <pubDate>Wed, 19 Mar 2025 00:00:00 GMT</pubDate>
-    <author>address@yoursite.com (ningto.com)</author>
-    <category>LLM</category><category>RAG</category>
-  </item>
-
-  <item>
-    <guid>https://ningto.com/blog/2025/开发中的各种代理设置</guid>
-    <title>软件开发中经常使用的代理或源设置方法</title>
-    <link>https://ningto.com/blog/2025/开发中的各种代理设置</link>
-    <description>本文全面介绍软件开发中常用的各种代理和源设置方法，涵盖HTTP、Git、pip、npm、apt、Go和Docker等平台，帮助开发者在受限网络环境中高效工作。</description>
-    <pubDate>Wed, 19 Mar 2025 00:00:00 GMT</pubDate>
-    <author>address@yoursite.com (ningto.com)</author>
-    <category>tools</category>
-  </item>
-
-  <item>
-    <guid>https://ningto.com/blog/2025/提示工程实用指南</guid>
+    <guid>https://ningto.com/blog/2025/practical-guide-to-prompt-engineering</guid>
     <title>提示工程终极指南：从入门到精通</title>
-    <link>https://ningto.com/blog/2025/提示工程实用指南</link>
+    <link>https://ningto.com/blog/2025/practical-guide-to-prompt-engineering</link>
     <description>本文提供全面的提示工程指南，从基础概念到高级策略，帮助读者掌握与AI大模型有效沟通的技巧，提高对话效率和结果质量。</description>
     <pubDate>Wed, 19 Mar 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -331,9 +301,39 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/Python asyncio使用方法</guid>
+    <guid>https://ningto.com/blog/2025/proxy-settings-for-development</guid>
+    <title>软件开发中经常使用的代理或源设置方法</title>
+    <link>https://ningto.com/blog/2025/proxy-settings-for-development</link>
+    <description>本文全面介绍软件开发中常用的各种代理和源设置方法，涵盖HTTP、Git、pip、npm、apt、Go和Docker等平台，帮助开发者在受限网络环境中高效工作。</description>
+    <pubDate>Wed, 19 Mar 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>tools</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/python-package-management-tools-comparison</guid>
+    <title>Python 包管理工具对比</title>
+    <link>https://ningto.com/blog/2025/python-package-management-tools-comparison</link>
+    <description>本文对Python生态中的各种包管理工具如pip、pipenv、conda、poetry、pdm、pip-tools、pyenv和uv进行了全面对比，帮助开发者选择最适合其项目需求的工具。</description>
+    <pubDate>Wed, 19 Mar 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>Python</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/rag-technology-implementation-principles</guid>
+    <title>RAG技术实现原理</title>
+    <link>https://ningto.com/blog/2025/rag-technology-implementation-principles</link>
+    <description>本文详细解析检索增强生成(RAG)技术的工作原理、架构组成和应用场景，介绍如何结合信息检索与生成模型提升大语言模型在知识密集型任务中的表现。</description>
+    <pubDate>Wed, 19 Mar 2025 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>LLM</category><category>RAG</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2025/python-asyncio-usage-guide</guid>
     <title>Python asyncio 入门到精通</title>
-    <link>https://ningto.com/blog/2025/Python asyncio使用方法</link>
+    <link>https://ningto.com/blog/2025/python-asyncio-usage-guide</link>
     <description>本文全面介绍Python asyncio库的基本概念、使用方法及最佳实践，从入门到精通，帮助开发者充分利用异步编程提升I/O密集型应用的性能。</description>
     <pubDate>Tue, 18 Mar 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
@@ -341,9 +341,9 @@
   </item>
 
   <item>
-    <guid>https://ningto.com/blog/2025/大型语言模型不知道自己不知道</guid>
+    <guid>https://ningto.com/blog/2025/what-llms-dont-know-they-dont-know</guid>
     <title>大型语言模型不知道自己不知道——这是个问题</title>
-    <link>https://ningto.com/blog/2025/大型语言模型不知道自己不知道</link>
+    <link>https://ningto.com/blog/2025/what-llms-dont-know-they-dont-know</link>
     <description>本文探讨了大型语言模型(LLMs)的一个关键缺陷：缺乏对自身能力的认知。这使得它们在执行自己并不理解的任务时过于自信，造成比幻觉问题更严重的实用性困境。</description>
     <pubDate>Fri, 14 Mar 2025 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
