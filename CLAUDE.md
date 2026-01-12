@@ -108,6 +108,14 @@
 - 使用 Turbopack 加快构建速度（实验性）
 - 启用 CSS 优化（`experimental.optimizeCss`）
 
+## 重要约束
+
+**禁止使用 Webpack：**
+- 本项目使用 Turbopack 作为构建工具
+- 不要使用 `--webpack` 标志
+- 不要在 `next.config.js` 中配置 webpack
+- 字体加载问题通过 `adjustFontFallback: true` 解决
+
 ## 环境
 
 - 启用 ES 模块的 Node.js
