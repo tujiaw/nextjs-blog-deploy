@@ -1,7 +1,7 @@
 ---
 title: 'linux C++内存优化'
 date: '2019-08-30'
-tags: ['Linux', 'C++']
+tags: ['Linux', 'cpp']
 draft: false
 summary: 总结：linux C++内存释放后进程内存未降，因系统内存分配原理，mmap释放后归还给系统，brk释放后若高地址内存块未释放则低地址内存块不还。可用 malloc_trim(0)强制归还给系统，还可通过 mallopt 优化内存。 
 ---

@@ -1,7 +1,7 @@
 ---
 title: 'std  move和右值引用'
 date: '2017-09-21'
-tags: ['C++']
+tags: ['cpp']
 draft: false
 summary: 右值引用可避免不必要内存拷贝提高性能。如 std::string 示例，push_back 时加 std::move 避免深拷贝。自定义类需实现右值引用相关函数，std::move 只是返回右值类型调用类中操作，虽增加写库工作量，但方便用户且提升程序性能。 
 ---

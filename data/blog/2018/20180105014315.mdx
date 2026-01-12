@@ -1,7 +1,7 @@
 ---
 title: 'Qt回调到UI线程'
 date: '2018-01-05'
-tags: ['C++', 'Qt', 'Windows']
+tags: ['cpp', 'Qt', 'Windows']
 draft: false
 summary: 桌面客户端主线程即 UI 线程，异步获取数据常在子线程，不能直接操作 UI。介绍两种将子线程数据抛到 UI 层处理的方法：一是调用和接收在一起，通过信号槽机制；二是调用和接收分开，用 signalDispatch 类以信号方式 emit 结果，可实现多个 UI 窗口数据同步。 
 ---

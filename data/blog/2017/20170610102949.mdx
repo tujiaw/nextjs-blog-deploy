@@ -1,7 +1,7 @@
 ---
 title: 'Qt 大数据列表展示'
 date: '2017-06-10'
-tags: ['C++', 'Qt']
+tags: ['cpp', 'Qt']
 draft: false
 summary: 介绍 Qt 大数据列表展示，用 QListWidget 等自定义子 widget 展示数据时易慢耗内存，原理是重用隐藏 widget 。组件有父 widget 和滚动条，基本方法有 showEvent 等，通过 m_widgets 缓存 widget ，重点是刷新数据到 widget ，文末有源码及展示效果。 
 ---

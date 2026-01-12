@@ -1,7 +1,7 @@
 ---
 title: 'linux C++进程CPU占用100%排查'
 date: '2019-09-04'
-tags: ['Linux', 'C++']
+tags: ['Linux', 'cpp']
 draft: false
 summary: 文章主要介绍 linux C++进程 CPU 占用 100%的排查方法。先通过 top -c 查看进程，若日志无异常则找到出现问题的线程 ID，用 gdb attach 目标进程，通过 info threads 找到对应线程，输入 thread 及编号后 bt 查看信息，最后 detach 退出调试。 
 ---

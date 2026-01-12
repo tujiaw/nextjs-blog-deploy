@@ -1,7 +1,7 @@
 ---
 title: 'localtime线程不安全造成的线上问题'
 date: '2020-07-23'
-tags: ['Linux', 'C++', 'Bug']
+tags: ['Linux', 'cpp', 'Bug']
 draft: false
 summary: 线上出现日期赋值异常，经调查确定是 localtime 函数线程不安全导致。通过 demo 模拟，多个线程运行时 t2 的时间会误赋值给 t1。应使用线程安全的 localtime，如在 windows 下直接使用 localtime，linux 下使用 localtime_r。 
 ---

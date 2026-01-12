@@ -1,7 +1,7 @@
 ---
 title: 'QSortFilterProxyModel排序不正确'
 date: '2019-03-27'
-tags: ['Windows', 'C++', 'Qt']
+tags: ['Windows', 'cpp', 'Qt']
 draft: false
 summary: 客户端使用 QSortFilterProxyModel 时，频繁更新 model 致 table 行排序不正确。虽可手动调用 sort 及 invalidate，却在特定操作时会崩溃。可关 dynamicSortFilter 用 Timer 控制排序，通过相关函数控制触发间隔及在 model changed 槽函数启动 timer 来解决此问题。 
 ---
