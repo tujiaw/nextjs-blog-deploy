@@ -1,6 +1,6 @@
 import Link from '@/components/Link'
 import Tag from '@/components/Tag'
-import tagData from 'app/tag-data.json'
+import tagData from '../tag-data.json'
 import { genPageMetadata } from 'app/seo'
 
 export const metadata = genPageMetadata({ title: 'Tags', description: 'Things I blog about' })
