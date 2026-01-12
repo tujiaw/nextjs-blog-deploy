@@ -1,12 +1,12 @@
 ---
 title: '大语言模型学习指南'
-date: '2024-11-15'
-tags: ['LLM', 'ChatGPT', 'RAG', 'favorites']
+date: '2026-01-12'
+tags: ['LLM', 'ChatGPT', 'RAG', 'Claude', 'AI开发', 'favorites']
 draft: false
-summary: 本文提供了大语言模型（LLM）学习的全面指南，涵盖官方资源、论坛、博客、论文、视频博主和下载模型等多个方面。重点介绍了OpenAI、Stability AI等前沿公司，以及Reddit、Hugging Face等社区资源。同时推荐了多个B站和YouTube上的知名AI教育频道，帮助读者获取最新的技术和实践经验。此资源指南定期更新，为AI学习者提供最新最全的学习路径。
+summary: 本文提供了大语言模型（LLM）学习的全面指南，涵盖官方资源、论坛、博客、论文、开发工具、视频博主和模型下载等多个方面。重点介绍了OpenAI、Anthropic、Mistral等前沿公司，以及Reddit、Hugging Face等社区资源。新增Claude Code、MCP协议等最新开发工具，推荐多个AI教育频道，帮助读者获取2026年最新的技术和实践经验。
 ---
 
-> 此网页内容主要来自第三方，大部分链接需要科学上网。最近更新：2024年11月
+> 此网页内容主要来自第三方，大部分链接需要科学上网。最近更新：2026年1月
 
 # 本站链接
 [LLM前沿动态追踪指南](https://ningto.com/blog/2025/llm-follow)
@@ -15,22 +15,33 @@ summary: 本文提供了大语言模型（LLM）学习的全面指南，涵盖�
 
 | 公司/产品 | 描述 | 链接 |
 |---------|------|-----|
-| OpenAI | 目前最前沿的闭源AI科技公司 | [官网](https://openai.com/) |
+| OpenAI | 目前最前沿的闭源AI科技公司，GPT-4系列 | [官网](https://openai.com/) |
+| Anthropic | Claude系列模型，注重AI安全 | [官网](https://www.anthropic.com/) \| [Claude](https://claude.ai/) |
 | XAI | 马斯克的AI公司，产品叫Grok | [官网](https://x.ai/) |
-| Claude | Anthropic开发的大语言模型 | [官网](https://claude.ai/) |
 | Midjourney | 目前最成功的AIGC图像公司 | [Discord](https://discord.com/invite/midjourney) |
 | Stability AI | 开源众多模型的AI科技公司 | [官网](https://stability.ai/) |
-| Pika | AIGC视频（收费） | [官网](https://pika.art/) |
-| Runway | AIGC视频（收费） | [官网](https://runwayml.com/) |
-| Pixverse | AIGC视频（目前免费） | [官网](https://pixverse.ai/) |
-| LumaAI | AIGC3D（目前免费） | [官网](https://lumalabs.ai/) |
-| 谷歌 Gemini | 谷歌的大语言模型 | [官网](https://gemini.google.com) |
-| 智谱.AI | 国内AI公司 | [官网](https://www.zhipuai.cn/) |
-| 百度文心一言 | 百度的大语言模型 | [官网](https://yiyan.baidu.com/) |
-| 阿里通义千问 | 阿里的大语言模型 | [官网](https://tongyi.aliyun.com/) |
-| 百川智能 | 国内AI初创公司 | [官网](https://www.baichuan-ai.com) |
-| Mistral AI | 强大的开源模型提供商 | [官网](https://mistral.ai/) |
+| Mistral AI | 强大的开源模型提供商，Mixtral系列 | [官网](https://mistral.ai/) |
+| Google DeepMind | 谷歌Gemini系列模型 | [官网](https://gemini.google.com) |
 | Perplexity AI | 结合搜索引擎的AI问答工具 | [官网](https://perplexity.ai/) |
+| ElevenLabs | AI语音合成和克隆 | [官网](https://elevenlabs.io/) |
+| Suno AI | AI音乐生成 | [官网](https://suno.ai/) |
+| Pika | AIGC视频 | [官网](https://pika.art/) |
+| Runway | AIGC视频，Gen-3 Alpha | [官网](https://runwayml.com/) |
+| LumaAI | AIGC 3D和视频，Dream Machine | [官网](https://lumalabs.ai/) |
+| HeyGen | AI视频翻译和数字人 | [官网](https://www.heygen.com/) |
+
+### 国内AI公司
+
+| 公司/产品 | 描述 | 链接 |
+|---------|------|-----|
+| 智谱.AI | GLM系列模型，清言对话 | [官网](https://www.zhipuai.cn/) |
+| 百度文心一言 | 百度的大语言模型 | [官网](https://yiyan.baidu.com/) |
+| 阿里通义千问 | 阿里的大语言模型，Qwen系列 | [官网](https://tongyi.aliyun.com/) |
+| 百川智能 | 国内AI初创公司 | [官网](https://www.baichuan-ai.com) |
+| 月之暗面 | Kimi智能助手 | [官网](https://www.moonshot.cn/) |
+| 零一万物 | Yi系列模型 | [官网](https://www.01.ai/) |
+| 深度求索 | DeepSeek系列模型 | [官网](https://www.deepseek.com/) |
+| 智谱AI | 开源模型社区 | [ModelScope](https://www.modelscope.cn/) |
 
 ## 论坛 Community
 
@@ -49,15 +60,30 @@ summary: 本文提供了大语言模型（LLM）学习的全面指南，涵盖�
 - **[Hugging Face Daily Papers](https://huggingface.co/papers)**: 每日推荐AI论文
 - **[Discord Communities](https://discord.com/)**: 众多AI社区和开源模型官方社区
 
+### AI新闻追踪 AI News Tracking
+
+| 名称 | 描述 | 链接 |
+|-----|------|-----|
+| TLDR AI | 每日AI新闻简报 | [链接](https://tldr.tech/ai/) |
+| AI Supremacy | AI工具和新闻更新 | [链接](https://aisupremacy.com/) |
+| Synced | 全球AI产业新闻 | [链接](https://syncedreview.com/) |
+| VentureBeat AI | AI行业新闻和分析 | [链接](https://venturebeat.com/category/ai/) |
+| MIT AI News | MIT AI研究新闻 | [链接](https://news.mit.edu/topic/artificial-intelligence2) |
+| 机器之心 | 国内AI媒体 | [链接](https://www.jiqizhixin.com/) |
+| 量子位 | 国内AI科技媒体 | [链接](https://www.qbitai.com/) |
+
 ## 网站博客 Blog
 
 | 名称 | 描述 | 链接 |
 |-----|------|-----|
-| BimAnt | 翻译自国外的最新AI文章 | [链接](http://www.bimant.com/blog/tag/sheng-cheng-shi-ai/) |
+| Anthropic Engineering | Anthropic官方技术博客 | [链接](https://www.anthropic.com/engineering) |
+| OpenAI Research | OpenAI研究博客 | [链接](https://openai.com/research) |
 | DeepLearning.AI Blog | 吴恩达创办的AI教育平台博客 | [链接](https://blog.deeplearning.ai/) |
 | The Batch | DeepLearning.AI的每周AI新闻通讯 | [链接](https://www.deeplearning.ai/the-batch/) |
 | Weights & Biases | 机器学习实验平台的技术博客 | [链接](https://wandb.ai/fully-connected) |
 | Hugging Face Blog | 最新模型和技术分享 | [链接](https://huggingface.co/blog) |
+| BimAnt | 翻译自国外的最新AI文章 | [链接](http://www.bimant.com/blog/tag/sheng-cheng-shi-ai/) |
+| Lil'Log | 语言模型学习资源整理 | [链接](https://lilianweng.github.io/) |
 
 ## 论文 Papers
 
@@ -81,22 +107,55 @@ summary: 本文提供了大语言模型（LLM）学习的全面指南，涵盖�
 
 ## 开发工具 Development Tools
 
+### AI编程工具 AI Coding Tools
+
+| 名称 | 描述 | 链接 |
+|-----|------|-----|
+| Claude Code | Anthropic官方命令行AI编程工具 | [官网](https://claude.ai/code) |
+| Cursor | 基于AI的代码编辑器，支持多种模型 | [官网](https://cursor.sh/) |
+| GitHub Copilot | GitHub AI编程助手 | [官网](https://github.com/features/copilot) |
+| Cline | VS Code AI编程助手插件 | [GitHub](https://github.com/cline/cline) |
+| Aider | 命令行AI编程助手 | [GitHub](https://github.com/paul-gauthier/aider) |
+| Continue | 开源AI代码助手 | [官网](https://continue.dev/) |
+
 ### RAG框架 RAG Frameworks
 | 名称 | 描述 | 链接 |
 |-----|------|-----|
 | LangChain | 构建基于LLM应用的流行框架 | [链接](https://www.langchain.com/) |
 | LlamaIndex | 数据索引和检索框架，优化RAG实现 | [链接](https://www.llamaindex.ai/) |
+| LangGraph | LangChain的有状态应用框架 | [链接](https://langchain-ai.github.io/langgraph/) |
 | Haystack | 端到端RAG框架，用于文档搜索 | [链接](https://haystack.deepset.ai/) |
 | LLMWare | 企业级RAG管道统一框架 | [链接](https://llmware.ai/) |
 | PathwayLLM | 动态RAG框架，支持实时数据同步 | [GitHub](https://github.com/pathwaycom/llm-app) |
+| RAGFlow | 基于深度文档理解的RAG引擎 | [GitHub](https://github.com/infiniflow/ragflow) |
+
+### MCP协议与工具 MCP Protocol
+| 名称 | 描述 | 链接 |
+|-----|------|-----|
+| MCP (Model Context Protocol) | Anthropic推出的AI应用连接标准协议 | [官网](https://modelcontextprotocol.io/) |
+| MCP Servers | 丰富的MCP服务器集合 | [GitHub](https://github.com/modelcontextprotocol) |
+| FastMCP | 快速构建MCP服务器的Python框架 | [GitHub](https://github.com/jlowin/fastmcp) |
 
 ### 本地部署工具 Local Deployment
 | 名称 | 描述 | 链接 |
 |-----|------|-----|
-| Ollama | 轻量级本地模型运行工具 | [链接](https://ollama.ai/) |
-| Langserve | LangChain应用的服务部署工具 | [GitHub](https://github.com/langchain-ai/langserve) |
+| Ollama | 轻量级本地模型运行工具 | [链接](https://ollama.com/) |
 | LM Studio | 一站式大语言模型运行与测试环境 | [链接](https://lmstudio.ai/) |
+| vLLM | 高性能LLM推理引擎 | [GitHub](https://github.com/vllm-project/vllm) |
+| llama.cpp | CPU优化的LLM推理库 | [GitHub](https://github.com/ggerganov/llama.cpp) |
+| Text Generation WebUI | 开源LLM Web界面 | [GitHub](https://github.com/oobabooga/text-generation-webui) |
+| LocalAI | 本地AI模型API服务 | [GitHub](https://github.com/mudler/LocalAI) |
+| Ollama WebUI | Ollama的Web界面 | [GitHub](https://github.com/ollama-webui/ollama-webui) |
+
+### Agent框架 Agent Frameworks
+| 名称 | 描述 | 链接 |
+|-----|------|-----|
+| LangGraph | 构建有状态multi-actor应用 | [链接](https://langchain-ai.github.io/langgraph/) |
+| AutoGen | 微软开发的多智能体对话框架 | [GitHub](https://github.com/microsoft/autogen) |
+| CrewAI | 角色扮演Agent框架 | [GitHub](https://github.com/joaomdmoura/crewAI) |
 | Semantic Kernel | 微软开发的LLM集成框架 | [GitHub](https://github.com/microsoft/semantic-kernel) |
+| MetaGPT | 多角色Agent框架 | [GitHub](https://github.com/geekan/MetaGPT) |
+| Phidata | 开源Agent开发框架 | [GitHub](https://github.com/phidatahq/phidata) |
 
 ## 视频博主 Content creators
 
@@ -140,19 +199,33 @@ summary: 本文提供了大语言模型（LLM）学习的全面指南，涵盖�
 
 ## Awesome LLM
 
+### 综合资源列表
+
 - **[Awesome-LLM](https://github.com/Hannibal046/Awesome-LLM)**: 大语言模型资源精选列表
 - **[中文开源大语言模型](https://github.com/HqWu-HITCS/Awesome-Chinese-LLM)**: 整理开源的中文大语言模型
 - **[Awesome-Prompt-Engineering](https://github.com/promptslab/Awesome-Prompt-Engineering)**: 提示工程资源集合
 - **[Awesome-LLM-Reasoning](https://github.com/atfortes/Awesome-LLM-Reasoning)**: LLM推理能力资源集合
 
+### 最新技术资源
+
+- **[Awesome Claude Code](https://github.com/anthropics/anthropic-quickstarts)**: Claude Code官方示例和教程
+- **[Awesome MCP Servers](https://github.com/modelcontextprotocol/servers)**: MCP服务器集合
+- **[Awesome RAG](https://github.com/PerfectKey/awesome-rag)**: RAG技术资源集合
+- **[Awesome AI Agents](https://github.com/e2b-dev/awesome-ai-agents)**: AI Agent开发资源
+- **[Awesome LangGraph](https://github.com/langchain-ai/langgraph)**: LangGraph官方资源和示例
+- **[Awesome DeepSeek](https://github.com/deepseek-ai/DeepSeek-V3)**: DeepSeek模型相关资源
+
 ## 实践建议 Practical Advice
 
-### 初学者路线图
-1. **基础知识学习**: 先学习Python编程和基础数学知识（线性代数、概率统计）
-2. **机器学习入门**: 完成吴恩达的机器学习课程或其他入门课程
-3. **深度学习进阶**: 学习神经网络和深度学习的基本原理
-4. **LLM专项学习**: 了解Transformer架构、自监督学习和迁移学习
-5. **实践项目**: 尝试使用开源模型构建简单应用，如聊天机器人或文本分类
+### 初学者路线图（2026版）
+1. **基础知识学习**: Python编程、基础数学（线性代数、概率统计）
+2. **掌握AI编程工具**: 学习使用Claude Code、Cursor等AI编程助手
+3. **机器学习入门**: 完成吴恩达的机器学习课程或其他入门课程
+4. **深度学习进阶**: 学习神经网络和Transformer架构
+5. **实践LLM应用**: 使用Claude、GPT等API构建简单应用
+6. **学习RAG技术**: 理解检索增强生成原理和实践
+7. **探索Agent开发**: 学习使用LangGraph构建有状态AI应用
+8. **参与开源社区**: 在GitHub上参与AI开源项目
 
 ### 如何高效使用大语言模型
 1. **学习提示工程**: 掌握有效的提示词编写技巧，提高模型输出质量
@@ -161,19 +234,56 @@ summary: 本文提供了大语言模型（LLM）学习的全面指南，涵盖�
 4. **迭代改进**: 通过不断调整提示和参数，优化模型表现
 5. **关注最新发展**: 定期关注模型更新和新技术，保持知识更新
 
-### 构建LLM应用的最佳实践
-1. **先明确用例**: 在选择技术栈前，明确应用的具体需求和目标
-2. **选择合适的模型**: 根据任务复杂度、资源限制和性能需求选择模型
-3. **采用RAG架构**: 对于需要专业知识或最新信息的应用，考虑使用检索增强生成
-4. **评估系统表现**: 建立客观的评估指标，持续监控模型表现
-5. **考虑伦理与安全**: 注意数据隐私、输出审核和责任使用
+### 构建LLM应用的最佳实践（2026版）
+1. **使用AI编程工具**: Claude Code、Cursor等工具可大幅提升开发效率
+2. **选择合适的模型**: 根据任务复杂度、成本和延迟需求选择模型
+3. **采用RAG架构**: 对于需要专业知识或最新信息的应用，优先使用RAG
+4. **利用MCP协议**: 通过MCP连接外部服务和数据源
+5. **实现Agent模式**: 对于复杂任务，使用LangGraph构建多Agent系统
+6. **评估系统表现**: 建立客观的评估指标，持续监控模型表现
+7. **考虑伦理与安全**: 注意数据隐私、输出审核和负责任使用
+8. **优化成本**: 使用混合策略（简单任务用小模型，复杂任务用大模型）
 
-## 前沿趋势 Emerging Trends
+## 前沿趋势 Emerging Trends (2026)
+
+### 技术发展趋势
+
+| 趋势 | 描述 | 代表项目 |
+|-----|------|---------|
+| **小型高效模型** | 1B-10B参数的小型模型性能持续提升，推理成本大幅降低 | Mistral 7B, Qwen2.5, DeepSeek-V3 |
+| **多模态AI** | 原生多模态模型统一处理文本、图像、音频、视频 | GPT-4V, Gemini 2.0, Claude 4 |
+| **Agent架构** | 自主AI代理能够执行复杂任务链，支持工具调用和协作 | LangGraph, AutoGen, CrewAI |
+| **长上下文窗口** | 模型支持越来越长的上下文，从32K扩展到1M+ tokens | Claude 4, Gemini 2.0, Grok-2 |
+| **推理优化** | 量化、蒸馏、MoE等技术让模型更快更便宜 | GPTQ, AWQ, Mixtral 8x7B |
+| **RAG 2.0** | 结合知识图谱、多模态检索的下一代RAG系统 | GraphRAG, Multi-modal RAG |
+| **本地部署普及** | 消费级硬件可运行高质量开源模型 | Ollama, LM Studio, llama.cpp |
+
+### 应用层趋势
 
 | 趋势 | 描述 |
 |-----|------|
-| **小型高效模型** | 如Mistral和Phi等小型但高效的模型正变得越来越流行 |
-| **多模态AI** | 结合文本、图像、音频和视频的多模态模型持续发展 |
-| **Agent架构** | 自主AI代理能够执行复杂任务链的研究和应用正在兴起 |
-| **本地部署** | 随着模型体积缩小和量化技术改进，本地运行LLM变得更加可行 |
-| **特定领域微调** | 针对特定行业和任务的专业化模型将会增多 | 
+| **AI编程助手** | Claude Code、Cursor等工具大幅提升开发效率 |
+| **MCP协议生态** | Model Context Protocol统一AI应用连接标准 |
+| **垂直领域Agent** | 专门化Agent用于编程、数据分析、内容创作等 |
+| **端侧AI** | 手机、PC等终端设备直接运行AI模型 |
+| **AI工作流自动化** | 从单次交互转向长期运行的自动化流程 |
+| **多Agent协作** | 多个AI Agent协同完成复杂任务 |
+
+### 2026值得关注的技术
+
+1. **Claude Code**: Anthropic推出的命令行AI编程工具，支持MCP协议
+2. **DeepSeek-V3**: 国产高性能MoE模型，开源社区热烈讨论
+3. **MCP (Model Context Protocol)**: AI应用连接的标准化协议
+4. **LangGraph**: 构建有状态AI应用的标准框架
+5. **RAGFlow**: 新一代深度文档理解RAG引擎
+6. **vLLM**: 高性能推理引擎，大幅降低部署成本
+
+### 学习建议更新
+
+**2026年学习重点**：
+1. **掌握AI编程工具**: Claude Code、Cursor等工具成为必备技能
+2. **学习Agent开发**: 理解多Agent协作和状态管理
+3. **理解MCP协议**: 参与构建MCP服务器生态
+4. **关注开源模型**: Qwen、DeepSeek等国产模型快速崛起
+5. **实践RAG应用**: 从简单RAG到GraphRAG、Multi-modal RAG
+6. **学习模型部署**: Ollama、vLLM等本地部署技术 
