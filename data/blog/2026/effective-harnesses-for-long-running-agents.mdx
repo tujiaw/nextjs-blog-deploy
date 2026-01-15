@@ -1,0 +1,139 @@
+---
+title: "长时间运行智能体的有效框架"
+date: 2026-01-15
+tags: ["AI", "Agent", "Long-Running", "Anthropic", "Claude Agent SDK"]
+summary: "探讨如何通过初始化智能体和编码智能体的两阶段解决方案，让 Claude Agent SDK 在多个上下文窗口中有效工作。"
+draft: false
+---
+
+> 本文翻译自 Anthropic 官方博客：[Effective harnesses for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
+>
+> 译者注：本文介绍了如何构建能够在长时间、多会话中持续工作的 AI 智能体系统。
+
+随着 AI 智能体变得更加强大,开发人员 increasingly 要求它们承担需要跨越数小时甚至数天的复杂任务。然而,让智能体在多个上下文窗口中保持一致的进展仍然是一个开放性问题。
+
+长时间运行智能体的核心挑战在于它们必须在离散的会话中工作,而每个新会话开始时对之前发生的事情没有任何记忆。想象一个由工程师轮班工作的软件项目,每个新工程师到来时对之前班次发生的事情没有任何记忆。由于上下文窗口有限,而且大多数复杂项目无法在单个窗口内完成,智能体需要一种方法来填补编码会话之间的差距。
+
+我们开发了一个两部分的解决方案,使 Claude Agent SDK 能够在许多上下文窗口中有效工作:一个**初始化智能体**(initializer agent)负责在首次运行时设置环境,以及一个**编码智能体**(coding agent)负责在每个会话中取得渐进式进展,同时为下一个会话留下清晰的工件。您可以在配套的快速入门中找到代码示例。
+
+## 长时间运行智能体的问题
+
+Claude Agent SDK 是一个强大、通用的智能体框架,擅长编码以及其他需要模型使用工具来收集上下文、计划和执行的任务。它具有上下文管理能力,如压缩(compaction),使智能体能够完成任务而不会耗尽上下文窗口。理论上,有了这种设置,智能体应该可以持续进行任意长时间的有用工作。
+
+然而,压缩并不足够。开箱即用,即使是像 Opus 4.5 这样的前沿编码模型,如果在 Claude Agent SDK 上跨多个上下文窗口循环运行,如果只给它一个高级别的提示,如"构建 claude.ai 的克隆",也无法构建出生产质量的 Web 应用程序。
+
+Claude 的失败表现为两种模式。首先,智能体倾向于一次做太多事情——本质上是试图一次性完成应用程序。这通常导致模型在实现中途耗尽上下文,使下一个会话必须从一个功能实现了一半且没有记录的状态开始。然后智能体必须猜测发生了什么,并花费大量时间试图让基本应用程序重新工作。即使有压缩也会发生这种情况,因为压缩并不总是向下一个智能体传递完美清晰的指令。
+
+第二种失败模式通常会在项目的后期出现。在已经构建了一些功能之后,后续的智能体实例会环顾四周,看到已经取得了进展,然后就宣布工作完成。
+
+这将问题分解为两个部分。首先,我们需要设置一个初始环境,为给定提示所需的**所有**功能奠定基础,这为智能体逐步、逐个功能地工作设置了条件。其次,我们应该提示每个智能体朝其目标取得渐进式进展,同时在会话结束时将环境保持在干净状态。所谓"干净状态",我们指的是适合合并到主分支的代码:没有主要错误,代码有序且有良好的文档,总体上,开发人员可以轻松开始开发新功能,而不必首先清理无关的混乱。
+
+在内部实验时,我们使用两部分解决方案解决了这些问题:
+
+1. **初始化智能体**:第一个智能体会话使用专门的提示,要求模型设置初始环境:一个 `init.sh` 脚本、一个记录智能体所做工作的 claude-progress.txt 文件,以及一个显示添加了哪些文件的初始 git 提交。
+2. **编码智能体**:每个后续会话都要求模型取得渐进式进展,然后留下结构化更新¹。
+
+这里的关键洞察是找到一种方法,让智能体在开始使用全新的上下文窗口时快速理解工作状态,这是通过 claude-progress.txt 文件和 git 历史记录一起实现的。这些实践的灵感来自了解有效的软件工程师每天做什么。
+
+## 环境管理
+
+在更新的 Claude 4 提示指南中,我们分享了一些多上下文窗口工作流程的最佳实践,包括使用"第一个上下文窗口使用不同的提示"的框架结构。这个"不同的提示"要求初始化智能体设置环境,其中包含未来编码智能体有效工作所需的所有必要上下文。在这里,我们深入探讨这种环境的一些关键组件。
+
+### 功能列表
+
+为了解决智能体一次性完成应用程序或过早认为项目完成的问题,我们提示初始化智能体编写一个全面的功能需求文件,扩展用户的初始提示。在 claude.ai 克隆示例中,这意味着超过 200 个功能,如"用户可以打开新聊天、输入查询、按回车键并查看 AI 响应"。这些功能最初都标记为"失败",以便后续的编码智能体能够清楚地了解完整功能的外观。
+
+```json
+{
+    "category": "functional",
+    "description": "New chat button creates a fresh conversation",
+    "steps": [
+      "Navigate to main interface",
+      "Click the 'New Chat' button",
+      "Verify a new conversation is created",
+      "Check that chat area shows welcome state",
+      "Verify conversation appears in sidebar"
+    ],
+    "passes": false
+  }
+```
+
+我们提示编码智能体只能通过更改 passes 字段的状态来编辑此文件,并使用措辞强烈的指令,如"删除或编辑测试是不可接受的,因为这可能导致功能缺失或错误"。经过一些实验,我们最终使用了 JSON,因为与 Markdown 文件相比,模型不太可能不当更改或覆盖 JSON 文件。
+
+### 渐进式进展
+
+有了这个初始环境框架,编码智能体的下一次迭代被要求一次只处理一个功能。这种渐进式方法被证明是解决智能体一次做太多事情倾向的关键。
+
+一旦渐进式工作,模型在代码更改后保持环境干净仍然至关重要。在我们的实验中,我们发现引发这种行为的最佳方式是要求模型使用描述性的提交消息将其进度提交到 git,并在进度文件中编写其进度摘要。这允许模型使用 git 恢复错误的代码更改并恢复代码库的工作状态。
+
+这些方法还提高了效率,因为它们消除了智能体必须猜测发生了什么并花费时间试图让基本应用程序重新工作的需要。
+
+### 测试
+
+我们观察到的最后一个主要失败模式是 Claude 倾向于在没有适当测试的情况下将功能标记为完成。如果没有明确的提示,Claude 倾向于进行代码更改,甚至使用单元测试或针对开发服务器的 `curl` 命令进行测试,但无法识别功能端到端不工作。
+
+在构建 Web 应用程序的情况下,一旦明确提示使用浏览器自动化工具并像人类用户一样进行所有测试,Claude 在端到端验证功能方面大部分都做得很好。
+
+![Claude 通过 Puppeteer MCP 服务器测试 claude.ai 克隆时截取的屏幕截图。](https://www-cdn.anthropic.com/images/4zrzovbb/website/f94c2257964fb2d623f1e81f874977ebfc0986bc-1920x1080.gif)
+
+为 Claude 提供这些测试工具显著提高了性能,因为智能体能够识别并修复仅从代码中看不出的错误。
+
+仍然存在一些问题,例如 Claude 视觉和浏览器自动化工具的局限性,使得难以识别每种类型的错误。例如,Claude 无法通过 Puppeteer MCP 看到浏览器原生的警报模态框,依赖这些模态框的功能因此往往更容易出错。
+
+## 快速上手
+
+有了以上所有内容,每个编码智能体都会被提示运行一系列步骤来了解情况,有些相当基本但仍然很有帮助:
+
+1. _运行 `pwd` 查看您正在工作的目录。您只能编辑此目录中的文件。_
+2. _读取 git 日志和进度文件以快速了解最近的工作。_
+3. _读取功能列表文件并选择尚未完成的最高优先级功能来处理。_
+
+这种方法在每个会话中为 Claude 节省了一些 token,因为它不必弄清楚如何测试代码。还有助于要求初始化智能体编写一个可以运行开发服务器的 `init.sh` 脚本,然后在实现新功能之前运行基本的端到端测试。
+
+在 claude.ai 克隆的情况下,这意味着智能体始终启动本地开发服务器并使用 Puppeteer MCP 启动新聊天、发送消息并接收响应。这确保了 Claude 可以快速识别应用程序是否处于损坏状态,并立即修复任何现有错误。相反,如果智能体开始实现新功能,很可能会使问题恶化。
+
+鉴于所有这些,典型的会话以以下助手消息开始:
+
+```
+[Assistant] I'll start by getting my bearings and understanding the current state of the project.
+[Tool Use] <bash - pwd>
+[Tool Use] <read - claude-progress.txt>
+[Tool Use] <read - feature_list.json>
+[Assistant] Let me check the git log to see recent work.
+[Tool Use] <bash - git log --oneline -20>
+[Assistant] Now let me check if there's an init.sh script to restart the servers.
+<Starts the development server>
+[Assistant] Excellent! Now let me navigate to the application and verify that some fundamental features are still working.
+<Tests basic functionality>
+[Assistant] Based on my verification testing, I can see that the fundamental functionality is working well. The core chat features, theme switching, conversation loading, and error handling are all functioning correctly. Now let me review the tests.json file more comprehensively to understand what needs to be implemented next.
+<Starts work on a new feature>
+```
+
+## 智能体失败模式和解决方案
+
+| **问题** | **初始化智能体行为** | **编码智能体行为** |
+| --- | --- | --- |
+| Claude 过早宣布整个项目完成。 | 设置功能列表文件:根据输入规范,设置一个包含端到端功能描述的结构化 JSON 文件。 | 在会话开始时读取功能列表文件。选择一个功能开始处理。 |
+| Claude 使环境处于有错误或未记录进度的状态。 | 编写初始 git 仓库和进度注释文件。 | 通过读取进度注释文件和 git 提交日志开始会话,并在开发服务器上运行基本测试以捕获任何未记录的错误。通过编写 git 提交和进度更新结束会话。 |
+| Claude 过早将功能标记为完成。 | 设置功能列表文件。 | 自我验证所有功能。只有在仔细测试后才将功能标记为"通过"。 |
+| Claude 必须花时间弄清楚如何运行应用程序。 | 编写一个可以运行开发服务器的 `init.sh` 脚本。 | 通过读取 `init.sh` 开始会话。 |
+
+总结长时间运行 AI 智能体中四种常见失败模式和解决方案。
+
+## 未来工作
+
+这项研究展示了长时间运行智能体框架中一种可能的解决方案集,使模型能够在许多上下文窗口中取得渐进式进展。然而,仍然存在未解决的问题。
+
+最值得注意的是,目前尚不清楚单个、通用的编码智能体是否在所有上下文中表现最佳,还是是否可以通过多智能体架构实现更好的性能。合理的做法是,专门的智能体,如测试智能体、质量保证智能体或代码清理智能体,可以在软件开发生命周期的子任务上做得更好。
+
+此外,此演示针对全栈 Web 应用程序开发进行了优化。未来的方向是将这些发现推广到其他领域。这些经验中的一些或全部可能可以应用于例如科学研究或金融建模所需的长周期智能体任务。
+
+### 致谢
+
+本文由 Justin Young 撰写。特别感谢 David Hershey、Prithvi Rajasakeran、Jeremy Hadfield、Naia Bouscal、Michael Tingley、Jesse Mu、Jake Eaton、Marius Buleandara、Maggie Vo、Pedram Navid、Nadine Yasser 和 Alex Notov 的贡献。
+
+这项工作反映了 Anthropic 几个团队的集体努力,他们使 Claude 能够安全地进行长周期自主软件工程,特别是代码 RL 和 Claude Code 团队。有兴趣做出贡献的候选人欢迎在 anthropic.com/careers 申请。
+
+### 脚注
+
+1. 我们在这个上下文中称它们为独立的智能体,只是因为它们有不同的初始用户提示。系统提示、工具集和整体智能体框架在其他方面是相同的。

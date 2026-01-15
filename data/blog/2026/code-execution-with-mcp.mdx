@@ -1,0 +1,263 @@
+---
+title: "使用 MCP 进行代码执行"
+date: 2026-01-14
+tags: ["AI", "Agent", "Anthropic", "MCP", "Code Execution"]
+summary: "介绍如何使用模型上下文协议(MCP)进行代码执行，提升Agent的能力"
+draft: false
+---
+
+> 本文翻译自 Anthropic 官方博客：[Code execution with MCP](https://www.anthropic.com/engineering/code-execution-with-mcp)
+
+模型上下文协议（MCP）是连接 AI Agent 与外部系统的开放标准。传统上，将 Agent 连接到工具和数据需要为每个配对进行自定义集成，这造成了碎片化和重复工作，使得难以扩展真正连接的系统。MCP 提供了一个通用协议——开发者在 Agent 中实现一次 MCP，就能解锁整个集成生态系统。
+
+自 2024 年 11 月推出 MCP 以来，采用速度非常快：社区已经构建了数千个 MCP 服务器，所有主要编程语言都有可用的 SDK，行业已经采用 MCP 作为连接 Agent 与工具和数据的事实标准。
+
+如今，开发人员经常构建能够访问跨数十个 MCP 服务器的数百或数千个工具的 Agent。然而，随着连接工具数量的增长，预先加载所有工具定义并通过上下文窗口传递中间结果会降低 Agent 的速度并增加成本。
+
+在这篇博客中，我们将探讨代码执行如何使 Agent 能够更高效地与 MCP 服务器交互，处理更多工具同时使用更少的 token。
+
+## 工具消耗过多 token 使 Agent 效率降低
+
+随着 MCP 使用规模的扩大，有两种常见模式可能会增加 Agent 的成本和延迟：
+
+1. 工具定义过载上下文窗口
+2. 中间工具结果消耗额外的 token
+
+### 1. 工具定义过载上下文窗口
+
+大多数 MCP 客户端预先将所有工具定义直接加载到上下文中，使用直接工具调用语法将其暴露给模型。这些工具定义可能如下所示：
+
+```
+gdrive.getDocument
+     Description: 从 Google Drive 检索文档
+     Parameters:
+                documentId (必需, 字符串): 要检索的文档 ID
+                fields (可选, 字符串): 要返回的特定字段
+     Returns: 包含标题、正文内容、元数据、权限等的文档对象
+```
+
+```
+salesforce.updateRecord
+    Description: 更新 Salesforce 中的记录
+    Parameters:
+               objectType (必需, 字符串): Salesforce 对象类型（Lead、Contact、Account 等）
+               recordId (必需, 字符串): 要更新的记录 ID
+               data (必需, 对象): 要更新的字段及其新值
+     Returns: 带确认的更新记录对象
+```
+
+工具描述占据更多上下文窗口空间，增加响应时间和成本。在 Agent 连接到数千个工具的情况下，它们需要在读取请求之前处理数十万个 token。
+
+### 2. 中间工具结果消耗额外的 token
+
+大多数 MCP 客户端允许模型直接调用 MCP 工具。例如，你可能会问你的 Agent："从 Google Drive 下载我的会议记录并将其附加到 Salesforce 线索。"
+
+模型将进行如下调用：
+
+```
+TOOL CALL: gdrive.getDocument(documentId: "abc123")
+        → 返回 "讨论了 Q4 目标...\n[完整记录文本]"
+           (加载到模型上下文中)
+
+TOOL CALL: salesforce.updateRecord(
+				objectType: "SalesMeeting",
+				recordId: "00Q5f000001abcXYZ",
+  				data: { "Notes": "讨论了 Q4 目标...\n[完整记录文本写出]" }
+			)
+			(模型需要再次将整个记录写入上下文)
+```
+
+每个中间结果都必须通过模型。在这个例子中，完整的调用记录流经两次。对于 2 小时的销售会议，这意味着可能需要处理额外的 50,000 个 token。更大的文档甚至可能超过上下文窗口限制，中断工作流程。
+
+对于大型文档或复杂的数据结构，模型在工具调用之间复制数据时更容易出错。
+
+![MCP 客户端如何与 MCP 服务器和 LLM 工作](https://www-cdn.anthropic.com/images/4zrzovbb/website/9ecf165020005c09a22a9472cee6309555485619-1920x1080.png)
+
+MCP 客户端将工具定义加载到模型的上下文窗口中，并编排一个消息循环，其中每个工具调用和结果在操作之间通过模型传递。
+
+## 使用 MCP 进行代码执行提高上下文效率
+
+随着代码执行环境在 Agent 中变得越来越普遍，一个解决方案是将 MCP 服务器作为代码 API 而不是直接工具调用来呈现。然后 Agent 可以编写代码与 MCP 服务器交互。这种方法解决了两个挑战：Agent 可以只加载它们需要的工具，并在将结果传递回模型之前在执行环境中处理数据。
+
+有多种方法可以做到这一点。一种方法是从连接的 MCP 服务器生成所有可用工具的文件树。这是一个使用 TypeScript 的实现：
+
+```
+servers
+├── google-drive
+│   ├── getDocument.ts
+│   ├── ... (其他工具)
+│   └── index.ts
+├── salesforce
+│   ├── updateRecord.ts
+│   ├── ... (其他工具)
+│   └── index.ts
+└── ... (其他服务器)
+```
+
+然后每个工具对应一个文件，类似这样：
+
+```typescript
+// ./servers/google-drive/getDocument.ts
+import { callMCPTool } from "../../../client.js";
+
+interface GetDocumentInput {
+  documentId: string;
+}
+
+interface GetDocumentResponse {
+  content: string;
+}
+
+/* 从 Google Drive 读取文档 */
+export async function getDocument(input: GetDocumentInput): Promise<GetDocumentResponse> {
+  return callMCPTool<GetDocumentResponse>('google_drive__get_document', input);
+}
+```
+
+我们上面的 Google Drive 到 Salesforce 的例子变成了这样的代码：
+
+```typescript
+// 从 Google Docs 读取记录并添加到 Salesforce 潜在客户
+import * as gdrive from './servers/google-drive';
+import * as salesforce from './servers/salesforce';
+
+const transcript = (await gdrive.getDocument({ documentId: 'abc123' })).content;
+await salesforce.updateRecord({
+  objectType: 'SalesMeeting',
+  recordId: '00Q5f000001abcXYZ',
+  data: { Notes: transcript }
+});
+```
+
+Agent 通过探索文件系统来发现工具：列出 `./servers/` 目录以找到可用的服务器（如 `google-drive` 和 `salesforce`），然后读取它需要的特定工具文件（如 `getDocument.ts` 和 `updateRecord.ts`）以了解每个工具的接口。这使得 Agent 只加载当前任务所需的定义。这将 token 使用从 150,000 个减少到 2,000 个——节省了 98.7% 的时间和成本。
+
+Cloudflare 发布了类似的发现，将使用 MCP 进行代码执行称为"代码模式"。核心洞察是相同的：LLM 擅长编写代码，开发人员应该利用这一优势来构建与 MCP 服务器交互更高效的 Agent。
+
+## 使用 MCP 进行代码执行的好处
+
+使用 MCP 进行代码执行使 Agent 能够通过按需加载工具、在数据到达模型之前过滤数据以及单步执行复杂逻辑来更高效地使用上下文。使用这种方法还有安全和状态管理的好处。
+
+### 渐进式披露
+
+模型非常擅长导航文件系统。将工具作为文件系统上的代码呈现，允许模型按需读取工具定义，而不是预先读取所有定义。
+
+或者，可以将 `search_tools` 工具添加到服务器以查找相关定义。例如，当处理上面使用的假设 Salesforce 服务器时，Agent 搜索"salesforce"并只加载当前任务需要的那些工具。在 `search_tools` 工具中包含一个详细信息级别参数，允许 Agent 选择所需的详细信息级别（如仅名称、名称和描述，或带有模式的完整定义），也有助于 Agent 节省上下文并高效地查找工具。
+
+### 上下文高效的工具结果
+
+处理大型数据集时，Agent 可以在返回结果之前在代码中过滤和转换结果。考虑获取一个 10,000 行的电子表格：
+
+```typescript
+// 没有代码执行 - 所有行流经上下文
+TOOL CALL: gdrive.getSheet(sheetId: 'abc123')
+        → 返回上下文中的 10,000 行以手动过滤
+
+// 使用代码执行 - 在执行环境中过滤
+const allRows = await gdrive.getSheet({ sheetId: 'abc123' });
+const pendingOrders = allRows.filter(row =>
+  row["Status"] === 'pending'
+);
+console.log(`Found ${pendingOrders.length} pending orders`);
+console.log(pendingOrders.slice(0, 5)); // 仅记录前 5 行以供审查
+```
+
+Agent 看到的是五行而不是 10,000 行。类似的模式适用于聚合、跨多个数据源的连接或提取特定字段——所有这些都不会膨胀上下文窗口。
+
+#### 更强大且上下文高效的控制流
+
+循环、条件语句和错误处理可以使用熟悉的代码模式来完成，而不是链接单个工具调用。例如，如果你需要在 Slack 中发送部署通知，Agent 可以编写：
+
+```typescript
+let found = false;
+while (!found) {
+  const messages = await slack.getChannelHistory({ channel: 'C123456' });
+  found = messages.some(m => m.text.includes('deployment complete'));
+  if (!found) await new Promise(r => setTimeout(r, 5000));
+}
+console.log('Deployment notification received');
+```
+
+这种方法比通过 Agent 循环在 MCP 工具调用和 sleep 命令之间交替更高效。
+
+此外，能够写出被执行的条件树还可以节省"首字节时间"延迟：而不是等待模型评估 if 语句，Agent 可以让代码执行环境来做这件事。
+
+### 隐私保护操作
+
+当 Agent 使用 MCP 进行代码执行时，中间结果默认保留在执行环境中。这样，Agent 只看到你明确记录或返回的内容，这意味着你不希望与模型共享的数据可以流经你的工作流程，而无需进入模型的上下文。
+
+对于更敏感的工作负载，Agent harness 可以自动标记敏感数据。例如，假设你需要将客户联系详细信息从电子表格导入到 Salesforce。Agent 编写：
+
+```typescript
+const sheet = await gdrive.getSheet({ sheetId: 'abc123' });
+for (const row of sheet.rows) {
+  await salesforce.updateRecord({
+    objectType: 'Lead',
+    recordId: row.salesforceId,
+    data: {
+      Email: row.email,
+      Phone: row.phone,
+      Name: row.name
+    }
+  });
+}
+console.log(`Updated ${sheet.rows.length} leads`);
+```
+
+MCP 客户端在数据到达模型之前拦截数据并标记 PII：
+
+```typescript
+// Agent 会看到的内容，如果它记录了 sheet.rows：
+[
+  { salesforceId: '00Q...', email: '[EMAIL_1]', phone: '[PHONE_1]', name: '[NAME_1]' },
+  { salesforceId: '00Q...', email: '[EMAIL_2]', phone: '[PHONE_2]', name: '[NAME_2]' },
+  ...
+]
+```
+
+然后，当数据在另一个 MCP 工具调用中共享时，它通过 MCP 客户端中的查找被取消标记。真实的电子邮件地址、电话号码和姓名从 Google Sheets 流向 Salesforce，但从不通过模型。这可以防止 Agent 意外记录或处理敏感数据。你还可以使用它来定义确定性的安全规则，选择数据可以流向和流自的位置。
+
+### 状态持久化和技能
+
+具有文件系统访问权限的代码执行允许 Agent 在操作之间维护状态。Agent 可以将中间结果写入文件，从而能够恢复工作并跟踪进度：
+
+```typescript
+const leads = await salesforce.query({
+  query: 'SELECT Id, Email FROM Lead LIMIT 1000'
+});
+const csvData = leads.map(l => `${l.Id},${l.Email}`).join('\n');
+await fs.writeFile('./workspace/leads.csv', csvData);
+
+// 后续执行从中断的地方继续
+const saved = await fs.readFile('./workspace/leads.csv', 'utf-8');
+```
+
+Agent 还可以将自己的代码持久化为可重用的函数。一旦 Agent 为任务开发出可工作的代码，它就可以保存该实现以供将来使用：
+
+```typescript
+// 在 ./skills/save-sheet-as-csv.ts 中
+import * as gdrive from './servers/google-drive';
+export async function saveSheetAsCsv(sheetId: string) {
+  const data = await gdrive.getSheet({ sheetId });
+  const csv = data.map(row => row.join(',')).join('\n');
+  await fs.writeFile(`./workspace/sheet-${sheetId}.csv`, csv);
+  return `./workspace/sheet-${sheetId}.csv`;
+}
+
+// 稍后，在任何 Agent 执行中：
+import { saveSheetAsCsv } from './skills/save-sheet-as-csv';
+const csvPath = await saveSheetAsCsv('abc123');
+```
+
+这与 Skills 的概念密切相关，Skills 是模型可重用的指令、脚本和资源文件夹，用于提高专门任务的性能。将 SKILL.md 文件添加到这些保存的函数中会创建一个结构化技能，模型可以引用和使用它。随着时间的推移，这允许你的 Agent 构建一个更高级别能力的工具箱，发展它最有效工作所需的脚手架。
+
+请注意，代码执行引入了自己的复杂性。运行 Agent 生成的代码需要一个安全的执行环境，具有适当的沙箱、资源限制和监控。这些基础设施需求增加了运营开销和安全考虑，而直接工具调用可以避免这些。代码执行的好处——降低 token 成本、降低延迟和改进的工具组合——应该与这些实现成本相权衡。
+
+## 总结
+
+MCP 为 Agent 连接到许多工具和系统提供了基础协议。然而，一旦连接了太多服务器，工具定义和结果可能会消耗过多的 token，降低 Agent 的效率。
+
+尽管这里的许多问题看起来很新颖——上下文管理、工具组合、状态持久化——它们在软件工程中都有已知的解决方案。代码执行将这些既定的模式应用于 Agent，让它们使用熟悉的编程构造来更高效地与 MCP 服务器交互。如果你实现了这种方法，我们鼓励你与 MCP 社区分享你的发现。
+
+### 致谢
+
+_本文由 Adam Jones 和 Conor Kelly 撰写。感谢 Jeremy Fox、Jerome Swannack、Stuart Ritchie、Molly Vorwerck、Matt Samuels 和 Maggie Vo 对本文草稿的反馈。_

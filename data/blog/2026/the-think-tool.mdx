@@ -1,0 +1,228 @@
+---
+title: ""Think"工具：让 Claude 学会停下来思考"
+date: 2026-01-14
+tags: ["AI", "Agent", "Anthropic", "Tool Use"]
+summary: "介绍了一个简单而强大的"think"工具，为 Claude 在复杂任务中提供结构化思考空间，显著提高了在策略遵循、一致决策和多步问题处理方面的表现。"
+draft: false
+---
+
+> 本文翻译自 Anthropic 官方博客：[The "think" tool: Enabling Claude to stop and think](https://www.anthropic.com/engineering/claude-think-tool)
+>
+> 译者注：本文介绍的"think"工具与 Claude 的"扩展思考"功能不同，是在复杂任务中提供结构化思考空间的强大技术。
+
+在我们继续增强 Claude 复杂问题解决能力的过程中，我们发现了一种特别有效的方法：一个"think"工具，在复杂任务期间为结构化思考创建专门的空间。
+
+这个简单而强大的技术——正如我们将在下面解释的那样，与 Claude 新的"扩展思考"功能不同——在 Claude 的代理工具使用能力方面产生了显著的改进。这包括遵循策略、做出一致决策以及处理多步问题，所有这些都只需最少的实现开销。
+
+在本文中，我们将探讨如何在不同应用程序上实现"think"工具，基于经过验证的基准结果与开发者分享实用指导。
+
+### 什么是"think"工具？
+
+通过"think"工具，我们让 Claude 能够包括一个额外的思考步骤——连同自己指定的空间——作为获得最终答案的一部分。
+
+虽然它听起来类似于扩展思考，但这是一个不同的概念。扩展思考是关于 Claude 在开始生成响应之前做什么。通过扩展思考，Claude 在采取行动之前深入考虑和迭代其计划。"think"工具是针对 Claude，一旦它开始生成响应，就添加一个步骤停下来思考它是否有继续前进所需的所有信息。这在执行长链工具调用或与用户进行长多步对话时特别有帮助。
+
+这使得"think"工具更适合 Claude 无法仅从用户查询中获得制定响应所需的所有信息的情况，以及它需要处理外部信息（例如，工具调用结果中的信息）的情况。Claude 使用"think"工具执行的推理不如使用扩展思考可以获得的那样全面，并且更多地关注模型发现的**新**信息。
+
+我们建议将扩展思考用于更简单的工具使用场景，例如非顺序工具调用或直接的指令遵循。当你不需要 Claude 调用工具时，扩展思考对于编码、数学和物理等用例也很有用。"think"工具更适合当 Claude 需要调用复杂工具、在长工具调用链中仔细分析工具输出、在具有详细指导的策略繁重环境中导航，或做出顺序决策（每个决策都建立在前一个决策之上，错误代价高昂）时。
+
+以下是使用来自 τ-Bench 的标准工具规范格式的示例实现：
+
+```json
+{
+  "name": "think",
+  "description": "Use the tool to think about something. It will not obtain new information or change the database, but just append the thought to the log. Use it when complex reasoning or some cache memory is needed.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "thought": {
+        "type": "string",
+        "description": "A thought to think about."
+      }
+    },
+    "required": ["thought"]
+  }
+}
+```
+
+### 在 τ-Bench 上的性能
+
+我们使用 τ-bench（tau-bench）评估了"think"工具，这是一个综合基准，旨在测试模型在现实客户服务场景中使用工具的能力，其中"think"工具是评估标准环境的一部分。
+
+τ-bench 评估 Claude 的能力：
+
+- 与模拟用户进行现实对话
+- 一致地遵循复杂的客户服务代理策略指导
+- 使用各种工具访问和操作环境数据库
+
+τ-bench 中使用的主要评估指标是 pass^k，它测量给定任务的所有 k 个独立任务试验成功的概率，在所有任务上平均。与其他 LLM 评估常见的 pass@k 指标（测量 k 次试验中至少一次成功）不同，pass^k 评估一致性和可靠性——对于一致遵守策略至关重要的客户服务应用程序的关键质量。
+
+#### 性能分析
+
+我们的评估比较了几种不同的配置：
+
+1. 基线（无"think"工具，无扩展思考模式）
+2. 仅扩展思考模式
+3. 仅"think"工具
+4. "think"工具与优化提示（用于航空公司领域）
+
+结果显示，当 Claude 3.7 在基准的"航空公司"和"零售"客户服务领域中有效使用"think"工具时，有显著改善：
+
+- **航空公司领域**："think"工具与优化提示在 pass^1 指标上达到 0.570，而基线仅为 0.370——相对改善 54%
+- **零售领域**："think"工具单独达到 0.812，而基线为 0.783
+
+![Claude 3.7 Sonnet 在 Tau-Bench 评估的"航空公司"领域的性能](https://www-cdn.anthropic.com/images/4zrzovbb/website/ff91e5c84be59ae71306bcc60adba9affed86484-2200x1300.jpg)
+
+Claude 3.7 Sonnet 在 Tau-Bench 评估的"航空公司"领域的性能
+
+| 配置 | k=1 | k=2 | k=3 | k=4 | k=5 |
+| --- | --- | --- | --- | --- | --- |
+| "Think" + Prompt | 0.584 | 0.444 | 0.384 | 0.356 | 0.340 |
+| "Think" | 0.404 | 0.254 | 0.186 | 0.140 | 0.100 |
+| Extended thinking | 0.412 | 0.290 | 0.232 | 0.192 | 0.160 |
+| Baseline | 0.332 | 0.206 | 0.148 | 0.116 | 0.100 |
+
+在四种不同配置下的评估结果。分数是比例。
+
+在航空公司领域的最佳性能是通过将"think"工具与优化的提示配对实现的，该提示给出了在分析客户请求时使用的推理方法类型的示例。以下是优化提示的示例：
+
+```
+## Using the think tool
+
+Before taking any action or responding to the user after receiving tool results, use the think tool as a scratchpad to:
+- List the specific rules that apply to the current request
+- Check if all required information is collected
+- Verify that the planned action complies with all policies
+- Iterate over tool results for correctness
+
+Here are some examples of what to iterate over inside the think tool:
+<think_tool_example_1>
+User wants to cancel flight ABC123
+- Need to verify: user ID, reservation ID, reason
+- Check cancellation rules:
+  * Is it within 24h of booking?
+  * If not, check ticket class and insurance
+- Verify no segments flown or are in the past
+- Plan: collect missing info, verify rules, get confirmation
+</think_tool_example_1>
+
+<think_tool_example_2>
+User wants to book 3 tickets to NYC with 2 checked bags each
+- Need user ID to check:
+  * Membership tier for baggage allowance
+  * Which payments methods exist in profile
+- Baggage calculation:
+  * Economy class × 3 passengers
+  * If regular member: 1 free bag each → 3 extra bags = $150
+  * If silver member: 2 free bags each → 0 extra bags = $0
+  * If gold member: 3 free bags each → 0 extra bags = $0
+- Payment rules to verify:
+  * Max 1 travel certificate, 1 credit card, 3 gift cards
+  * All payment methods must be in profile
+  * Travel certificate remainder goes to waste
+- Plan:
+1. Get user ID
+2. Verify membership level for bag fees
+3. Check which payment methods in profile and if their combination is allowed
+4. Calculate total: ticket price + any bag fees
+5. Get explicit confirmation for booking
+</think_tool_example_2>
+```
+
+特别有趣的是不同方法的比较。将"think"工具与优化的提示配对比扩展思考模式（显示与未提示的"think"工具类似的性能）实现了明显更好的结果。单独使用"think"工具（没有提示）改善了基线性能，但仍然达不到优化方法。
+
+"think"工具与优化提示的组合以显著优势提供了最强的性能，可能是由于基准的航空公司策略部分的高复杂性，模型从被给予"思考"示例中受益最多。
+
+在零售领域，我们还测试了各种配置以了解每种方法的具体影响
+
+![Claude 3.7 Sonnet 在 Tau-Bench 评估的"零售"领域的性能](https://www-cdn.anthropic.com/images/4zrzovbb/website/5819616b4cc109d30f1a7d47ec8a32a6b839637b-7638x4513.jpg)
+
+Claude 3.7 Sonnet 在 Tau-Bench 评估的"零售"领域的性能
+
+| 配置 | k=1 | k=2 | k=3 | k=4 | k=5 |
+| --- | --- | --- | --- | --- | --- |
+| "Think" + no prompt | 0.812 | 0.735 | 0.685 | 0.650 | 0.626 |
+| Extended thinking | 0.770 | 0.681 | 0.623 | 0.581 | 0.548 |
+| Baseline | 0.783 | 0.695 | 0.643 | 0.607 | 0.583 |
+
+在三种不同配置下的评估结果。分数是比例。
+
+"think"工具即使没有额外提示也达到了最高的 pass^1 分数 0.812。与航空公司领域相比，零售策略明显更容易导航，Claude 能够仅通过有思考空间就得到改善，而无需进一步指导。
+
+#### 从 τ-Bench 分析中获得的关键见解
+
+我们的详细分析揭示了几个可以帮助你有效实现"think"工具的模式：
+
+1. **在困难领域提示很重要**。简单地使"think"工具可用可能会在一定程度上改善性能，但将其与优化提示配对在困难领域产生了明显更好的结果。然而，更容易的领域可能仅从能够"思考"中受益。
+2. **跨试验改善一致性**。使用"think"的改善在 k=5 之前都保持，表明该工具帮助 Claude 更有效地处理边缘情况和异常场景。
+
+### 在 SWE-Bench 上的性能
+
+在评估 Claude 3.7 Sonnet 时，向我们的 SWE-bench 设置添加了类似的"think"工具，有助于达到 0.623 的最先进分数。调整后的"think"工具定义如下：
+
+```json
+{
+  "name": "think",
+  "description": "Use the tool to think about something. It will not obtain new information or make any changes to the repository, but just log the thought. Use it when complex reasoning or brainstorming is needed. For example, if you explore the repo and discover the source of a bug, call this tool to brainstorm several unique ways of fixing the bug, and assess which change(s) are likely to be simplest and most effective. Alternatively, if you receive some test results, call this tool to brainstorm ways to fix the failing tests.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "thought": {
+        "type": "string",
+        "description": "Your thoughts."
+      }
+    },
+    "required": ["thought"]
+  }
+}
+```
+
+我们的实验（n=30 个样本带"think"工具，n=144 个样本不带）显示，包含此工具的隔离效应平均改善了 1.6% 的性能（Welch's t-test: t(38.89) = 6.71, p < .001, d = 1.47）。
+
+### 何时使用"think"工具
+
+基于这些评估结果，我们确定了 Claude 从"think"工具中受益最多的特定场景：
+
+1. **工具输出分析**。当 Claude 需要在采取行动之前仔细处理先前工具调用的输出，并且可能需要在其方法中回溯时
+2. **策略繁重的环境**。当 Claude 需要遵循详细指导并验证合规性时
+3. **顺序决策**。当每个行动都建立在前一个行动之上，错误代价高昂时（通常在多步领域中找到）
+
+## 实现最佳实践
+
+为了在 Claude 中充分利用"think"工具，我们基于我们的 τ-bench 实验推荐以下实现实践。
+
+#### 1. 具有领域特定示例的策略性提示
+
+最有效的方法是提供关于何时以及如何使用"think"工具的清晰指令，例如用于 τ-bench 航空公司领域的指令。提供针对你的特定用例定制的示例显著改善了模型使用"think"工具的有效性：
+
+- 推理过程中预期的详细程度
+- 如何将复杂的指令分解为可操作的步骤
+- 处理常见场景的决策树
+- 如何检查是否收集了所有必要信息
+
+#### 2. 将复杂的指导放在系统提示中
+
+我们发现，当它们很长和/或复杂时，在系统提示中包含关于"think"工具的指令比将它们放在工具描述本身中更有效。这种方法提供了更广泛的上下文，并帮助模型更好地将思考过程集成到其整体行为中。
+
+### 何时不使用"think"工具
+
+虽然"think"工具可以提供实质性改善，但它不适用于所有工具使用用例，并且确实会增加提示长度和输出 token 的成本。具体来说，我们发现"think"工具在以下用例中没有提供任何改善：
+
+1. **非顺序工具调用**。如果 Claude 只需要进行单次工具调用或多次并行调用来完成任务，添加"think"不太可能有任何改善。
+2. **简单的指令遵循**。当没有很多 Claude 需要遵守的约束，并且其默认行为足够好时，不太可能有额外的"思考"收益。
+
+### 入门
+
+"think"工具是对你的 Claude 实现的直接添加，可以在几个步骤中产生有意义的改善：
+
+1. **使用代理工具使用场景进行测试**。从具有挑战性的用例开始——Claude 当前在策略合规性或复杂推理的长工具调用链中遇到困难的用例。
+2. **添加工具定义**。实现一个为你的领域定制的"think"工具。它只需要最少的代码，但可以实现更结构化的推理。还要考虑在系统提示中包含关于何时以及如何使用工具的指令，以及与你的领域相关的示例。
+3. **监控和改进**。观察 Claude 在实践中如何使用工具，并调整你的提示以鼓励更有效的思考模式。
+
+最好的是，添加此工具在性能结果方面的缺点最少。除非 Claude 决定使用它，否则它不会改变外部行为，也不会干扰你现有的工具或工作流。
+
+### 结论
+
+我们的研究表明，"think"工具可以显著增强 Claude 3.7 Sonnet 在需要策略遵守和长工具调用链中推理的复杂任务上的性能。"Think"不是一刀切的解决方案，但对于正确的用例提供了实质性好处，所有这些都只需要最少的实现复杂性。
+
+我们期待看到你如何使用"think"工具与 Claude 构建更有能力、可靠和透明的 AI 系统。
