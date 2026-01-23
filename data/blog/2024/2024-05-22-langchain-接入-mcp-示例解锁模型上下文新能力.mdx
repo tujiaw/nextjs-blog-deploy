@@ -1,0 +1,295 @@
+---
+title: "LangChain 接入 MCP 示例：解锁模型上下文新能力"
+date: 2024-05-22
+tags: ["LangChain", "AI", "LLM", "MCP", "Tutorial"]
+summary: "本文详细介绍了如何将 LangChain 与 MCP（Model Context Protocol）集成，通过实际代码示例展示如何利用 MCP 协议为 LLM 应用注入动态、结构化的上下文信息。"
+draft: false
+---
+
+在构建基于大语言模型（LLM）的复杂应用时，如何高效、动态地为模型提供精准的上下文信息，是决定应用智能程度和实用性的关键。传统的上下文注入方式（如拼接字符串、使用向量数据库检索）往往面临格式不统一、信息冗余或实时性不足的挑战。Model Context Protocol (MCP) 的出现，为这一难题提供了标准化的解决方案。本文将带你深入了解 MCP，并手把手教你如何将其与强大的 LangChain 框架集成，从而构建更智能、上下文感知能力更强的 AI 应用。
+
+## 什么是 MCP (Model Context Protocol)？
+
+MCP 是一个开放协议，旨在为 LLM 应用定义一种标准化的方式来获取、管理和注入上下文信息。你可以把它想象成 LLM 的“插件系统”或“外挂数据源”的通用接口。
+
+**MCP 的核心优势：**
+1.  **标准化接口**：统一了不同工具和数据源为 LLM 提供上下文的方式，简化了集成工作。
+2.  **动态与结构化**：支持按需、实时地获取结构化的上下文片段，而非简单的文本块。
+3.  **工具增强**：允许 LLM 通过标准化的“工具调用”来主动查询所需上下文，实现更复杂的推理链。
+4.  **解耦与复用**：将上下文提供者（如数据库、API、文件系统）与 LLM 应用逻辑解耦，便于独立开发和复用。
+
+简单来说，MCP 让 LLM 能够“知道”在何时、以何种格式、从何处获取它完成任务所需的信息。
+
+## LangChain 与 MCP 集成的应用场景
+
+将 LangChain 的编排能力与 MCP 的标准化上下文供给相结合，可以解锁许多高级应用场景：
+
+*   **智能客服增强**：客服 Agent 可以通过 MCP 实时查询用户订单数据库、知识库文章和库存系统，给出精准答复。
+*   **代码生成与理解**：编程助手可以动态获取项目文件结构、相关 API 文档和代码依赖，生成更符合上下文的代码。
+*   **数据分析与报告**：LLM 可以连接至 BI 工具或数据库，执行查询并将结果作为上下文，自动生成分析报告。
+*   **个性化内容创作**：根据用户的阅读历史、偏好（通过 MCP 从用户画像服务获取），动态调整生成内容的口吻和主题。
+
+## 实战：将 MCP 服务器集成到 LangChain
+
+下面我们通过一个具体示例，演示如何创建一个简单的 MCP 服务器（提供“天气”和“用户信息”上下文），并在 LangChain 的 Agent 中使用它。
+
+### 步骤 1：环境准备与依赖安装
+
+首先，确保你已安装 Python 3.8+。然后安装必要的库。我们将使用 `mcp` 库来创建服务器，以及 `langchain` 和 `langchain-openai`。
+
+```bash
+pip install mcp langchain langchain-openai openai
+```
+
+### 步骤 2：创建 MCP 服务器
+
+我们创建一个名为 `mcp_server.py` 的文件。这个服务器将暴露两个“工具”（在 MCP 中称为 `resources` 和 `tools`），一个用于获取天气，一个用于获取模拟的用户信息。
+
+```python
+# mcp_server.py
+import asyncio
+from typing import Any, List
+from mcp import Server, StdioServerParameters
+import mcp.types as types
+import random
+
+# 初始化 MCP 服务器
+server = Server("example-langchain-mcp-server")
+
+# 1. 声明一个“资源”（Resource），代表用户信息数据源
+@server.list_resources()
+async def handle_list_resources() -> List[types.Resource]:
+    return [
+        types.Resource(
+            uri="user://profile/current",
+            name="current-user-profile",
+            description="获取当前模拟用户的个人资料信息",
+            mimeType="application/json"
+        )
+    ]
+
+# 当请求该资源时，返回模拟数据
+@server.read_resource()
+async def handle_read_resource(uri: str) -> str:
+    if uri == "user://profile/current":
+        # 模拟用户数据
+        user_data = {
+            "name": "张三",
+            "preference": {"language": "zh-CN", "theme": "dark"},
+            "recent_actions": ["查看了项目A", "登录了系统"]
+        }
+        import json
+        return json.dumps(user_data, ensure_ascii=False)
+    raise ValueError(f"Unknown resource: {uri}")
+
+# 2. 声明一个“工具”（Tool），用于获取天气
+@server.list_tools()
+async def handle_list_tools() -> List[types.Tool]:
+    return [
+        types.Tool(
+            name="get_weather",
+            description="根据城市名称获取当前天气情况",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "city": {"type": "string", "description": "城市名称，例如：北京"}
+                },
+                "required": ["city"]
+            }
+        )
+    ]
+
+# 当调用该工具时，返回模拟天气
+@server.call_tool()
+async def handle_call_tool(name: str, arguments: dict[str, Any]) -> List[types.TextContent]:
+    if name == "get_weather":
+        city = arguments.get("city", "未知城市")
+        # 模拟天气数据
+        weather_conditions = ["晴", "多云", "小雨", "阴"]
+        temp = random.randint(15, 30)
+        weather = random.choice(weather_conditions)
+        result = f"城市 {city} 的当前天气：{weather}，气温 {temp}°C。"
+        return [types.TextContent(type="text", text=result)]
+    raise ValueError(f"Unknown tool: {name}")
+
+async def main():
+    # 使用标准输入/输出与客户端（如 LangChain）通信
+    params = StdioServerParameters()
+    async with await server.run_stdio(params) as (read_stream, write_stream):
+        await server.wait_for_disconnect()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+这个服务器启动后，会通过标准输入/输出（stdio）等待客户端连接，并告知客户端它提供了哪些“资源”和“工具”。
+
+### 步骤 3：在 LangChain 中创建 MCP 工具并构建 Agent
+
+接下来，我们创建另一个文件 `langchain_mcp_client.py`。这里的关键是使用 `MCPClient` 来连接我们刚创建的服务器，并将其提供的功能转换为 LangChain 可用的 `Tool` 对象。
+
+```python
+# langchain_mcp_client.py
+import asyncio
+import subprocess
+from typing import Type
+from pydantic import BaseModel, Field
+from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain.tools import Tool
+from mcp import ClientSession
+from mcp.clients.stdio import StdioClient
+
+# 注意：你需要设置你的 OpenAI API Key
+import os
+os.environ["OPENAI_API_KEY"] = "your-api-key-here"
+
+async def create_mcp_tools():
+    """
+    启动 MCP 服务器进程并创建 LangChain Tools
+    """
+    # 1. 启动 MCP 服务器子进程
+    process = subprocess.Popen(
+        ["python", "mcp_server.py"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    # 2. 创建 MCP 客户端并连接到服务器进程
+    client = StdioClient(process.stdin, process.stdout)
+    async with ClientSession(client) as session:
+        # 初始化连接，获取服务器提供的工具和资源列表
+        await session.initialize()
+
+        tools_list = []
+        # 3. 获取服务器声明的所有工具，并包装成 LangChain Tool
+        mcp_tools = await session.list_tools()
+        for tool in mcp_tools:
+            # 为每个 MCP 工具定义一个动态的输入模型
+            class DynamicToolInput(BaseModel):
+                city: str = Field(description="城市名称")
+
+            # 创建 LangChain Tool 的调用函数
+            async def tool_func(**kwargs):
+                # 调用 MCP 服务器的 call_tool
+                result = await session.call_tool(tool.name, kwargs)
+                # 提取返回的文本内容
+                return "\n".join([content.text for content in result[0].contents])
+
+            # 实例化 LangChain Tool
+            langchain_tool = Tool(
+                name=tool.name,
+                description=tool.description,
+                func=tool_func,
+                args_schema=DynamicToolInput
+            )
+            tools_list.append(langchain_tool)
+
+        # 4. （可选）处理资源 - 这里演示直接读取一个资源
+        # 我们可以创建一个工具来“获取用户资料”
+        async def get_user_profile():
+            resources = await session.list_resources()
+            for resource in resources:
+                if resource.uri == "user://profile/current":
+                    content = await session.read_resource(resource.uri)
+                    return content
+            return "未找到用户资料。"
+
+        profile_tool = Tool(
+            name="get_current_user_profile",
+            description="获取当前模拟用户的个人资料信息（JSON格式）",
+            func=get_user_profile
+        )
+        tools_list.append(profile_tool)
+
+        # 返回工具列表和会话对象（需要保持进程运行）
+        return tools_list, process, session
+
+async def main():
+    # 1. 创建 MCP 工具
+    mcp_tools, server_process, mcp_session = await create_mcp_tools()
+    print(f"已从 MCP 服务器加载 {len(mcp_tools)} 个工具。")
+
+    # 2. 初始化 LLM 和 Agent
+    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "你是一个有用的助手，可以查询天气和用户信息。请根据用户问题，使用合适的工具来获取信息后再回答。"),
+        ("human", "{input}"),
+        ("placeholder", "{agent_scratchpad}"),
+    ])
+
+    # 3. 创建 Tool Calling Agent
+    agent = create_tool_calling_agent(llm, mcp_tools, prompt)
+    agent_executor = AgentExecutor(agent=agent, tools=mcp_tools, verbose=True)
+
+    # 4. 运行示例查询
+    print("\n--- 示例 1: 查询天气 ---")
+    result1 = await agent_executor.ainvoke({"input": "北京天气怎么样？"})
+    print("回答:", result1["output"])
+
+    print("\n--- 示例 2: 结合上下文回答 ---")
+    result2 = await agent_executor.ainvoke({"input": "根据当前用户的资料，他可能喜欢什么样的问候方式？"})
+    print("回答:", result2["output"])
+
+    # 5. 清理：关闭 MCP 会话和进程
+    await mcp_session.__aexit__(None, None, None)
+    server_process.terminate()
+    server_process.wait()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### 运行演示
+
+1.  首先，确保在 `langchain_mcp_client.py` 中设置了正确的 `OPENAI_API_KEY`。
+2.  在终端中运行客户端脚本：
+    ```bash
+    python langchain_mcp_client.py
+    ```
+
+你将看到类似以下的输出，展示了 Agent 如何自动调用 MCP 工具来获取信息并生成回答：
+
+```
+已从 MCP 服务器加载 2 个工具。
+
+--- 示例 1: 查询天气 ---
+> 进入新的 AgentExecutor 链...
+调用 `get_weather` 工具，参数：`{'city': '北京'}`
+工具返回：城市 北京 的当前天气：晴，气温 22°C。
+根据查询结果，北京目前天气晴朗，气温 22°C，是一个适宜出行的好天气。
+
+> 链结束。
+
+--- 示例 2: 结合上下文回答 ---
+> 进入新的 AgentExecutor 链...
+调用 `get_current_user_profile` 工具
+工具返回：{"name": "张三", "preference": {"language": "zh-CN", "theme": "dark"}, "recent_actions": ["查看了项目A", "登录了系统"]}
+根据用户资料，用户姓名为张三，偏好简体中文和深色主题。因此，可以用中文进行友好、清晰的问候，例如：“你好，张三！今天有什么可以帮您？” 这符合他的语言偏好，并且考虑到他最近登录了系统，可以询问是否需要继续之前（如查看项目A）的相关协助。
+
+> 链结束。
+```
+
+## 最佳实践与注意事项
+
+1.  **错误处理**：在生产环境中，务必为 MCP 服务器和客户端的连接、工具调用添加 robust 的错误处理和重试逻辑。
+2.  **安全性**：MCP 服务器可能访问敏感数据（如数据库）。确保对客户端进行身份验证和授权，并验证输入参数，防止注入攻击。
+3.  **性能**：工具调用涉及进程间通信（IPC）。对于高频调用，考虑性能开销，或使用更高效的传输方式（如 Socket）。
+4.  **工具设计**：设计 MCP 工具时，保持功能单一、描述清晰。这有助于 LLM 准确理解和使用它们。
+5.  **会话管理**：如示例所示，需要妥善管理 MCP 服务器进程的生命周期，避免资源泄漏。
+
+## 未来展望
+
+MCP 协议及其生态仍处于快速发展阶段。未来的方向可能包括：
+
+*   **更丰富的标准工具库**：出现官方或社区维护的常用 MCP 服务器（如数据库连接器、CRM 接口等），实现“即插即用”。
+*   **更紧密的框架集成**：LangChain、LlamaIndex 等主流框架可能会提供更原生、开箱即用的 MCP 支持，简化配置。
+*   **标准化提示词模板**：MCP 可能扩展，包含如何在不同上下文中最佳使用某工具或资源的提示建议。
+*   **流式响应与复杂类型**：支持工具返回流式数据（如日志尾随）或更复杂的结构化数据（如图表、代码差异）。
+
+## 总结
+
+通过本文的示例，我们展示了将 LangChain 与 MCP 集成的完整流程。MCP 作为一种标准化的上下文协议，极大地增强了 LLM 应用获取和利用外部信息的能力。这种集成模式的核心价值在于**解耦**与**标准化**：你将上下文供给逻辑封装在独立的 MCP 服务器中，而 LangChain Agent 则通过统一的接口去消费这些上下文。这为构建模块化、可维护且功能强大的 AI 应用奠定了坚实的基础。现在就尝试创建你自己的 MCP 服务器，为你的 LangChain Agent 注入专属的动态知识吧！
