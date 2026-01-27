@@ -1,0 +1,366 @@
+---
+title: "从 Ubuntu 到 vLLM：现代大模型推理部署的分层架构详解"
+date: 2026-01-27
+tags: ["LLM", "vLLM", "vLLM Stack", "PyTorch", "CUDA"]
+summary: "从工程视角拆解 Ubuntu + CUDA + PyTorch + vLLM + Python 的完整推理栈，讲清每一层干什么、数据模型长什么样、以及一次推理请求如何在各层之间流动。"
+draft: false
+---
+
+> 这篇文章面向已经在做大模型部署 / 推理服务的工程师，重点不是公式，而是 **「每一层在工程上到底解决什么问题」**，以及 **「数据在各层之间是怎么流动的」**。
+
+## 一、整体架构脑图：从 OS 到 模型服务
+
+从 **硬件到模型服务** 的分层关系可以画成这样一张“脑图”：
+
+```text
+┌────────────────────────────────────────┐
+│          应用 / API / 推理服务          │
+│        (FastAPI / OpenAI API)         │
+└────────────────────────────────────────┘
+                    ▲
+                    │ Token / Tensor
+┌────────────────────────────────────────┐
+│               vLLM 0.12.0             │
+│  • 请求调度  • KV Cache 管理           │
+│  • PagedAttention • 高吞吐推理        │
+└────────────────────────────────────────┘
+                    ▲
+                    │ torch.Tensor
+┌────────────────────────────────────────┐
+│            PyTorch 2.9.0              │
+│  • 计算图 • Tensor • CUDA Kernel      │
+│  • Autograd（推理时多半关闭）         │
+└────────────────────────────────────────┘
+                    ▲
+                    │ CUDA Runtime
+┌────────────────────────────────────────┐
+│              CUDA 12.8                │
+│  • GPU 驱动接口 • Kernel 调度         │
+│  • 显存管理 • Stream                  │
+└────────────────────────────────────────┘
+                    ▲
+                    │ OS / Driver
+┌────────────────────────────────────────┐
+│           Ubuntu 24.04（基础镜像）     │
+│  • Linux Kernel • NVIDIA Driver       │
+│  • glibc • 系统依赖                   │
+└────────────────────────────────────────┘
+```
+
+Python 3.12 是贯穿全栈的 **控制层 / 胶水层**，把 vLLM 和 PyTorch 串起来。
+
+下面我们按 **「每个组件是什么 → 负责哪一层 → 数据模型 → 它们之间如何协作」** 来展开。
+
+---
+
+## 二、逐层拆解：每个组件到底在干什么？
+
+### 1️⃣ Ubuntu 24.04（基础镜像）
+
+**定位：操作系统 & 运行时环境**
+
+主要作用：
+
+- **提供基础运行时**：Linux 内核、glibc、动态链接环境
+- **承载 NVIDIA Driver**（注意：Driver 一般在宿主机，而不是容器内）
+- 作为容器部署时所有组件的“地基”
+
+关键点：
+
+- **CUDA ≠ Driver**
+  - Driver 在宿主机（对应物理 GPU）
+  - CUDA Toolkit / Runtime 通常在容器里
+- Ubuntu 24.04 对 **Python 3.12 / 新版 CUDA / 新编译工具链** 支持更友好
+
+工程视角可以简单理解为：  
+> Ubuntu 负责“机器活着，而且能跑 GPU 程序”。
+
+---
+
+### 2️⃣ CUDA 12.8
+
+**定位：GPU 计算运行时 & 并行编程平台**
+
+解决的问题：
+
+- 把 **PyTorch 的 Tensor 计算** 映射到 GPU
+- 负责：
+  - Kernel Launch（核函数调度）
+  - 显存分配 / 回收（malloc / free）
+  - Stream / 并发执行
+
+可以把 CUDA 理解为：
+
+> **CUDA = GPU 世界里的「操作系统 API」**
+
+vLLM / PyTorch **不会直接摸硬件**，而是通过 CUDA runtime / driver 间接操作 GPU。
+
+---
+
+### 3️⃣ PyTorch 2.9.0
+
+**定位：深度学习计算引擎**
+
+核心职责：
+
+- 定义 `torch.Tensor` 数据结构
+- 把 CUDA Tensor 的计算转换为 CUDA Kernel 调用
+- 实现各种基础算子：
+  - Linear / Attention / RMSNorm / RoPE
+  - FlashAttention / Triton kernel（如果启用）
+
+在大模型推理中，几乎所有“数值实体”都是 Tensor：
+
+- **模型权重（Weights） = `torch.Tensor`**
+- **KV Cache = `torch.Tensor`**
+- **中间激活（activations） = `torch.Tensor`**
+
+推理时通常会关掉梯度：
+
+```python
+import torch
+
+@torch.inference_mode()
+def forward(...):
+    ...
+```
+
+从 vLLM 的角度看：
+
+> **PyTorch 就是它的“数学执行引擎”**——所有真正算 FLOPs 的活都在 PyTorch + CUDA 上完成。
+
+---
+
+### 4️⃣ Python 3.12
+
+**定位：控制层 / 调度层 / glue code**
+
+主要负责：
+
+- 加载模型权重（HF / `safetensors` 等）
+- 启动 vLLM Engine，配置 worker / device / tensor parallel 等
+- 管理请求生命周期（创建 request、回收资源）
+- 调用 PyTorch API，触发 forward 计算
+
+性能视角的一个常见误区：
+
+- **真正慢的不是 Python 本身**
+- 热路径（attention / matmul / layernorm）都在 CUDA kernel 里
+- Python 更多是 orchestration：控制调用顺序、拼 batch、调度资源
+
+可以把 Python 看成：
+
+> “现场总指挥 + 协调员”，不用它算数，但所有人听它调度。
+
+---
+
+### 5️⃣ vLLM 0.12.0（核心）
+
+**定位：高性能 LLM 推理引擎**
+
+vLLM 做的是 **“PyTorch 不会帮你做”** 的那一大坨事情。
+
+#### 🔥 核心能力
+
+- **PagedAttention**：基于分页的 KV Cache 访问
+- **KV Cache 分页管理**：显存池化、碎片控制、复用
+- **请求动态批处理（Continuous Batching）**
+- **多请求并发推理（高吞吐）**
+- **OpenAI API 兼容接口**（/v1/chat/completions 等）
+
+一句话总结：
+
+> **vLLM = 为 LLM 推理量身定制的「调度器 + KV Cache 管理系统」**  
+> PyTorch 只管“算对”，vLLM 帮你“算快、算省、算得上更多并发”。
+
+---
+
+## 三、Data Models（数据模型）——这一层最容易被忽视
+
+理解数据模型，是把这个栈真正吃透的关键。
+
+### 1️⃣ 最底层：Tensor 数据模型（PyTorch）
+
+基础结构大致是：
+
+```text
+torch.Tensor
+├── dtype: float16 / bfloat16
+├── shape: [batch, seq, hidden]
+├── device: cuda:0
+```
+
+它承载的对象包括：
+
+- **权重（Weights）**
+- **KV Cache（Key / Value）**
+- **Attention 中间结果**
+
+这是整个推理栈的 **物理数据模型**，所有数字都最终落在 Tensor 上。
+
+---
+
+### 2️⃣ vLLM 的逻辑数据模型
+
+vLLM 在 Tensor 之上，抽象出了面向“推理语义”的一层：
+
+#### （1）Sequence（序列）
+
+```text
+Sequence
+├── prompt_tokens
+├── generated_tokens
+├── position_ids
+└── 状态（running / finished）
+```
+
+一个用户请求在内部可以对应为一个或多个 `Sequence`：
+
+- 单次生成：一个 request → 一个 sequence
+- beam search / n-best：一个 request → 多个 sequence
+
+---
+
+#### （2）Request / Sequence Group
+
+```text
+Request
+├── prompt
+├── sampling_params
+└── sequences (beam / n-best)
+```
+
+在工程实现里，你常见的是：
+
+- HTTP 进来的是一个 **Request**
+- vLLM 里拆成一个或多个 **Sequence**
+
+---
+
+#### （3）Paged KV Cache（vLLM 的灵魂）
+
+vLLM 把 KV Cache 设计成分页的内存模型：
+
+```text
+KV Cache
+├── Page（固定容量的“页”）
+├── 每页若干 token
+├── Key Tensor
+└── Value Tensor
+```
+
+特点：
+
+- **不要求连续内存**
+- **可复用（复用 page）**
+- **按需分配 / 回收**
+- **显著降低 OOM 风险**
+
+传统实现里，KV Cache 通常是按 sequence 连续分配：
+
+```text
+[seq1 全部 KV][seq2 全部 KV][seq3 全部 KV] → 显存碎片爆炸
+```
+
+vLLM 的做法更像显存池化：
+
+```text
+[Page][Page][Page] ... → Page 被不同 sequence 复用 / 绑定
+```
+
+这就是 PagedAttention 能在长上下文、多并发下扛住显存压力的根本原因。
+
+---
+
+### 3️⃣ 调度层数据模型（Scheduler）
+
+调度器维护的是“谁在跑、谁在等、还能塞多少”的视角：
+
+```text
+Scheduler
+├── running_queue
+├── waiting_queue
+├── GPU memory budget
+└── step-based 执行（每个 step 生成一批 token）
+```
+
+调度维度包括：
+
+- 当前 step 总 token 数
+- batch size
+- 占用的 KV Cache 页数
+- 预计的 GPU 显存占用
+
+这层是 **吞吐 / 延迟权衡** 的中枢。
+
+---
+
+## 四、一次推理请求是如何在各层之间流动的？
+
+下面按时间顺序梳理一下一次完整的推理过程。
+
+### 🚀 从 HTTP 请求到生成 token 的完整链路
+
+```text
+1. HTTP / OpenAI API 请求进入
+        ↓
+2. vLLM 创建 Request / Sequence
+        ↓
+3. Tokenizer 将文本 → input_ids（token 序列）
+        ↓
+4. Scheduler 决定本 step 运行哪些 sequence
+        ↓
+5. 调用 PyTorch forward()
+        ↓
+6. CUDA kernel 执行 attention / matmul 等算子
+        ↓
+7. 写入 / 读取 Paged KV Cache
+        ↓
+8. 采样得到 next token（greedy / top-p / temperature）
+        ↓
+9. （可选）streaming：把 token 流式返回给客户端
+```
+
+从“栈”的角度再看一遍：
+
+- **应用层（FastAPI / OpenAI API 封装）**：只关心 prompt / response
+- **vLLM**：负责 request / sequence / scheduler / KV Cache
+- **PyTorch**：负责把一堆 `input_ids` 和 KV Cache 变成 logits
+- **CUDA**：负责把矩阵乘法和 kernel 调度跑在 GPU 上
+- **Ubuntu + Driver**：负责系统级运行环境
+
+---
+
+## 五、你这套版本组合的“现实意义”
+
+从版本选择可以大致看出系统的设计倾向：
+
+| 组件          | 意义                                 |
+| ------------- | ------------------------------------ |
+| Python 3.12   | 更快启动，更好的 async 支持         |
+| CUDA 12.8     | 支持新 GPU / 新 kernel / 新特性     |
+| PyTorch 2.9   | 对 Triton / FlashAttention 更友好   |
+| vLLM 0.12.0   | PagedAttention 已经较为成熟         |
+| Ubuntu 24.04  | LTS + 新 toolchain，生态相对新      |
+
+这个组合非常适合：
+
+- LLaMA / Qwen / DeepSeek 等主流开源 LLM
+- 高并发、多租户 API 服务
+- 长上下文推理场景（8k / 32k / 甚至更长）
+
+工程上，它更像是一个 **面向“现代大模型推理”的通用推荐栈**。
+
+---
+
+## 六、一句话总总结（工程版）
+
+> **Ubuntu + CUDA** 提供 GPU 运行土壤  
+> **PyTorch** 负责所有数学计算  
+> **vLLM** 管理请求、KV Cache 和吞吐  
+> **Python** 做控制和调度  
+> **数据模型** 从 Tensor → Sequence → Request → Scheduler 层层抽象
+
+如果你已经在用这套栈，可以尝试从 **“数据模型”和“调度”** 的视角多看一眼：  
+当你开始调 batch size、max tokens、并发数、显存占用时，这些抽象会直接决定系统是在“优雅扩缩容”，还是在“随机 OOM、延迟抖动、用户体验崩盘”。
+
