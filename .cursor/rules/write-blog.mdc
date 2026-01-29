@@ -1,0 +1,28 @@
+---
+name: write-blog
+description: This is a new rule
+---
+
+# Overview
+
+当写文章、写博客时，必须遵守此规则
+
+## 文章目录
+data/blog/{current_year}/
+
+## 文章文件名
+必须是mdx格式，同时必须是英文，不要重名
+
+## 文章内容
+必须满足mdx格式要求，要保证mdx内容能被正确解析，参考：
+```
+---
+title: "三次近期问题的事后分析"
+date: 2026-01-29
+tags: ["AI", "Python"]
+summary: "详细分析三个间歇性降低 Claude 响应质量的基础设施错误,解释问题原因、检测和修复过程以及改进措施。"
+draft: false
+---
+
+{{文章内容}}
+```
