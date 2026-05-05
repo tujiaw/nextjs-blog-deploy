@@ -4,6 +4,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
 import { Menu, RadioGroup, Transition } from '@headlessui/react'
 import FairyDustCursor from './FairyDustCursor'
+import Link from './Link'
 
 const Sun = () => (
   <svg
@@ -69,6 +70,18 @@ const FairyWand = () => (
 
 const Blank = () => <svg className="h-6 w-6" />
 
+const WritePostIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    className="h-6 w-6"
+    aria-hidden
+  >
+    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+  </svg>
+)
+
 const ThemeSwitch = () => {
   const [mounted, setMounted] = useState(false)
   const { theme, setTheme, resolvedTheme } = useTheme()
@@ -111,7 +124,7 @@ const ThemeSwitch = () => {
           leaveFrom="transform opacity-100 scale-100"
           leaveTo="transform opacity-0 scale-95"
         >
-          <Menu.Items className="absolute right-0 z-50 mt-2 w-32 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800">
+          <Menu.Items className="absolute right-0 z-50 mt-2 min-w-[10rem] origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800">
             <RadioGroup value={theme} onChange={setTheme}>
               <div className="p-1">
                 <RadioGroup.Option value="light">
@@ -165,6 +178,7 @@ const ThemeSwitch = () => {
                 <Menu.Item>
                   {({ active }) => (
                     <button
+                      type="button"
                       onClick={toggleFairyDust}
                       className={`${
                         active ? 'bg-primary-600 text-white' : ''
@@ -179,6 +193,23 @@ const ThemeSwitch = () => {
                 </Menu.Item>
               </div>
             </RadioGroup>
+            <div className="p-1">
+              <Menu.Item>
+                {({ active }) => (
+                  <Link
+                    href="/blog/write"
+                    className={`${
+                      active ? 'bg-primary-600 text-white' : ''
+                    } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                  >
+                    <div className="mr-2 shrink-0">
+                      <WritePostIcon />
+                    </div>
+                    写文章
+                  </Link>
+                )}
+              </Menu.Item>
+            </div>
           </Menu.Items>
         </Transition>
       </Menu>

@@ -7,9 +7,219 @@
       <language>zh-CN</language>
       <managingEditor>address@yoursite.com (ningto.com)</managingEditor>
       <webMaster>address@yoursite.com (ningto.com)</webMaster>
-      <lastBuildDate>Mon, 12 Jan 2026 00:00:00 GMT</lastBuildDate>
+      <lastBuildDate>Fri, 30 Jan 2026 00:00:00 GMT</lastBuildDate>
       <atom:link href="https://ningto.com/feed.xml" rel="self" type="application/rss+xml"/>
       
+  <item>
+    <guid>https://ningto.com/blog/2026/fastapi-uvicorn-multiprocessing-pool-task-cancellation-issue</guid>
+    <title>FastAPI/Uvicorn 异步服务中使用 multiprocessing.Pool 导致任务取消的问题</title>
+    <link>https://ningto.com/blog/2026/fastapi-uvicorn-multiprocessing-pool-task-cancellation-issue</link>
+    <description>深入分析在 FastAPI/Uvicorn 异步服务中使用 multiprocessing.Pool 导致服务器意外关闭的问题,解释 fork 模式与 asyncio 事件循环的冲突机制,并提供使用 ProcessPoolExecutor + spawn 模式的完整解决方案。</description>
+    <pubDate>Fri, 30 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>FastAPI</category><category>Uvicorn</category><category>Python</category><category>异步编程</category><category>multiprocessing</category><category>asyncio</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/agent-lightning-introduction-and-practical-path</guid>
+    <title>Agent Lightning：用“可观测执行轨迹”驱动 Agent 的系统化优化（从上手到落地）</title>
+    <link>https://ningto.com/blog/2026/agent-lightning-introduction-and-practical-path</link>
+    <description>介绍 Agent Lightning 的定位与核心架构，并给出从易到难的上手路线：先采集轨迹与回放，再做 APO 提示词优化、SFT 微调、VERL 强化学习，最后把它落到真实业务的评估与持续改进闭环。</description>
+    <pubDate>Thu, 29 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>RL</category><category>Prompt</category><category>Tracing</category><category>Observability</category><category>Training</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/mem0-introduction-and-quickstart</guid>
+    <title>Mem0：给 AI Agent 加上一层“可用的长期记忆”（介绍与上手）</title>
+    <link>https://ningto.com/blog/2026/mem0-introduction-and-quickstart</link>
+    <description>从“为什么需要长期记忆”讲起，深入浅出介绍 Mem0 的核心概念与工作流，并给出可直接跑通的 Python 示例与落地建议。</description>
+    <pubDate>Thu, 29 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Memory</category><category>LLM</category><category>RAG</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/modern-llm-inference-stack-ubuntu-cuda-pytorch-vllm</guid>
+    <title>从 Ubuntu 到 vLLM：现代大模型推理部署的分层架构详解</title>
+    <link>https://ningto.com/blog/2026/modern-llm-inference-stack-ubuntu-cuda-pytorch-vllm</link>
+    <description>从工程视角拆解 Ubuntu + CUDA + PyTorch + vLLM + Python 的完整推理栈，讲清每一层干什么、数据模型长什么样、以及一次推理请求如何在各层之间流动。</description>
+    <pubDate>Tue, 27 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>LLM</category><category>vLLM</category><category>vLLM Stack</category><category>PyTorch</category><category>CUDA</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/langchain-mcp-integration-example-building-smarter-context-aware-applications</guid>
+    <title>LangChain 接入 MCP 示例：构建更智能的上下文感知应用</title>
+    <link>https://ningto.com/blog/2026/langchain-mcp-integration-example-building-smarter-context-aware-applications</link>
+    <description>本文详细介绍了如何在 LangChain 框架中集成 Model Context Protocol (MCP)，通过具体的代码示例展示如何构建能够动态获取和使用外部上下文的智能应用。</description>
+    <pubDate>Thu, 22 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>LangChain</category><category>MCP</category><category>LLM</category><category>Python</category><category>Tutorial</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/langchain-mcp-integration-practical-guide-unlocking-a-new-paradigm-for-model-context-management</guid>
+    <title>LangChain 接入 MCP 实战指南：解锁模型上下文管理新范式</title>
+    <link>https://ningto.com/blog/2026/langchain-mcp-integration-practical-guide-unlocking-a-new-paradigm-for-model-context-management</link>
+    <description>本文详细介绍了如何将 LangChain 框架接入 MCP（Model Context Protocol），通过代码示例和最佳实践，帮助开发者高效管理大语言模型的上下文，提升应用性能。</description>
+    <pubDate>Thu, 22 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>LangChain</category><category>MCP</category><category>Python</category><category>Tutorial</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/langchain-memory-management-deep-dive-from-short-term-conversations-to-long-term-memory-architecture-philosophy</guid>
+    <title>LangChain内存管理机制深度解析：从短时对话到长时记忆的架构哲学</title>
+    <link>https://ningto.com/blog/2026/langchain-memory-management-deep-dive-from-short-term-conversations-to-long-term-memory-architecture-philosophy</link>
+    <description>本文深入剖析LangChain框架中短时内存与长时内存的设计原理、实现机制、应用场景，并结合LangGraph的持久化能力，为构建复杂、可扩展的AI代理提供最佳实践。</description>
+    <pubDate>Thu, 22 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>LangChain</category><category>LLM</category><category>Memory Management</category><category>LangGraph</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/a-postmortem-of-three-recent-issues</guid>
+    <title>三次近期问题的事后分析</title>
+    <link>https://ningto.com/blog/2026/a-postmortem-of-three-recent-issues</link>
+    <description>详细分析三个间歇性降低 Claude 响应质量的基础设施错误,解释问题原因、检测和修复过程以及改进措施。</description>
+    <pubDate>Thu, 15 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Infrastructure</category><category>Postmortem</category><category>Claude</category><category>Reliability</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/claude-code-sandboxing</guid>
+    <title>通过沙箱隔离提升 Claude Code 的安全性和自主性</title>
+    <link>https://ningto.com/blog/2026/claude-code-sandboxing</link>
+    <description>介绍 Claude Code 的两个新沙箱功能:沙箱化 bash 工具和云端 Claude Code,如何通过文件系统和网络隔离提升安全性并减少权限提示。</description>
+    <pubDate>Thu, 15 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Security</category><category>Sandboxing</category><category>Claude Code</category><category>MCP</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/effective-harnesses-for-long-running-agents</guid>
+    <title>长时间运行智能体的有效框架</title>
+    <link>https://ningto.com/blog/2026/effective-harnesses-for-long-running-agents</link>
+    <description>探讨如何通过初始化智能体和编码智能体的两阶段解决方案，让 Claude Agent SDK 在多个上下文窗口中有效工作。</description>
+    <pubDate>Thu, 15 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Long-Running</category><category>Anthropic</category><category>Claude Agent SDK</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/multi-agent-research-system</guid>
+    <title>我们如何构建多智能体研究系统</title>
+    <link>https://ningto.com/blog/2026/multi-agent-research-system</link>
+    <description>深入探讨构建 Claude Research 系统的工程挑战和经验教训，分享多智能体系统的架构设计、提示工程和评估方法。</description>
+    <pubDate>Thu, 15 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Multi-Agent</category><category>Anthropic</category><category>Research</category><category>Claude</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/building-agents-with-the-claude-agent-sdk</guid>
+    <title>使用 Claude Agent SDK 构建代理</title>
+    <link>https://ningto.com/blog/2026/building-agents-with-the-claude-agent-sdk</link>
+    <description>介绍如何使用 Claude Agent SDK 构建自主代理，包括代理循环设计、上下文收集、执行方式和工作验证的最佳实践。</description>
+    <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Anthropic</category><category>SDK</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/building-effective-agents</guid>
+    <title>构建高效的 AI Agent</title>
+    <link>https://ningto.com/blog/2026/building-effective-agents</link>
+    <description>Anthropic 分享了与客户合作构建 LLM Agent 的经验，介绍了从简单可组合模式到自主 Agent 的最佳实践，包括工作流模式、构建块和实际应用案例。</description>
+    <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Anthropic</category><category>LLM</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/code-execution-with-mcp</guid>
+    <title>使用 MCP 进行代码执行</title>
+    <link>https://ningto.com/blog/2026/code-execution-with-mcp</link>
+    <description>介绍如何使用模型上下文协议(MCP)进行代码执行，提升Agent的能力</description>
+    <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Anthropic</category><category>MCP</category><category>Code Execution</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/contextual-retrieval</guid>
+    <title>上下文检索：RAG 的新水平</title>
+    <link>https://ningto.com/blog/2026/contextual-retrieval</link>
+    <description>介绍了上下文检索（Contextual Retrieval）技术，通过在嵌入前为每个片段添加上下文信息，将检索失败率降低了 49%，结合重新排序可降低 67%。</description>
+    <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Anthropic</category><category>RAG</category><category>Retrieval</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/demystifying-evals-for-ai-agents</guid>
+    <title>AI Agent 评测详解</title>
+    <link>https://ningto.com/blog/2026/demystifying-evals-for-ai-agents</link>
+    <description>介绍如何为AI Agent设计和实施有效的评估系统</description>
+    <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Anthropic</category><category>Evals</category><category>评估</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/effective-context-engineering-for-ai-agents</guid>
+    <title>AI Agent 的有效上下文工程</title>
+    <link>https://ningto.com/blog/2026/effective-context-engineering-for-ai-agents</link>
+    <description>介绍了为 AI Agent 设计上下文的原则和模式，包括如何组织上下文、引导推理以及管理会话以获得最佳性能。</description>
+    <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Anthropic</category><category>Context Engineering</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/equipping-agents-for-the-real-world-with-agent-skills</guid>
+    <title>使用 Agent Skills 为现实世界配备 Agent</title>
+    <link>https://ningto.com/blog/2026/equipping-agents-for-the-real-world-with-agent-skills</link>
+    <description>介绍了 Agent Skills 的概念，这是一种模块化的能力封装方式，通过文件夹组织指令、脚本和资源，让 Agent 能够动态发现和加载特定技能。</description>
+    <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Anthropic</category><category>Agent Skills</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/introducing-advanced-tool-use</guid>
+    <title>Claude 开发者平台高级工具使用介绍</title>
+    <link>https://ningto.com/blog/2026/introducing-advanced-tool-use</link>
+    <description>Claude 现在可以动态发现、学习和执行工具，以在现实世界中采取行动。介绍了工具搜索工具、程序化工具调用和工具使用示例三大功能。</description>
+    <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Anthropic</category><category>Tool Use</category><category>MCP</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/the-think-tool</guid>
+    <title>&quot;Think&quot;工具：让 Claude 学会停下来思考</title>
+    <link>https://ningto.com/blog/2026/the-think-tool</link>
+    <description>介绍了一个简单而强大的&quot;think&quot;工具，为 Claude 在复杂任务中提供结构化思考空间，显著提高了在策略遵循、一致决策和多步问题处理方面的表现。</description>
+    <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Anthropic</category><category>Tool Use</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2026/writing-effective-tools-for-agents</guid>
+    <title>为 AI Agent 编写高效工具——使用 AI Agent</title>
+    <link>https://ningto.com/blog/2026/writing-effective-tools-for-agents</link>
+    <description>介绍了如何编写和优化 AI Agent 使用的工具，包括原型构建、评估运行、与 Agent 协作改进工具，以及编写高质量工具的核心原则。</description>
+    <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>Agent</category><category>Anthropic</category><category>Tool Use</category><category>MCP</category>
+  </item>
+
   <item>
     <guid>https://ningto.com/blog/llm-guide</guid>
     <title>大语言模型学习指南</title>
@@ -478,6 +688,36 @@
     <pubDate>Sat, 10 Aug 2024 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (ningto.com)</author>
     <category>Linux</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2024/2024-05-27-langchain-接入-mcp-实战指南解锁模型上下文管理新范式</guid>
+    <title>LangChain 接入 MCP 实战指南：解锁模型上下文管理新范式</title>
+    <link>https://ningto.com/blog/2024/2024-05-27-langchain-接入-mcp-实战指南解锁模型上下文管理新范式</link>
+    <description>本文详细介绍了如何将 LangChain 与 MCP (Model Context Protocol) 集成，通过实际代码示例展示如何高效管理大语言模型的上下文，提升应用性能与可靠性。</description>
+    <pubDate>Mon, 27 May 2024 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>LangChain</category><category>MCP</category><category>AI</category><category>LLM</category><category>Python</category><category>Tutorial</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2024/2024-05-22-langchain-接入-mcp-完整指南解锁模型上下文管理新范式</guid>
+    <title>LangChain 接入 MCP 完整指南：解锁模型上下文管理新范式</title>
+    <link>https://ningto.com/blog/2024/2024-05-22-langchain-接入-mcp-完整指南解锁模型上下文管理新范式</link>
+    <description>本文详细介绍了如何在 LangChain 框架中接入 Model Context Protocol (MCP)，通过实际代码示例展示如何高效管理大语言模型的上下文，提升应用性能与可靠性。</description>
+    <pubDate>Wed, 22 May 2024 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>AI</category><category>LangChain</category><category>MCP</category><category>Python</category><category>Tutorial</category><category>LLM</category>
+  </item>
+
+  <item>
+    <guid>https://ningto.com/blog/2024/2024-05-22-langchain-接入-mcp-示例解锁模型上下文新能力</guid>
+    <title>LangChain 接入 MCP 示例：解锁模型上下文新能力</title>
+    <link>https://ningto.com/blog/2024/2024-05-22-langchain-接入-mcp-示例解锁模型上下文新能力</link>
+    <description>本文详细介绍了如何将 LangChain 与 MCP（Model Context Protocol）集成，通过实际代码示例展示如何利用 MCP 协议为 LLM 应用注入动态、结构化的上下文信息。</description>
+    <pubDate>Wed, 22 May 2024 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (ningto.com)</author>
+    <category>LangChain</category><category>AI</category><category>LLM</category><category>MCP</category><category>Tutorial</category>
   </item>
 
   <item>

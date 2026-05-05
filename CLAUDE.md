@@ -6,6 +6,66 @@
 
 本项目使用 **Yarn** 作为包管理器。始终使用 `yarn` 而不是 `npm`。
 
+如果本地未安装 Yarn，可以使用 `npx yarn` 或先安装：
+```bash
+npm install -g yarn
+```
+
+## 首次安装
+
+```bash
+# 1. 安装依赖
+yarn install
+# 或使用 npx（如果未安装 yarn）
+npx yarn install
+
+# 2. 配置环境变量（见下方"环境配置"部分）
+
+# 3. 启动开发服务器
+yarn dev
+```
+
+## 环境配置
+
+项目使用 `.env.local` 文件配置外部服务。创建该文件并添加以下必需的环境变量：
+
+```bash
+# Supabase 配置（用于评论、存储等功能）
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# S3 存储配置（可选）
+NEXT_PUBLIC_S3_ACCESS_KEY_ID=your_access_key
+NEXT_PUBLIC_S3_SECRET_ACCESS_KEY=your_secret_key
+NEXT_PUBLIC_S3_ENDPOINT=your_s3_endpoint
+NEXT_PUBLIC_S3_REGION=your_region
+NEXT_PUBLIC_S3_BUCKET_NAME=your_bucket_name
+
+# Giscus 评论配置（基于 GitHub Discussions）
+NEXT_PUBLIC_GISCUS_REPO=your_username/repo
+NEXT_PUBLIC_GISCUS_REPOSITORY_ID=your_repo_id
+NEXT_PUBLIC_GISCUS_CATEGORY=Announcements
+NEXT_PUBLIC_GISCUS_CATEGORY_ID=your_category_id
+
+# Google Analytics（可选）
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+```
+
+**注意**：`.env.local` 文件不应提交到版本控制。
+
+## 核心配置文件
+
+**`data/siteMetadata.js`** - 站点中央配置文件，包含：
+- 站点基本信息（标题、描述、作者、URL）
+- SEO 配置（关键词、语言、社交媒体链接）
+- 分析工具配置（Google Analytics、Umami）
+- 评论系统配置（Giscus）
+- 搜索功能配置（Kbar/Algolia）
+- 通讯订阅配置
+
+修改站点外观、社交链接、分析工具等设置时，请编辑此文件。
+
 ## 常用命令
 
 ### 开发
